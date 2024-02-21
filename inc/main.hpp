@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <fstream>
 #include <sstream>
+#include <string>
 
 #define RESET "\033[0m"
 #define BLACK "\033[30m"

@@ -1,0 +1,9 @@
+body {
+	background-image: url('images/Background.jpg');
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	height: 100vh; /* This ensures the background covers the entire viewport height */
+	margin: 0; /* Remove default margin */
+	padding: 0; /* Remove default padding */
+}
