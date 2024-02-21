@@ -16,21 +16,21 @@ NC=\033[0m
 all: $(NAME)
 
 $(NAME): $(OBJ_FILES)
-	@echo "${GREEN}Linking...${NC}"
+	@printf "${GREEN}Linking...${NC}\n"
 	@$(CXX) $(CXXFLAGS) -o $@ $^
-	@echo "${GREEN}Done. Executable created: $(NAME)${NC}"
+	@printf "${GREEN}Done. Executable created: $(NAME)${NC}\n"
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	@echo "${GREEN}Compiling $<...${NC}"
+	@printf "${GREEN}Compiling $<...${NC}\n"
 	@mkdir -p $(@D)
 	@$(CXX) $(CXXFLAGS) -I $(INC_DIR) -c -o $@ $<
 
 clean:
-	@echo "${RED}Cleaning...${NC}"
+	@printf "${RED}Cleaning...${NC}\n"
 	@rm -rf $(OBJ_DIR)
 
 fclean: clean
-	@echo "${RED}Removing executable...${NC}"
+	@printf "${RED}Removing executable...${NC}\n"
 	@rm -f $(NAME)
 
 re: fclean all
