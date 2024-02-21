@@ -4,13 +4,33 @@ const int port = 8080;
 
 void handle_client(int client_sock)
 {
-    const char *http_response = "HTTP/1.1 200 OK\r\n"
-                                "Content-Type: text/plain\r\n"
-                                "Content-Length: 12\r\n"
-                                "\r\n"
-                                "Hello World!";
+    // const char *http_response = "HTTP/1.1 200 OK\r\n"
+    //                             "Content-Type: text/plain\r\n"
+    //                             "Content-Length: 22\r\n"
+    //                             "\r\n"
+    //                             "Hello World! what's up";
 
-    write(client_sock, http_response, strlen(http_response));
+	// std::string not_found_response = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
+
+    // write(client_sock, not_found_response.c_str(), strlen(not_found_response.c_str()));
+	// write(client_sock, http_response, strlen(http_response));
+
+	// send(client_sock, http_response, strlen(http_response), 0);
+
+	std::ifstream html_page("www/index.html");
+	if (!html_page.is_open())
+	{
+		std::cerr << "Error opening html file" << std::endl;
+		return;
+	}
+
+	std::stringstream response;
+	response << "HTTP/1.1 200 OK\r\n";
+	response << "Content-Type: text/html\r\n\r\n";
+	response << html_page.rdbuf();
+
+	write(client_sock, response.str().c_str(), response.str().length());
+	html_page.close();
 }
 
 int main(void)

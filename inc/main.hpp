@@ -9,6 +9,10 @@
 #include <sys/types.h>  // socket
 #include <unistd.h>     // close, write
 #include <strings.h>    // bzero
+#include <stdio.h>
+#include <fcntl.h>
+#include <fstream>
+#include <sstream>
 
 #define RESET "\033[0m"
 #define BLACK "\033[30m"
