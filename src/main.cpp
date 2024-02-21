@@ -16,7 +16,9 @@ void handle_client(int client_sock)
 	// write(client_sock, http_response, strlen(http_response));
 
 	// send(client_sock, http_response, strlen(http_response), 0);
-
+	char buffer[1024] = {0};
+    read(client_sock, buffer, 1024);
+    std::cout << "Request received:\n" << buffer << std::endl;
 	std::ifstream html_page("www/index.html");
 	if (!html_page.is_open())
 	{
