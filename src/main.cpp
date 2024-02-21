@@ -1,17 +1,6 @@
 #include "main.hpp"
 #include "logger.hpp"
 
-void handle_client(int client_sock)
-{
-    const char *http_response = "HTTP/1.1 200 OK\r\n"
-                                "Content-Type: text/plain\r\n"
-                                "Content-Length: 12\r\n"
-                                "\r\n"
-                                "Hello World!";
-
-    write(client_sock, http_response, strlen(http_response));
-}
-
 int main(void)
 {
     logger log;
@@ -49,7 +38,45 @@ int main(void)
             continue;
         }
 
-        handle_client(client_sock);
+        // take the request on string and parse it
+        char request[2048];
+        int bytes_read = recv(client_sock, request, 2048, 0);
+        if (bytes_read < 0)
+        {
+            log.log(ERROR, "recv error: " + std::string(strerror(errno)));
+            continue;
+        }
+
+        std::string req(request);
+        log.log(INFO, "request: \n" + req);
+
+        // if the file is index.html, then send the file
+        if (req.find("GET /index.html") != std::string::npos || req.find("GET /") != std::string::npos)
+        {
+            std::ifstream file;
+            file.open("www/index.html");
+            if (!file.is_open())
+            {
+                log.log(ERROR, "file open error: " + std::string(strerror(errno)));
+                continue;
+            }
+
+            std::string response;
+            std::string line;
+            while (std::getline(file, line))
+                response += line + "\n";
+
+            file.close();
+            response = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n" + response;
+            log.log(INFO, "response: \n" + response);
+            send(client_sock, response.c_str(), response.size(), 0);
+        }
+        else
+        {
+            std::string response = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n";
+            send(client_sock, response.c_str(), response.size(), 0);
+        }
+
         close(client_sock);
     }
 
