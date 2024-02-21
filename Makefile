@@ -5,8 +5,8 @@ SRC_DIR = src
 INC_DIR = inc
 OBJ_DIR = obj
 
-SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
-OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
+SRC_FILES =  $(SRC_DIR)/main.cpp $(SRC_DIR)/logger/logger.cpp
+OBJ_FILES = $(SRC_FILES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 NAME = webserv
 
 RED=\033[0;31m
@@ -15,19 +15,14 @@ NC=\033[0m
 
 all: $(NAME)
 
-# Linking
 $(NAME): $(OBJ_FILES)
 	@echo "${GREEN}Linking...${NC}"
 	@$(CXX) $(CXXFLAGS) -o $@ $^
 	@echo "${GREEN}Done. Executable created: $(NAME)${NC}"
 
-# create folder
-$(OBJ_DIR):
-	@mkdir -p $(OBJ_DIR)
-
-# Compiling
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(OBJ_DIR)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@echo "${GREEN}Compiling $<...${NC}"
+	@mkdir -p $(@D)
 	@$(CXX) $(CXXFLAGS) -I $(INC_DIR) -c -o $@ $<
 
 clean:
@@ -41,4 +36,3 @@ fclean: clean
 re: fclean all
 
 .PHONY: all clean fclean re
-
