@@ -1,87 +1,82 @@
 #include "main.hpp"
-
-const int port = 8080;
-
-std::string read_file(std::string filepath) 
-{
-    std::ifstream file(filepath.c_str());
-    if (!file.is_open()) {
-        std::cerr << "Error opening file: " << filepath << std::endl;
-        return "";
-    }
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
-}
-
-void handle_client(int client_sock)
-{
-    // const char *http_response = "HTTP/1.1 200 OK\r\n"
-    //                             "Content-Type: text/plain\r\n"
-    //                             "Content-Length: 22\r\n"
-    //                             "\r\n"
-    //                             "Hello World! what's up";
-
-	// std::string not_found_response = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
-
-    // write(client_sock, not_found_response.c_str(), strlen(not_found_response.c_str()));
-	// write(client_sock, http_response, strlen(http_response));
-
-	// send(client_sock, http_response, strlen(http_response), 0);
-	char buffer[1024] = {0};
-    read(client_sock, buffer, 1024);
-    std::cout << "Request received:\n" << buffer << std::endl;
-	std::string html = read_file("www/index.html");
-	// std::string css = read_file("www/styles.css");
-
-	std::stringstream response;
-	response << "HTTP/1.1 200 OK\r\n";
-	response << "Content-Type: text/html\r\n\r\n";
-	response << html << "\n";
-
-	write(client_sock, response.str().c_str(), response.str().length());
-}
+#include "logger.hpp"
 
 int main(void)
 {
+    logger log;
     int server_sock, client_sock;
     struct sockaddr_in server_addr, client_addr;
     socklen_t sin_len = sizeof(client_addr);
 
     server_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (server_sock < 0)
-    {
-        std::cerr << "socket error: " << strerror(errno) << std::endl;
-        exit(1);
-    }
+        log.log(FATAL, "socket error: " + std::string(strerror(errno)));
 
     int optval = 1;
-    setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+    if (setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0)
+        log.log(FATAL, "setsockopt error: " + std::string(strerror(errno)));
 
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(port);
+    server_addr.sin_port = htons(PORT);
     bzero(&server_addr.sin_zero, sizeof(server_addr.sin_zero));
 
     if (bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
-    {
-        std::cerr << "bind error: " << strerror(errno) << std::endl;
-        exit(2);
-    }
+        log.log(FATAL, "bind error: " + std::string(strerror(errno)));
 
     listen(server_sock, 5);
-    std::cout << "Server is running on port " << port << std::endl;
+    std::stringstream ss;
+    ss << "server started on port " << PORT;
+    log.log(INFO, ss.str());
 
     while (true)
     {
         client_sock = accept(server_sock, (struct sockaddr *)&client_addr, &sin_len);
         if (client_sock < 0)
         {
-            std::cerr << "accept error: " << strerror(errno) << std::endl;
+            log.log(ERROR, "accept error: " + std::string(strerror(errno)));
             continue;
         }
 
-        handle_client(client_sock);
+        // take the request on string and parse it
+        char request[2048];
+        int bytes_read = recv(client_sock, request, 2048, 0);
+        if (bytes_read < 0)
+        {
+            log.log(ERROR, "recv error: " + std::string(strerror(errno)));
+            continue;
+        }
+
+        std::string req(request);
+        log.log(INFO, "request: \n" + req);
+
+        // if the file is index.html, then send the file
+        if (req.find("GET /index.html") != std::string::npos || req.find("GET /") != std::string::npos)
+        {
+            std::ifstream file;
+            file.open("www/index.html");
+            if (!file.is_open())
+            {
+                log.log(ERROR, "file open error: " + std::string(strerror(errno)));
+                continue;
+            }
+
+            std::string response;
+            std::string line;
+            while (std::getline(file, line))
+                response += line + "\n";
+
+            file.close();
+            response = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n" + response;
+            log.log(INFO, "response: \n" + response);
+            send(client_sock, response.c_str(), response.size(), 0);
+        }
+        else
+        {
+            std::string response = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n";
+            send(client_sock, response.c_str(), response.size(), 0);
+        }
+
         close(client_sock);
     }
 

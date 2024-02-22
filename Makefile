@@ -5,8 +5,8 @@ SRC_DIR = src
 INC_DIR = inc
 OBJ_DIR = obj
 
-SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
-OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
+SRC_FILES =  $(SRC_DIR)/main.cpp $(SRC_DIR)/logger/logger.cpp
+OBJ_FILES = $(SRC_FILES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 NAME = webserv
 
 RED=\033[0;31m
@@ -15,30 +15,24 @@ NC=\033[0m
 
 all: $(NAME)
 
-# Linking
 $(NAME): $(OBJ_FILES)
-	@echo "${GREEN}Linking...${NC}"
+	@printf "${GREEN}Linking...${NC}\n"
 	@$(CXX) $(CXXFLAGS) -o $@ $^
-	@echo "${GREEN}Done. Executable created: $(NAME)${NC}"
+	@printf "${GREEN}Done. Executable created: $(NAME)${NC}\n"
 
-# create folder
-$(OBJ_DIR):
-	@mkdir -p $(OBJ_DIR)
-
-# Compiling
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(OBJ_DIR)
-	@echo "${GREEN}Compiling $<...${NC}"
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@printf "${GREEN}Compiling $<...${NC}\n"
+	@mkdir -p $(@D)
 	@$(CXX) $(CXXFLAGS) -I $(INC_DIR) -c -o $@ $<
 
 clean:
-	@echo "${RED}Cleaning...${NC}"
+	@printf "${RED}Cleaning...${NC}\n"
 	@rm -rf $(OBJ_DIR)
 
 fclean: clean
-	@echo "${RED}Removing executable...${NC}"
+	@printf "${RED}Removing executable...${NC}\n"
 	@rm -f $(NAME)
 
 re: fclean all
 
 .PHONY: all clean fclean re
-
