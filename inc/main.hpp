@@ -9,8 +9,11 @@
 #include <unistd.h>
 #include <fstream>
 #include <string>
+#include "logger.hpp"
 
 #define PORT 8080
+
+int	parsing_reception(int client_sock, logger log);
 
 /*
 class Request

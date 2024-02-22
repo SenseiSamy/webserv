@@ -5,7 +5,7 @@ SRC_DIR = src
 INC_DIR = inc
 OBJ_DIR = obj
 
-SRC_FILES =  $(SRC_DIR)/main.cpp $(SRC_DIR)/logger/logger.cpp
+SRC_FILES =  $(SRC_DIR)/main.cpp $(SRC_DIR)/logger/logger.cpp $(SRC_DIR)/parsing_reception.cpp
 OBJ_FILES = $(SRC_FILES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 NAME = webserv
 
