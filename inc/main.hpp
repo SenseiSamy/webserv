@@ -52,6 +52,7 @@ class Request
 
 class Response
 {
+  
 };
 
 class CGI

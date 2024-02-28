@@ -73,10 +73,10 @@ int main(void)
             // response = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n" + response;
             // log.log(INFO, "response: \n" + response);
             // send(client_sock, response.c_str(), response.size(), 0);
-		
 			std::ifstream file;
 			std::string filename;
 			filename = "www/" + req.substr(5, req.find_first_of("HTTP/1.1", 5));
+            // std::cout << filename << std::endl;
 			while (filename.find(' ') != std::string::npos)
 				filename.erase(filename.find(' '));
 			// std::cout << filename << std::endl;
@@ -93,7 +93,10 @@ int main(void)
 				reponse += line + "\n";
 			file.close();
 			if (filename.find(".html") != std::string::npos)
+            {
 				reponse = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n" + reponse;
+                // std::cout << reponse << std::endl;
+            }
 			if (filename.find(".css") != std::string::npos)
 				reponse = "HTTP/1.1 200 OK\nContent-Type: text/css\n\n" + reponse;
 			if (filename.find(".jpg") != std::string::npos)
