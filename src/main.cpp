@@ -50,74 +50,8 @@ int main(void)
         std::string req(request);
         log.log(INFO, "request: \n" + req);
 
-        // if the file is index.html, then send the file
-        if (req.find("GET") != std::string::npos)
-        {
-            // std::ifstream file;
-            // file.open("www/index.html");
-			// std::string filename;
-			// filename = req.substr(5, req.find_first_of("HTTP/1.1", 5));
-			// std::cout << filename << std::endl;
-            // if (!file.is_open())
-            // {
-            //     log.log(ERROR, "file open error: " + std::string(strerror(errno)));
-            //     continue;
-            // }
-
-            // std::string response;
-            // std::string line;
-            // while (std::getline(file, line))
-            //     response += line + "\n";
-
-            // file.close();
-            // response = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n" + response;
-            // log.log(INFO, "response: \n" + response);
-            // send(client_sock, response.c_str(), response.size(), 0);
-			std::ifstream file;
-			std::string filename;
-			filename = "www/" + req.substr(5, req.find_first_of("HTTP/1.1", 5));
-            // std::cout << filename << std::endl;
-			while (filename.find(' ') != std::string::npos)
-				filename.erase(filename.find(' '));
-			// std::cout << filename << std::endl;
-			file.open(filename.c_str());
-			if (!file.is_open())
-			{
-				log.log(ERROR, "file open error: " + std::string(strerror(errno)));
-				continue;
-			}
-			std::string reponse;
-			std::string line;
-
-			while (std::getline(file, line))
-				reponse += line + "\n";
-			file.close();
-			if (filename.find(".html") != std::string::npos)
-            {
-				reponse = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n" + reponse;
-                // std::cout << reponse << std::endl;
-            }
-			if (filename.find(".css") != std::string::npos)
-				reponse = "HTTP/1.1 200 OK\nContent-Type: text/css\n\n" + reponse;
-			if (filename.find(".jpg") != std::string::npos)
-				reponse = "HTTP/1.1 200 OK\nContent-Type: image/jpeg\n\n" + reponse;
-			if (filename.find(".ico") != std::string::npos)
-				reponse = "HTTP/1.1 200 OK\nContent-Type: image/vnd.microsoft.icon\n\n" + reponse;
-			// log.log(INFO, "response: \n" + reponse);
-			send(client_sock, reponse.c_str(), reponse.size(), 0);
-		}
-		else
-		{
-			std::string response = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n";
-            send(client_sock, response.c_str(), response.size(), 0);
-		}
-		// if (parsing_reception(client_sock, log) < 0)
-		// {
-		// 	std::string response = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n";
-        //     send(client_sock, response.c_str(), response.size(), 0);
-		// }
-
-
+        Response rep(client_sock, req.c_str(), log);
+        rep.sendResponse();
         close(client_sock);
     }
 
