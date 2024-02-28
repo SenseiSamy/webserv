@@ -67,7 +67,7 @@ class Response
         if (!file.is_open())
 		{
             log.log(ERROR, "filename:" + std::string(strerror(errno)));
-            return;
+            // return;
         }
 
         std::string response;
