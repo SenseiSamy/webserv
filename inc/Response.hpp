@@ -65,11 +65,7 @@ class Response
         std::string filename = extractFilename();
         std::ifstream file(filename.c_str());
         if (!file.is_open())
-		{
             log.log(ERROR, "filename:" + std::string(strerror(errno)));
-            // return;
-        }
-
         std::string response;
         std::string line;
         while (std::getline(file, line))
@@ -82,9 +78,13 @@ class Response
 
     std::string extractFilename()
 	{
-        std::string filename = "www/" + request.substr(5, request.find_first_of("HTTP/1.1", 5));
-        while (filename.find(' ') != std::string::npos)
-            filename.erase(filename.find(' '));
+		std::string filename;
+		size_t first_space = request.find_first_of(' ');
+		size_t second_space = request.find_first_of(' ', first_space + 1);
+		if (first_space != std::string::npos && second_space != std::string::npos)
+			filename = "www" + request.substr(first_space + 1, second_space - first_space - 1);
+		if (request.substr(first_space + 1, second_space - first_space - 1) == "/")
+			filename = "www/index.html";
 		if (filename.find(".html") != std::string::npos)
 			this->type = HTML;
 		else if (filename.find(".css") != std::string::npos)
