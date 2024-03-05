@@ -18,7 +18,25 @@
                 <li><a href="#">Contact</a></li>
             </ul>
         </nav>
+		<h2>Submit Form</h2>
+
+		<form action="/submit_form" method="post">
+			<label for="username">Username:</label><br>
+			<input type="text" id="username" name="username"><br><br>
+			
+			<label for="password">Password:</label><br>
+			<input type="password" id="password" name="password"><br><br>
+			
+			<input type="submit" value="Submit">
+		</form>
     </header>
+
+	<h2>Upload File</h2>
+
+	<form action="/upload" method="post" enctype="multipart/form-data">
+		<input type="file" name="fileToUpload" id="fileToUpload">
+		<input type="submit" value="Upload File" name="submit">
+	</form>
 
     <section>
         <h2>The GOAT</h2>
