@@ -10,6 +10,7 @@
 #include <fstream>
 #include <string>
 #include "logger.hpp"
+#include "Response.hpp"
 
 #define PORT 8080
 
@@ -52,6 +53,7 @@ class Request
 
 class Response
 {
+
 };
 
 class CGI
