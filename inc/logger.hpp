@@ -25,8 +25,4 @@ enum log_level
     FATAL
 };
 
-class logger
-{
-  public:
-    static void log(int level, const std::string &message);
-};
+void log(int level, const std::string &message);

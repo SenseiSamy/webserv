@@ -1,20 +1,15 @@
 #pragma once
 
-#include <cerrno>
-#include <cstring>
-#include <iostream>
 #include <netinet/in.h>
-#include <sstream>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <fstream>
-#include <string>
-#include "logger.hpp"
+#include <iostream>
 #include "Response.hpp"
+#include "logger.hpp"
 
 #define PORT 8080
 
-int	parsing_reception(int client_sock, logger log);
+int	parsing_reception(int client_sock);
 
 /*
 class Request

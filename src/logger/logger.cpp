@@ -1,8 +1,7 @@
 #include "logger.hpp"
-#include <cerrno>
 #include <cstdlib>
 
-void logger::log(int level, const std::string &message)
+void log(int level, const std::string &message)
 {
     std::string level_str;
     std::string color;
