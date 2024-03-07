@@ -232,11 +232,13 @@ class Response
 
     void    generateHTTPError(int num)
     {
+        std::stringstream ss;
+        ss << num;
         std::string reponse;
         std::ifstream file("www/ErrorPage");
         std::string line;
         reponse += "HTTP/1.1 ";
-        reponse += "404";
+        reponse += ss.str();
         reponse += " ";
         reponse += hec.getDescription(num);
         reponse += "\n\r\n\r";
@@ -244,7 +246,7 @@ class Response
             reponse += line + "\n\r";
         file.close();
         reponse += "<img src=\"https://http.cat/";
-        reponse += "404\" alt=\"Centered Image\"/>\n\r";
+        reponse += ss.str() + "\" alt=\"Centered Image\"/>\n\r";
         reponse += "</div>\n</body>\n\r</html>\n\r";
         std::cout << reponse << std::endl;
 
