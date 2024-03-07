@@ -131,11 +131,6 @@ class Response
     int type;
     HttpErrorCodes hec;
 
-    void logError(const std::string &message)
-    {
-        std::cerr << "Error: " << message << std::endl;
-    }
-
     std::string extractFilename()
     {
         std::string filename;
@@ -249,8 +244,8 @@ class Response
             reponse += line + "\n\r";
         file.close();
         reponse += "<img src=\"https://http.cat/";
-        reponse += "404\"\n\rwidth=\"400\"\nheight=\"341\"/>\n\r";
-        reponse += "</body>\n\r</html>\n\r";
+        reponse += "404\" alt=\"Centered Image\"/>\n\r";
+        reponse += "</div>\n</body>\n\r</html>\n\r";
         std::cout << reponse << std::endl;
 
         send(client_sock, reponse.c_str(), reponse.size(), 0);
