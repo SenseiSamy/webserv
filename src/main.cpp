@@ -1,5 +1,6 @@
 #include "main.hpp"
 #include "logger.hpp"
+#include "cgi.hpp"
 #include <fstream>
 
 int main(void)
@@ -50,9 +51,17 @@ int main(void)
         std::string req(request);
         log(INFO, "request: \n" + req);
 
-        Response rep(client_sock, req.c_str());
-        rep.sendResponse();
-        close(client_sock);
+		if (isCGIrequest(req))
+		{
+			if (handleCGI(req, client_sock) == EXIT_FAILURE)
+				std::cerr << "An error happened during the cgi execution :(\n";
+		}
+		else
+		{
+			Response rep(client_sock, req.c_str());
+       		rep.sendResponse();
+		}
+		close(client_sock);
     }
 
     close(server_sock);
