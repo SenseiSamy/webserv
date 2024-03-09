@@ -1,15 +1,22 @@
 #pragma once
 
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <iostream>
 #include "Response.hpp"
 #include "logger.hpp"
+#include <errno.h>
+#include <fcntl.h>
+#include <fstream>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/epoll.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 #define PORT 8080
+#define MAX_EVENTS 64
 
-int	parsing_reception(int client_sock);
+int parsing_reception(int client_sock);
 
 /*
 class Request
