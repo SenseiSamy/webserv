@@ -2,6 +2,7 @@
 #include "logger.hpp"
 #include "cgi.hpp"
 #include <fstream>
+#include <cstdlib>
 
 int main(void)
 {

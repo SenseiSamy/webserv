@@ -27,21 +27,25 @@ bool	isCGIrequest(std::string& request)
 	return (request.compare(0, 13, "GET /cgi-bin/") == 0);
 }
 
-static int	fork_and_exec(std::map<std::string, std::string>& metaVar, int* fd, int pid)
+static int fork_and_exec(std::map<std::string, std::string>& metaVar, int* fd, int pid)
 {
-	if (pipe(fd) == -1)
-		return (EXIT_FAILURE);
-	pid = fork();
-	if (pid == 0)
-	{
-		dup2(fd[1], 1);
-		execve(("www" + metaVar["SCRIPT_NAME"]).c_str(), (char *[]){strdup("test"), NULL}, mapToEnv(metaVar));	
-		exit(EXIT_FAILURE);
-	}
-	else if (pid == -1)
-		return (EXIT_FAILURE);
-	return (EXIT_SUCCESS);
+    if (pipe(fd) == -1)
+        return (EXIT_FAILURE);
+    pid = fork();
+    if (pid == 0)
+    {
+        dup2(fd[1], STDOUT_FILENO);
+        char* args[] = {strdup("test"), NULL};
+    	std::string scriptPath = "www" + metaVar["SCRIPT_NAME"];
+        execve(scriptPath.c_str(), args, mapToEnv(metaVar));
+        exit(EXIT_FAILURE);
+    }
+    else if (pid == -1)
+        return (EXIT_FAILURE);
+    close(fd[1]);
+    return (EXIT_SUCCESS);
 }
+
 
 static std::string get_cgi_output(int *fd)
 {
