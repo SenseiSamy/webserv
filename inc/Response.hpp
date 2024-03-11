@@ -6,6 +6,8 @@
 #include <string>
 #include <string.h>
 #include <map>
+#include <cstdlib>
+#include <ctime>
 
 #define GET 1
 #define POST 2
@@ -245,9 +247,21 @@ class Response
         while(std::getline(file,line))
             reponse += line + "\n\r";
         file.close();
-        reponse += "<img src=\"https://http.cat/";
-        reponse += ss.str() + "\" alt=\"Centered Image\"/>\n\r";
-        reponse += "</div>\n</body>\n\r</html>\n\r";
+		std::srand(std::time(0));
+		if (std::rand() % 2)
+		{
+			reponse += "<img src=\"https://http.cat/";
+			reponse += ss.str() + "\" alt=\"Centered Image\"\n\r";
+			reponse += "width=\"800\"\n\rheight=\"600\"\n\r/>";
+			reponse += "</div>\n</body>\n\r</html>\n\r";
+		}
+		else
+		{
+			reponse += "<img src=\"https://http.dog/";
+			reponse += ss.str() + ".jpg\" alt=\"Centered Image\"\n\r";
+			reponse += "width=\"800\"\n\rheight=\"600\"\n\r/>";
+			reponse += "</div>\n</body>\n\r</html>\n\r";
+		}
         std::cout << reponse << std::endl;
 
         send(client_sock, reponse.c_str(), reponse.size(), 0);
