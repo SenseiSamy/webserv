@@ -248,16 +248,32 @@ class Response
             reponse += line + "\n\r";
         file.close();
 		std::srand(std::time(0));
-		if (std::rand() % 2)
+		int randnum = std::rand();
+		if (randnum % 4 == 0)
 		{
 			reponse += "<img src=\"https://http.cat/";
 			reponse += ss.str() + "\" alt=\"Centered Image\"\n\r";
 			reponse += "width=\"800\"\n\rheight=\"600\"\n\r/>";
 			reponse += "</div>\n</body>\n\r</html>\n\r";
 		}
-		else
+		else if (randnum % 4 == 1)
 		{
 			reponse += "<img src=\"https://http.dog/";
+			reponse += ss.str() + ".jpg\" alt=\"Centered Image\"\n\r";
+			reponse += "width=\"800\"\n\rheight=\"600\"\n\r/>";
+			reponse += "</div>\n</body>\n\r</html>\n\r";
+		}
+
+		else if (randnum % 4 == 2)
+		{
+			reponse += "<img src=\"https://http.pizza/";
+			reponse += ss.str() + ".jpg\" alt=\"Centered Image\"\n\r";
+			reponse += "width=\"800\"\n\rheight=\"600\"\n\r/>";
+			reponse += "</div>\n</body>\n\r</html>\n\r";
+		}
+		else
+		{
+			reponse += "<img src=\"https://httpgoats.com/";
 			reponse += ss.str() + ".jpg\" alt=\"Centered Image\"\n\r";
 			reponse += "width=\"800\"\n\rheight=\"600\"\n\r/>";
 			reponse += "</div>\n</body>\n\r</html>\n\r";
