@@ -1,3 +1,4 @@
+#include "Config.hpp"
 #include "Response.hpp"
 #include "logger.hpp"
 #include <errno.h>
@@ -31,8 +32,19 @@ static void setnonblocking(int sockfd)
     }
 }
 
-int main(void)
+int main(int argc, const char *argv[])
 {
+    if (argc != 2)
+    {
+        std::cout << "Usage: " << argv[0] << " <config_file>" << std::endl;
+        return 1;
+    }
+    Config config(argv[1]);
+    if (!config.parseConfig())
+        return 1;
+
+    config.displayConfig();
+
     int server_sock, client_sock;
     struct sockaddr_in server_addr, client_addr;
     socklen_t sin_len = sizeof(client_addr);
