@@ -14,7 +14,7 @@ class Config
         std::string root;
         bool directoryListing;
         std::string defaultFile;
-        std::string cgiPath;
+        std::map<std::string, std::string> cgi;
         std::string uploadPath;
     };
 
@@ -23,12 +23,13 @@ class Config
         int port;
         std::string host;
         std::vector<std::string> serverNames;
-        std::string defaultErrorPage;
+        std::map<std::string, std::string> errorPages;
         int clientBodySize;
         std::map<std::string, RouteConfig> routes;
     };
 
     Config(const std::string &path_config) : path_config(path_config) {}
+    ~Config() { }
     bool parseConfig();
     const std::vector<ServerConfig> &getServers() const;
 
