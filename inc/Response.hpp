@@ -1,11 +1,11 @@
-#include "main.hpp"
 #include "logger.hpp"
-#include <sstream>
+#include "main.hpp"
 #include <fstream>
 #include <iostream>
-#include <string>
-#include <string.h>
 #include <map>
+#include <sstream>
+#include <string.h>
+#include <string>
 
 #define GET 1
 #define POST 2
@@ -20,44 +20,54 @@ enum type
     UNKNOW
 };
 
-class HttpErrorCodes {
-private:
+class HttpErrorCodes
+{
+  private:
     typedef std::map<int, std::string> ErrorCodeMap;
     ErrorCodeMap httpErrorCodes;
 
-public:
+  public:
     // Default constructor
-    HttpErrorCodes() {
+    HttpErrorCodes()
+    {
         initializeErrorCodes();
     }
 
     // Copy constructor
-    HttpErrorCodes(const HttpErrorCodes& other) {
+    HttpErrorCodes(const HttpErrorCodes &other)
+    {
         httpErrorCodes = other.httpErrorCodes;
     }
 
     // Copy assignment operator
-    HttpErrorCodes& operator=(const HttpErrorCodes& other) {
-        if (this != &other) {
+    HttpErrorCodes &operator=(const HttpErrorCodes &other)
+    {
+        if (this != &other)
+        {
             httpErrorCodes = other.httpErrorCodes;
         }
         return *this;
     }
 
     // Destructor
-    ~HttpErrorCodes() {}
+    ~HttpErrorCodes()
+    {
+    }
 
-    std::string getDescription(int errorCode) const {
+    std::string getDescription(int errorCode) const
+    {
         ErrorCodeMap::const_iterator it = httpErrorCodes.find(errorCode);
-        if (it != httpErrorCodes.end()) {
+        if (it != httpErrorCodes.end())
+        {
             return it->second;
         }
         return "Unknown Error";
     }
 
-private:
+  private:
     // Initialize error codes
-    void initializeErrorCodes() {
+    void initializeErrorCodes()
+    {
         httpErrorCodes[100] = "Continue";
         httpErrorCodes[101] = "Switching Protocols";
         httpErrorCodes[102] = "Processing";
@@ -174,8 +184,6 @@ class Response
         return httpResponse;
     }
 
-
-
   public:
     // Constructor
     Response(int sock, const char *req)
@@ -230,7 +238,7 @@ class Response
         }
     }
 
-    void    generateHTTPError(int num)
+    void generateHTTPError(int num)
     {
         std::stringstream ss;
         ss << num;
@@ -242,7 +250,7 @@ class Response
         reponse += " ";
         reponse += hec.getDescription(num);
         reponse += "\n\r\n\r";
-        while(std::getline(file,line))
+        while (std::getline(file, line))
             reponse += line + "\n\r";
         file.close();
         reponse += "<img src=\"https://http.cat/";
