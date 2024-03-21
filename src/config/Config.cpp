@@ -1,17 +1,22 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   Config.cpp                                         :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: snaji <snaji@student.42.fr>                +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/03/18 18:27:05 by snaji             #+#    #+#             */
-/*   Updated: 2024/03/18 18:37:43 by snaji            ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
+#include "Config.hpp"
 
-#include "config.hpp"
+bool Config::parseConfig()
+{
 
-Config::Config(std::string const& config_file) {
-	
+    return true;
+}
+
+const std::vector<Config::ServerConfig> &Config::getServers() const
+{
+    return servers;
+}
+
+void Config::parseServerBlock(std::istream &stream, ServerConfig &serverConfig)
+{
+    // Parse a server block from the configuration file.
+}
+
+void Config::parseRouteBlock(std::istream &stream, RouteConfig &routeConfig)
+{
+    // Parse a route block from the configuration file.
 }
