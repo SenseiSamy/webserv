@@ -6,6 +6,8 @@
 #include <sstream>
 #include <string.h>
 #include <string>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #define GET 1
 #define POST 2
