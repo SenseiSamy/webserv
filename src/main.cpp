@@ -1,3 +1,4 @@
+#include "Config.hpp"
 #include "Response.hpp"
 #include "logger.hpp"
 #include <errno.h>
@@ -10,25 +11,41 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <vector>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #define PORT 8080
 #define MAX_EVENTS 64
 
 #include <fcntl.h>
 
-static void setnonblocking(int sockfd)
-{
-    int flags = fcntl(sockfd, F_GETFL, 0);
-    if (flags == -1)
-    {
-        log(ERROR, "fcntl F_GETFL");
-        return;
-    }
-    flags = (flags | O_NONBLOCK);
-    if (fcntl(sockfd, F_SETFL, flags) == -1)
-    {
-        log(ERROR, "fcntl F_SETFL O_NONBLOCK");
-    }
+std::vector<int>	open_servers_socket(const Config& config) {
+	std::vector<Config::ServerConfig> servers = config.getServers();
+	std::vector<int> servers_sock;
+
+	for (std::vector<Config::ServerConfig>::iterator it = servers.begin();
+		it != servers.end(); ++it) {
+		int sock = socket(AF_INET, SOCK_STREAM, SOCK_NONBLOCK);
+		if (sock < 0)
+        	log(FATAL, "socket error: " + std::string(strerror(errno)));
+
+		int optval = 1;
+    	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval) == -1))
+			log(FATAL, "socket error: " + std::string(strerror(errno)));
+
+		struct sockaddr_in addr;
+		addr.sin_family = AF_INET;
+		addr.sin_addr.s_addr = inet_addr(it->host.c_str());
+		addr.sin_port = htons(it->port);
+		memset(&addr.sin_zero, 0, sizeof(addr.sin_zero));
+
+		if (bind(sock, reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr)) == -1)
+			log(FATAL, "bind error: " + std::string(strerror(errno)));
+		if (listen(sock, 5) == -1)
+			log(FATAL, "listen error: " + std::string(strerror(errno)));
+	}
+	return (servers_sock);
 }
 
 int main(void)
