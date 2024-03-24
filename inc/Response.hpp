@@ -123,133 +123,101 @@ private:
     }
 };
 
-class Response
-{
-  private:
-    int client_sock;
-    std::string request;
-    int type;
-    HttpErrorCodes hec;
-
-    std::string extractFilename()
-    {
-        std::string filename;
-        size_t first_space = request.find_first_of(' ');
-        size_t second_space = request.find_first_of(' ', first_space + 1);
-        if (first_space != std::string::npos && second_space != std::string::npos)
-            filename = "www" + request.substr(first_space + 1, second_space - first_space - 1);
-        if (request.substr(first_space + 1, second_space - first_space - 1) == "/")
-            filename = "www/index.html";
-        if (filename.find(".html") != std::string::npos)
-            this->type = HTML;
-        else if (filename.find(".css") != std::string::npos)
-            this->type = CSS;
-        else if (filename.find(".jpg") != std::string::npos)
-            this->type = JPG;
-        else if (filename.find(".ico") != std::string::npos)
-            this->type = ICO;
-        else
-            this->type = UNKNOW;
-        return filename;
-    }
-
-    std::string generateHTTPResponse(const std::string &content)
-    {
-        std::string httpResponse;
-        if (content.empty())
-            httpResponse = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n";
-        else
-        {
-            if (type == HTML)
-                httpResponse = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n" + content;
-            else if (type == CSS)
-                httpResponse = "HTTP/1.1 200 OK\nContent-Type: text/css\n\n" + content;
-            else if (type == JPG)
-                httpResponse = "HTTP/1.1 200 OK\nContent-Type: image/jpeg\n\n" + content;
-            else if (type == ICO)
-                httpResponse = "HTTP/1.1 200 OK\nContent-Type: image/vnd.microsoft.icon\n\n" + content;
-            else
-                httpResponse = "HTTP/1.1 200 OK\n\n" + content; // default to plain text
+class   HTTPRequest {
+    public:
+        HTTPRequest(const std::string& request) : request(request) {
+            parseRequest();
         }
-        return httpResponse;
-    }
-
-
-
-  public:
-    // Constructor
-    Response(int sock, const char *req)
-    {
-        client_sock = sock;
-        request = req;
-    }
-
-    // Destructor
-    ~Response()
-    {
-        close(client_sock);
-    }
-
-    // Copy constructor
-    Response(const Response &other)
-    {
-        client_sock = other.client_sock;
-        request = other.request;
-    }
-
-    // Assignment operator
-    Response &operator=(const Response &other)
-    {
-        if (this != &other)
-        {
-            client_sock = other.client_sock;
-            request = other.request;
+    
+        HTTPRequest(const HTTPRequest& other) : request(other.request) {
+            parseRequest();
         }
-        return *this;
-    }
-
-    void sendResponse()
-    {
-        std::string filename = extractFilename();
-        std::ifstream file(filename.c_str());
-        if (!file.is_open())
-        {
-            log(ERROR, "filename:" + std::string(strerror(errno)));
-            generateHTTPError(404);
+    
+        ~HTTPRequest() {
+        
         }
-        else
-        {
-            std::string response;
-            std::string line;
-            while (std::getline(file, line))
-                response += line + "\n";
-            file.close();
-
-            std::string httpResponse = generateHTTPResponse(response);
-            send(client_sock, httpResponse.c_str(), httpResponse.size(), 0);
+    
+        std::string getMethod() const {
+            return method;
         }
-    }
+    
+        std::string getURL() const {
+            return url;
+        }
+    
+        std::string getHeader(const std::string& name) const {
+            std::map<std::string, std::string>::const_iterator it = headers.find(name);
+            if (it != headers.end()) {
+                return it->second;
+            }
+            return "";
+        }
+    
+        std::string getBody() const {
+            return body;
+        }
+    
+        void printRequest() const {
+            std::cout << "Method: " << method << std::endl;
+            std::cout << "URL: " << url << std::endl;
+            std::cout << "Headers:\n";
+            for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {
+                std::cout << it->first << ": " << it->second << std::endl;
+            }
+            std::cout << "Body: " << body << std::endl;
+        }
+    
+    private:
+        std::string request;
+        std::string method;
+        std::string url;
+        std::map<std::string, std::string> headers;
+        std::string body;
+    
+        void parseRequest() {
+            std::istringstream stream(request);
+            std::string requestLine;
+            if (!std::getline(stream, requestLine)) {
+                // Invalid request format
+                return;
+            }
+    
+            // Extract request line
+            std::istringstream requestLineStream(requestLine);
+            if (!std::getline(requestLineStream, method, ' ') || !std::getline(requestLineStream, url, ' ')) {
+                // Invalid request line format
+                return;
+            }
+    
+            // Parse headers
+            std::string headerLine;
+            while (std::getline(stream, headerLine) && !headerLine.empty()) {
+                size_t colonPos = headerLine.find(':');
+                if (colonPos != std::string::npos) {
+                    std::string headerName = headerLine.substr(0, colonPos);
+                    std::string headerValue = headerLine.substr(colonPos + 1); // Skip the colon
+                    // Remove leading whitespace from the value
+                    size_t valueStart = headerValue.find_first_not_of(" \t");
+                    if (valueStart != std::string::npos) {
+                        headerValue = headerValue.substr(valueStart);
+                    }
+                    headers[headerName] = headerValue;
+                }
+            }
+    
+            // Parse body
+            std::stringstream bodyStream;
+            bodyStream << stream.rdbuf();
+            body = bodyStream.str();
+        }
+};
 
-    void    generateHTTPError(int num)
-    {
-        std::stringstream ss;
-        ss << num;
-        std::string reponse;
-        std::ifstream file("www/ErrorPage");
-        std::string line;
-        reponse += "HTTP/1.1 ";
-        reponse += ss.str();
-        reponse += " ";
-        reponse += hec.getDescription(num);
-        reponse += "\n\r\n\r";
-        while(std::getline(file,line))
-            reponse += line + "\n\r";
-        file.close();
-        reponse += "<img src=\"https://http.cat/";
-        reponse += ss.str() + "\" alt=\"Centered Image\"/>\n\r";
-        reponse += "</div>\n</body>\n\r</html>\n\r";
-        std::cout << reponse << std::endl;
+class   Response    {
+    private :
+        std::map<std::string, std::string> header;
+        HttpErrorCodes hec;
+        std::string status_line;
+        std::string body;
 
-        send(client_sock, reponse.c_str(), reponse.size(), 0);
-    }
+    public :
 };

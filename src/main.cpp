@@ -47,11 +47,10 @@ int main(void)
             continue;
         }
 
-        std::string req(request);
-        log(INFO, "request: \n" + req);
+        HTTPRequest req(request);
+        req.printRequest();
 
-        Response rep(client_sock, req.c_str());
-        rep.sendResponse();
+        
         close(client_sock);
     }
 
