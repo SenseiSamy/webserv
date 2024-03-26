@@ -213,11 +213,92 @@ class   HTTPRequest {
 };
 
 class   Response    {
-    private :
-        std::map<std::string, std::string> header;
+    private:
+        int statusCode;
         HttpErrorCodes hec;
-        std::string status_line;
+        std::string statusMessage;
         std::string body;
+        std::map<std::string, std::string> headers;
 
-    public :
+    public:
+        // Default constructor
+        Response() : statusCode(200), statusMessage("OK"), body("Default Response") {
+            
+        }
+
+        // Constructor with parameters
+        Response(int code, const std::string& message, const std::string& responseBody)
+            : statusCode(code), statusMessage(message), body(responseBody) {
+
+            }
+
+        // Copy constructor
+        Response(const Response& other)
+            : statusCode(other.statusCode), statusMessage(other.statusMessage), body(other.body), headers(other.headers) {
+
+            }
+
+        // Copy assignment operator
+        Response& operator=(const Response& other) {
+            if (this != &other) {
+                statusCode = other.statusCode;
+                statusMessage = other.statusMessage;
+                body = other.body;
+                headers = other.headers;
+            }
+            return *this;
+        }
+
+        // Destructor (default is fine for this class)
+
+        // Setter methods
+        void setStatusCode(int code) {
+            statusCode = code;
+        }
+
+        void setStatusMessage(const std::string& message) {
+            statusMessage = message;
+        }
+
+        void setBody(const std::string& responseBody) {
+            body = responseBody;
+        }
+
+        void addHeader(const std::string& name, const std::string& value) {
+            headers[name] = value;
+        }
+
+        // Getter methods
+        int getStatusCode() const {
+            return statusCode;
+        }
+
+        const std::string& getStatusMessage() const {
+            return statusMessage;
+        }
+
+        const std::string& getBody() const {
+            return body;
+        }
+
+        const std::map<std::string, std::string>& getHeaders() const {
+            return headers;
+        }
+
+        // Method to convert response to string
+        std::string toString() const {
+            std::string response = "HTTP/1.1 ";
+            response += std::to_string(statusCode) + " " + statusMessage + "\r\n";
+            response += "Content-Length: " + std::to_string(body.length()) + "\r\n";
+            response += "Content-Type: text/plain\r\n";
+
+            // Append headers
+            for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {
+            response += it->first + ": " + it->second + "\r\n";
+            }
+
+            response += "\r\n";
+            response += body;
+            return response;
+        }
 };
