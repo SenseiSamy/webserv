@@ -1,159 +1,150 @@
 #include "Config.hpp"
-#include <fstream>
-#include <iostream>
-#include <ostream>
-#include <sstream>
-#include <string>
+#include <stdexcept>
 
-#define END_BLOCK '}'
-#define START_BLOCK '{'
-#define COMMENT '//'
-#define END_LINE ';'
-
-bool Config::parseConfig()
+void Config::parseConfig()
 {
-    std::ifstream configFile(_path_config.c_str());
-    if (!configFile.is_open())
-        return false;
+    // try to open the configuration file
+    std::ifstream file(config_file);
+    if (!file.is_open())
+        throw std::runtime_error("Failed to open configuration file");
 
+    // parse the configuration file
     std::string line;
-    ServerConfig currentServerConfig;
-    while (std::getline(configFile, line))
+    while (std::getline(file, line))
     {
-        std::istringstream iss(line);
-        std::string key;
-        iss >> key;
+        if (line.empty() \
+            || line.find_first_not_of(WHITE_SPACE) == line.find(COMMENT))
+            continue;
 
-        if (key == "server")
+        // parse the line
+        if (line.find("server") != std::string::npos)
         {
-            if (!currentServerConfig.listen.empty())
-            {
-                _servers.push_back(currentServerConfig);
-                currentServerConfig = ServerConfig();
-            }
-            parseServerBlock(configFile, currentServerConfig);
+            Server server;
+            parseServer(file, server);
+            servers.push_back(server);
         }
     }
-
-    if (!currentServerConfig.listen.empty())
-        _servers.push_back(currentServerConfig);
-
-    return true;
 }
 
-const std::vector<Config::ServerConfig> &Config::getServers() const
+int Config::stringToInt(const std::string &str)
 {
-    return _servers;
+    int result = 0;
+    for (char c : str)
+    {
+        if (c < '0' || c > '9')
+            throw std::runtime_error("Invalid number");
+        result = result * 10 + (c - '0');
+    }
+    return result;
 }
 
-void Config::parseServerBlock(std::istream &stream, ServerConfig &serverConfig)
+std::vector<std::string> splitLine(const std::string &line)
+{
+    std::vector<std::string> tokens;
+    std::string::size_type start = 0;
+    while (start < line.size())
+    {
+        std::string::size_type end = line.find_first_of(std::string(WHITE_SPACE) + END_LINE, start);
+        tokens.push_back(line.substr(start, end - start));
+        start = line.find_first_not_of(WHITE_SPACE, end);
+    }
+    return tokens;
+}
+
+void Config::parseServer(std::ifstream &file, Server &server)
 {
     std::string line;
-    while (std::getline(stream, line))
+    while (std::getline(file, line))
     {
-        std::istringstream iss(line);
-        std::string key;
-        iss >> key;
+        if (line.empty() \
+            || line.find_first_not_of(WHITE_SPACE) == line.find(COMMENT))
+            continue;
 
-        if (key == "listen")
-            iss >> serverConfig.listen;
-        else if (key == "server_name")
+        std::vector<std::string> tokens = splitLine(line);
+        if (tokens.size() < 2)
+            throw std::runtime_error("Invalid server directive");
+
+        if (tokens[0] == "listen")
         {
-            std::string name;
-            while (iss >> name)
-                serverConfig.server_name.push_back(name);
+            // split the host and port
+            std::string::size_type colon = tokens[1].find(':');
+            if (colon == std::string::npos)
+                throw std::runtime_error("Invalid listen directive on line: " + line);
+            server.listen = std::make_pair(tokens[1].substr(0, colon), stringToInt(tokens[1].substr(colon + 1)));
         }
-        else if (key == "error_page")
-            iss >> serverConfig.error_page;
-        else if (key == "client_max_body_size")
-            iss >> serverConfig.client_max_body_size;
-        else if (key == "location")
+        else if (tokens[0] == "server_name")
         {
-            std::string path;
-            iss >> path;
-            LocationConfig locationConfig;
-            parseLocationBlock(stream, locationConfig);
-            serverConfig.locations[path] = locationConfig;
+            for (std::size_t i = 1; i < tokens.size(); ++i)
+                server.server_names.push_back(tokens[i]);
         }
-        else if (key == "}")
+        else if (tokens[0] == "error_page")
+        {
+            if (tokens.size() < 3)
+                throw std::runtime_error("Invalid error_page directive on line: " + line);
+            for (std::size_t i = 1; i < tokens.size() - 1; ++i)
+                server.error_pages[stringToInt(tokens[i])] = tokens.back();
+
+        }
+        else if (tokens[0] == "client_max_body_size")
+        {
+            server.client_max_body_size = stringToInt(tokens[1]);
+        }
+        else if (tokens[0] == "location")
+        {
+            if (tokens.size() < 2 || tokens[1] != START_BLOCK)
+                throw std::runtime_error("Invalid location directive on line: " + line);
+            Location location;
+            parseLocation(file, location);
+            server.locations[tokens[1]] = location;
+        }
+    }
+}
+
+void Config::parseLocation(std::ifstream &file, Location &location)
+{
+    std::string line;
+    while (std::getline(file, line))
+    {
+        if (line.empty() \
+            || line.find_first_not_of(WHITE_SPACE) == line.find(COMMENT))
+            continue;
+
+        // parse the line
+        if (line.find(END_BLOCK) != std::string::npos)
             break;
-    }
-}
 
-void Config::parseLocationBlock(std::istream &stream, LocationConfig &locationConfig)
-{
-    std::string line;
-    while (std::getline(stream, line))
-    {
-        std::istringstream iss(line);
-        std::string key;
-        iss >> key;
+        std::vector<std::string> tokens = splitLine(line);
+        if (tokens.size() < 2)
+            throw std::runtime_error("Invalid location directive");
 
-        // Similar parsing logic for location-specific keys
-        if (key == "limit_except")
+        if (tokens[0] == "limit_except")
         {
-            std::string method;
-            while (iss >> method)
-                locationConfig.limit_except.push_back(method);
+            for (std::string::size_type i = 1; i < tokens.size(); ++i)
+                location.limit_except.push_back(tokens[i]);
         }
-        else if (key == "return_directive")
-            iss >> locationConfig.return_directive;
-        else if (key == "root")
-            iss >> locationConfig.root;
-        else if (key == "autoindex")
+        else if (tokens[0] == "rewrite")
         {
-            std::string value;
-            iss >> value;
-            locationConfig.autoindex = (value == "on");
+            if (tokens.size() < 3)
+                throw std::runtime_error("Invalid rewrite directive on line: " + line);
+            location.rewrite = std::make_pair(tokens[1], tokens[2]);
         }
-        else if (key == "index")
-            iss >> locationConfig.index;
-        else if (key == "fastcgi_pass")
-            iss >> locationConfig.fastcgi_pass;
-        else if (key == "client_max_body_size")
-            iss >> locationConfig.client_max_body_size;
-        else if (key == "fastcgi_param_SCRIPT_FILENAME")
-            iss >> locationConfig.fastcgi_param_SCRIPT_FILENAME;
-        else if (key == "}")
-            break;
-    }
-}
-
-void Config::displayConfig() const
-{
-    for (std::vector<Config::ServerConfig>::const_iterator it = _servers.begin(); it != _servers.end(); ++it)
-    {
-        const Config::ServerConfig &server = *it;
-        std::cout << "Server: " << server.listen << std::endl;
-
-        // Indent server names
-        for (std::vector<std::string>::const_iterator nameIt = server.server_name.begin(); nameIt != server.server_name.end(); ++nameIt)
-            std::cout << "    Server name: " << *nameIt << std::endl;
-
-        std::cout << "    Error page: " << server.error_page << std::endl;
-        std::cout << "    Client max body size: " << server.client_max_body_size << std::endl;
-
-        // Indent locations
-        for (std::map<std::string, Config::LocationConfig>::const_iterator locIt = server.locations.begin(); locIt != server.locations.end(); ++locIt)
+        else if (tokens[0] == "root")
         {
-            const std::string &location = locIt->first;
-            const Config::LocationConfig &locationConfig = locIt->second;
-            std::cout << "    Location: " << location << std::endl;
-
-            // Further indent location parameters
-            std::cout << "        Limit except: ";
-            for (std::vector<std::string>::const_iterator methodIt = locationConfig.limit_except.begin(); methodIt != locationConfig.limit_except.end(); ++methodIt)
-                std::cout << *methodIt << " ";
-            std::cout << std::endl;
-
-            std::cout << "        Return directive: " << locationConfig.return_directive << std::endl;
-            std::cout << "        Root: " << locationConfig.root << std::endl;
-            std::cout << "        Autoindex: " << (locationConfig.autoindex ? "on" : "off") << std::endl;
-            std::cout << "        Index: " << locationConfig.index << std::endl;
-            std::cout << "        Fastcgi pass: " << locationConfig.fastcgi_pass << std::endl;
-            std::cout << "        Client max body size: " << locationConfig.client_max_body_size << std::endl;
-            std::cout << "        Fastcgi param SCRIPT_FILENAME: " << locationConfig.fastcgi_param_SCRIPT_FILENAME << std::endl;
+            location.root = tokens[1];
         }
-        std::cout << std::endl; // Add a newline for better separation between servers
+        else if (tokens[0] == "autoindex")
+        {
+            location.autoindex = tokens[1] == "on";
+        }
+        else if (tokens[0] == "index")
+        {
+            location.index = tokens[1];
+        }
+        else if (tokens[0] == "cgi")
+        {
+            if (tokens.size() < 3)
+                throw std::runtime_error("Invalid CGI directive on line: " + line);
+            location.cgi[tokens[1]] = tokens[2];
+        }
     }
 }
