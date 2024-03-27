@@ -1,52 +1,69 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+#include <fstream>
 #include <map>
 #include <string>
-#include <tuple>
 #include <vector>
 
-struct LocationConfig;
-struct ServerConfig;
+#define WHITE_SPACE " \t\n\r\f\v"
+#define START_BLOCK "{"
+#define END_BLOCK "}"
+#define COMMENT "#"
+#define END_LINE ";"
+
+struct Location
+{
+    std::vector<std::string> limit_except;       // list of accepted HTTP methods for the route
+    std::pair<std::string, std::string> rewrite; // HTTP redirection
+    std::string root;                            // root directory
+    bool autoindex;                              // directory listing
+    std::string index;                           // default file
+    std::map<std::string, std::string> cgi;      // map of CGI paths to executables
+};
+struct Server
+{
+    std::pair<std::string, std::uint16_t> listen; // host, port
+    std::vector<std::string> server_names;        // server names
+    std::map<int, std::string> error_pages;       // map status codes to URI paths
+    std::size_t client_max_body_size;             // size in bytes
+    std::map<std::string, Location> locations;    // map of URI paths to Location
+};
 
 class Config
 {
   public:
-    struct LocationConfig
-    {
-        std::vector<std::string> limit_except;     // To represent accepted HTTP methods
-        std::string return_directive;              // HTTP redirection
-        std::string root;                          // Root directory
-        bool autoindex;                            // Directory listing
-        std::string index;                         // Default file for directories
-        std::string fastcgi_pass;                  // Execute CGI
-        std::string client_max_body_size;          // Limit client body size per location
-        std::string fastcgi_param_SCRIPT_FILENAME; // Full path for CGI
-    };
-
-    struct ServerConfig
-    {
-        std::tuple<std::string, std::string> listen;     // Format: "host:port"
-        std::vector<std::string> server_name;            // Server names
-        std::map<std::string, std::string> error_page;   // Error pages
-        std::string client_max_body_size;                // Limit client body size for the server
-        std::map<std::string, LocationConfig> locations; // Key: URI location    };
-    };
-
-    explicit Config(const std::string &path_config) : _path_config(path_config)
+    Config(const std::string &config_file) : config_file(config_file)
     {
     }
-    ~Config()
-    {
-    }
-    bool parseConfig();
-    const std::vector<ServerConfig> &getServers() const;
+    ~Config();
 
-    void displayConfig() const;
+    Config(const Config &other)
+    {
+        *this = other;
+    }
+    Config &operator=(const Config &other)
+    {
+        if (this != &other)
+            servers = other.servers;
+        return *this;
+    }
+
+    const std::vector<Server> &getServers() const
+    {
+        return servers;
+    }
+
+    void parseConfig();
 
   private:
-    std::string _path_config;
-    std::vector<ServerConfig> _servers;
+    std::string config_file;
+    std::vector<Server> servers;
 
-    void parseServerBlock(std::istream &stream, ServerConfig &serverConfig);
-    void parseLocationBlock(std::istream &stream, LocationConfig &routeConfig);
+    int stringToInt(const std::string &str);
+
+    std::string parseToken(const std::string &token_name, std::string &line);
+    void parseServer(std::ifstream &file, Server &server);
+    void parseLocation(std::ifstream &file, Location &location);
 };
