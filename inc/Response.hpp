@@ -6,6 +6,8 @@
 #include <string>
 #include <string.h>
 #include <map>
+#include <cstdlib>
+#include <ctime>
 
 #define GET 1
 #define POST 2
@@ -215,26 +217,103 @@ class   HTTPRequest {
 class   Response    {
     private:
         int statusCode;
+		int type;
         HttpErrorCodes hec;
         std::string statusMessage;
         std::string body;
         std::map<std::string, std::string> headers;
+		HTTPRequest request;
+
+		void	find_type()
+		{
+			std::string filename = getRequest().getURL();
+			if (filename == "/")
+				this->type = HTML;
+			if (filename.find(".html") != std::string::npos)
+				this->type = HTML;
+			else if (filename.find(".css") != std::string::npos)
+				this->type = CSS;
+			else if (filename.find(".jpg") != std::string::npos)
+				this->type = JPG;
+			else if (filename.find(".ico") != std::string::npos)
+				this->type = ICO;
+			else
+				this->type = UNKNOW;
+		}
+
+		void	add_content_type()
+		{
+			if (type == HTML)
+				addHeader("Content-Type","text/html");
+			else if (type == CSS)
+				addHeader("Content-Type","text/css");
+			else if (type == JPG)
+				addHeader("Content-Type","image/jpeg");
+			else if (type == ICO)
+				addHeader("Content-Type","image/vnd.microsoft.icon");
+		}
+
+		void	generateHTTPError(int num)
+		{
+			std::ifstream file("www/ErrorPage");
+			std::string line;
+			setStatusCode(num);
+			setStatusMessage(hec.getDescription(num));
+			while (std::getline(file, line))
+				body += line + "\n";
+			file.close();
+			std::srand(std::time(0));
+			std::stringstream ss;
+			ss << num;
+			int randnum = std::rand();
+			if (randnum % 4 == 0)
+			{
+				body += "<img src=\"https://http.cat/";
+				body += ss.str() + "\" alt=\"Centered Image\"\n";
+				body += "width=\"800\"\nheight=\"600\"\n/>";
+				body += "</div>\n</body>\n</html>\n\r";
+			}
+			else if (randnum % 4 == 1)
+			{
+				body += "<img src=\"https://http.dog/";
+				body += ss.str() + ".jpg\" alt=\"Centered Image\"\n";
+				body += "width=\"800\"\nheight=\"600\"\n/>";
+				body += "</div>\n</body>\n</html>\n\r";
+			}
+
+			else if (randnum % 4 == 2)
+			{
+				body += "<img src=\"https://http.pizza/";
+				body += ss.str() + ".jpg\" alt=\"Centered Image\"\n";
+				body += "width=\"800\"\nheight=\"600\"\n/>";
+				body += "</div>\n</body>\n</html>\n\r";
+			}
+			else
+			{
+				body += "<img src=\"https://httpgoats.com/";
+				body += ss.str() + ".jpg\" alt=\"Centered Image\"\n";
+				body += "width=\"800\"\nheight=\"600\"\n/>";
+				body += "</div>\n</body>\n</html>\n\r";
+			}
+		}
+
+		void	add_content_lenght()
+		{
+			std::stringstream ss;
+			ss << body.length();
+			addHeader("Content-Lenght", ss.str());
+		}
 
     public:
-        // Default constructor
-        Response() : statusCode(200), statusMessage("OK"), body("Default Response") {
-            
-        }
 
         // Constructor with parameters
-        Response(int code, const std::string& message, const std::string& responseBody)
-            : statusCode(code), statusMessage(message), body(responseBody) {
-
+        Response(HTTPRequest req) : request(req){
+				generate_response();
             }
 
         // Copy constructor
         Response(const Response& other)
-            : statusCode(other.statusCode), statusMessage(other.statusMessage), body(other.body), headers(other.headers) {
+            : statusCode(other.statusCode), statusMessage(other.statusMessage), body(other.body), headers(other.headers), request(other.request) {
 
             }
 
@@ -250,6 +329,34 @@ class   Response    {
         }
 
         // Destructor (default is fine for this class)
+		~Response() {
+
+		}
+
+		
+
+		void	generate_response()
+		{
+			if (getRequest().getMethod() == "GET")
+			{
+				find_type();
+				std::string filename = "www" + getRequest().getURL();
+				if (getRequest().getURL() == "/")
+					filename = "www/index.html";
+				std::ifstream file(filename.c_str());
+				if (file.is_open())
+				{
+					setStatusCode(200);
+					setStatusMessage(hec.getDescription(200));
+					add_content_type();
+					std::string line;
+					while (std::getline(file, line))
+						body += line + "\n";
+				}
+				else
+					generateHTTPError(404);
+			}
+		}
 
         // Setter methods
         void setStatusCode(int code) {
@@ -285,12 +392,20 @@ class   Response    {
             return headers;
         }
 
+		const HTTPRequest & getRequest() const {
+			return request;
+		}
+
         // Method to convert response to string
-        std::string toString() const {
+        std::string toString() const
+		{
+			std::stringstream ss;
+			ss << statusCode;
+			std::stringstream dd;
+			dd << body.length();
             std::string response = "HTTP/1.1 ";
-            response += std::to_string(statusCode) + " " + statusMessage + "\r\n";
-            response += "Content-Length: " + std::to_string(body.length()) + "\r\n";
-            response += "Content-Type: text/plain\r\n";
+            response += ss.str() + " " + statusMessage + "\r\n";
+
 
             // Append headers
             for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {

@@ -48,7 +48,10 @@ int main(void)
         }
 
         HTTPRequest req(request);
-        req.printRequest();
+        // req.printRequest();
+		Response rep(req);
+		// std::cout <<rep.toString() << std::endl;
+		send(client_sock, rep.toString().c_str(), rep.toString().size(), 0);
 
         
         close(client_sock);
