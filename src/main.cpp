@@ -46,8 +46,9 @@ int main(void)
             log(ERROR, "recv error: " + std::string(strerror(errno)));
             continue;
         }
-
+		std::cout << request << std::endl;
         HTTPRequest req(request);
+		// std::cout << req.getBody() << std::endl;
         // req.printRequest();
 		Response rep(req);
 		// std::cout <<rep.toString() << std::endl;

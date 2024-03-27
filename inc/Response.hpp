@@ -168,6 +168,14 @@ class   HTTPRequest {
             }
             std::cout << "Body: " << body << std::endl;
         }
+
+		void printHeaders() const
+		{
+			for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {
+                std::cout << it->first << ": " << it->second << std::endl;
+            }
+		}
+		
     
     private:
         std::string request;
@@ -229,7 +237,7 @@ class   Response    {
 			std::string filename = getRequest().getURL();
 			if (filename == "/")
 				this->type = HTML;
-			if (filename.find(".html") != std::string::npos)
+			else if (filename.find(".html") != std::string::npos)
 				this->type = HTML;
 			else if (filename.find(".css") != std::string::npos)
 				this->type = CSS;
@@ -304,6 +312,28 @@ class   Response    {
 			addHeader("Content-Lenght", ss.str());
 		}
 
+		void	Get_handler()
+		{
+			find_type();
+			std::string filename = "www" + getRequest().getURL();
+			if (getRequest().getURL() == "/")
+				filename = "www/index.html";
+			std::ifstream file(filename.c_str());
+			if (file.is_open())
+			{
+				setStatusCode(200);
+				setStatusMessage(hec.getDescription(200));
+				add_content_type();
+				std::string line;
+				while (std::getline(file, line))
+					body += line + "\n";
+				add_content_type();
+				add_content_lenght();
+			}
+			else
+				generateHTTPError(404);
+		}
+
     public:
 
         // Constructor with parameters
@@ -338,23 +368,25 @@ class   Response    {
 		void	generate_response()
 		{
 			if (getRequest().getMethod() == "GET")
+				Get_handler();
+			else if (getRequest().getMethod() == "POST")
 			{
-				find_type();
-				std::string filename = "www" + getRequest().getURL();
-				if (getRequest().getURL() == "/")
-					filename = "www/index.html";
-				std::ifstream file(filename.c_str());
-				if (file.is_open())
+				// std::cout << request. << std::endl;
+				// request.printHeaders();
+				std::string boundaries = request.getHeader("Content-Type");
+				size_t boundpos = boundaries.find("boundary=");
+				if (boundpos != std::string::npos)
 				{
-					setStatusCode(200);
-					setStatusMessage(hec.getDescription(200));
-					add_content_type();
-					std::string line;
-					while (std::getline(file, line))
-						body += line + "\n";
+					boundaries = boundaries.substr(boundpos + 9);
+					std::string data = request.getBody();
+					// std::cout << data << std::endl;
+					size_t filestart = data.find("\r\n\r\n") + 4;
+					size_t fileend = data.find("\r\n--" + boundaries, filestart);
+					if (filestart != std::string::npos && fileend != std::string::npos)
+					{
+						std::string file = data.substr(filestart, fileend - filestart);
+					}
 				}
-				else
-					generateHTTPError(404);
 			}
 		}
 
