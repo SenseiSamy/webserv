@@ -26,9 +26,11 @@ class Config
         std::map<std::string, std::string> errorPages;
         int clientBodySize;
         std::map<std::string, RouteConfig> routes;
+		int socket_fd;
     };
 
     Config(const std::string &path_config) : path_config(path_config) {}
+	Config();
     ~Config() { }
     bool parseConfig();
     const std::vector<ServerConfig> &getServers() const;
