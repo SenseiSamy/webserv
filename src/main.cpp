@@ -4,11 +4,11 @@
 #include <cstddef>
 #include <errno.h>
 #include <fcntl.h>
-#include <iterator>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -26,10 +26,10 @@ static void open_servers_socket(std::vector<Config::ServerConfig>& servers) {
 		it != servers.end(); ++it) {
 		it->socket_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 		if (it->socket_fd < 0)
-        	log(FATAL, "open_servers_socket: socket: " + std::string(strerror(errno)));
+			log(FATAL, "open_servers_socket: socket: " + std::string(strerror(errno)));
 
 		int optval = 1;
-    	if (setsockopt(it->socket_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
+		if (setsockopt(it->socket_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
 			log(FATAL, "open_servers_socket: setsockopt: " + std::string(strerror(errno)));
 
 		struct sockaddr_in addr;
@@ -75,75 +75,69 @@ int main(void)
 {
 	Config configuration;
 	std::vector<Config::ServerConfig> servers = configuration.getServers();
-    int client_sock;
-    struct sockaddr_in client_addr;
-    socklen_t sin_len = sizeof(client_addr);
+	int client_sock;
+	struct sockaddr_in client_addr;
+	socklen_t sin_len = sizeof(client_addr);
 
-    open_servers_socket(servers);
+	open_servers_socket(servers);
 
-    int epfd = epoll_create1(0);
-    if (epfd == -1)
-        log(FATAL, "epoll_create1 failed");
+	int epfd = epoll_create1(0);
+	if (epfd == -1)
+		log(FATAL, "epoll_create1 failed");
 
-    struct epoll_event ev, events[MAX_EVENTS];
-    ev.events = EPOLLIN;
+	struct epoll_event ev, events[MAX_EVENTS];
+	ev.events = EPOLLIN;
 	for (std::size_t i = 0; i < servers.size(); ++i) {
 		ev.data.fd = servers[i].socket_fd;
 		if (epoll_ctl(epfd, EPOLL_CTL_ADD, servers[i].socket_fd, &ev) == -1)
 			log(FATAL, "epoll_ctl: server_sock");
 	}
 
-    while (true)
-    {
-		std::map<int, Config::ServerConfig*> client_server;
-        int nfds = epoll_wait(epfd, events, MAX_EVENTS, -1);
-        for (int n = 0; n < nfds; ++n)
-        {
-			Config::ServerConfig* server = getServer(events[n].data.fd, servers);
-            if (server != NULL)
-            {
-                client_sock = accept(server->socket_fd, (struct sockaddr *)&client_addr, &sin_len);
-                if (client_sock < 0)
-                {
-                    log(ERROR, "accept error: " + std::string(strerror(errno)));
-                    continue;
-                }
+	while (true)
+	{
+		int nfds = epoll_wait(epfd, events, MAX_EVENTS, -1);
+		for (int n = 0; n < nfds; ++n)
+		{
+			const int fd = events[n].data.fd;
+			Config::ServerConfig* server = getServer(fd, servers);
+			if (server != NULL) {
+				client_sock = accept(server->socket_fd, (struct sockaddr *)&client_addr, &sin_len);
+				if (client_sock < 0) {
+					log(ERROR, "accept error: " + std::string(strerror(errno)));
+					continue;
+				}
 				fcntl(client_sock, F_SETFL, O_NONBLOCK);
-                ev.events = EPOLLIN | EPOLLET;
-                ev.data.fd = client_sock;
-                if (epoll_ctl(epfd, EPOLL_CTL_ADD, client_sock, &ev) == -1)
-                {
-                    log(ERROR, "epoll_ctl: client_sock");
-                    exit(EXIT_FAILURE);
-                }
-				client_server[client_sock] = server;
-            }
-            else
-            {
-                char buffer[1024];
-                ssize_t count = recv(events[n].data.fd, buffer, sizeof(buffer) - 1, 0);
-                if (count == -1)
-                {
-                    if (errno != EAGAIN)
-                    {
-                        log(ERROR, "recv error: " + std::string(strerror(errno)));
-                        close(events[n].data.fd);
-                    }
-                }
-                else if (count == 0)
-                    close(events[n].data.fd);
-                else
-                {
-                    buffer[count] = '\0';
-                    //log(INFO, "received: " + std::string(buffer));
-					std::cout <<
-                    Response response(events[n].data.fd, buffer);
-                    response.sendResponse();
-                }
-            }
-        }
-    }
-
-    //close(server_sock);
-    return 0;
+				ev.events = EPOLLIN | EPOLLET;
+				ev.data.fd = client_sock;
+				if (epoll_ctl(epfd, EPOLL_CTL_ADD, client_sock, &ev) == -1) {
+					log(ERROR, "epoll_ctl: client_sock");
+					exit(EXIT_FAILURE);
+				}
+			}
+			else if ((events[n].events & EPOLLERR) ||
+				(events[n].events & EPOLLHUP) ||
+				(!(events[n].events & EPOLLIN))) {
+				close(fd);
+			}
+			else {
+				std::string request("");
+				char buffer[1024];
+				ssize_t count;
+				while ((count = read(fd, buffer, sizeof(buffer) - 1)) > 0) {
+					buffer[count] = '\0';
+					request += buffer;
+				}
+				if (count == -1 && errno != EAGAIN) {
+					log(ERROR, "recv error: " + std::string(strerror(errno)));
+					close(fd);
+				}
+				else {
+					log(INFO, "received: " + std::string(request.c_str()));
+					Response response(fd, request.c_str());
+					response.sendResponse();
+				}
+			}
+		}
+	}
+	return 0;
 }
