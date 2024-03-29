@@ -55,21 +55,21 @@ Config::ServerConfig* getServer(int sock_fd, std::vector<Config::ServerConfig>
 }
 
 //tmp for testing
-Config::Config(void) {
-	Config::ServerConfig server;
+// Config::Config(void) {
+// 	Config::ServerConfig server;
 
-	server.port = 4934;
-	server.host = "127.0.0.1";
-	this->servers.push_back(server);
+// 	server.port = 4934;
+// 	server.host = "127.0.0.1";
+// 	this->servers.push_back(server);
 
-	server.port = 36734;
-	server.host = "127.53.86.3";
-	this->servers.push_back(server);
-}
+// 	server.port = 36734;
+// 	server.host = "127.53.86.3";
+// 	this->servers.push_back(server);
+// }
 
-const std::vector<Config::ServerConfig>& Config::getServers() const {
-	return (servers);
-}
+// const std::vector<Config::ServerConfig>& Config::getServers() const {
+// 	return (servers);
+// }
 
 int main(void)
 {
