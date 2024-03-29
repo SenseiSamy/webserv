@@ -29,6 +29,7 @@ struct Server
     std::map<int, std::string> error_pages;       // map status codes to URI paths
     std::size_t client_max_body_size;             // size in bytes
     std::map<std::string, Location> locations;    // map of URI paths to Location
+	int socket_fd;
 };
 
 class Config
