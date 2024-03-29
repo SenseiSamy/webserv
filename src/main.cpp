@@ -79,10 +79,10 @@ int main(int argc, const char *argv[])
         return 1;
     }
     Config config(argv[1]);
-    if (!config.parseConfig())
-        return 1;
+   // if (!config.parseConfig())
+   //     return 1;
 
-    config.displayConfig();
+   // config.displayConfig();
 
 	std::vector<Server> servers = config.getServers();
 	int client_sock;

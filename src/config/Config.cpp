@@ -1,10 +1,11 @@
 #include "Config.hpp"
+#include <cstddef>
 #include <stdexcept>
 
 void Config::parseConfig()
 {
     // try to open the configuration file
-    std::ifstream file(config_file);
+    std::ifstream file(config_file.c_str());
     if (!file.is_open())
         throw std::runtime_error("Failed to open configuration file");
 
@@ -29,11 +30,11 @@ void Config::parseConfig()
 int Config::stringToInt(const std::string &str)
 {
     int result = 0;
-    for (char c : str)
+    for (std::size_t i = 0; i < str.size(); ++i)
     {
-        if (c < '0' || c > '9')
+        if (str[i] < '0' || str[i] > '9')
             throw std::runtime_error("Invalid number");
-        result = result * 10 + (c - '0');
+        result = result * 10 + (str[i] - '0');
     }
     return result;
 }

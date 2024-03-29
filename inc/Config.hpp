@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
 #include <fstream>
 #include <map>
 #include <string>
@@ -24,7 +23,7 @@ struct Location
 };
 struct Server
 {
-    std::pair<std::string, std::uint16_t> listen; // host, port
+    std::pair<std::string, int> listen; // host, port
     std::vector<std::string> server_names;        // server names
     std::map<int, std::string> error_pages;       // map status codes to URI paths
     std::size_t client_max_body_size;             // size in bytes
@@ -38,7 +37,7 @@ class Config
     Config(const std::string &config_file) : config_file(config_file)
     {
     }
-    ~Config();
+    ~Config() {}
 
     Config(const Config &other)
     {
