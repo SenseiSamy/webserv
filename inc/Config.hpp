@@ -1,69 +1,58 @@
 #pragma once
 
-#include <cstddef>
+#include <cstring>
 #include <fstream>
 #include <map>
 #include <string>
 #include <vector>
 
-#define WHITE_SPACE " \t\n\r\f\v"
-#define START_BLOCK "{"
-#define END_BLOCK "}"
+#define WHITESPACE " \t\n\r\f\v"
 #define COMMENT "#"
-#define END_LINE ";"
+#define EQUAL ":"
+#define DELIMITER ","
 
-struct Location
+enum Method
 {
-    std::vector<std::string> limit_except;       // list of accepted HTTP methods for the route
-    std::pair<std::string, std::string> rewrite; // HTTP redirection
-    std::string root;                            // root directory
-    bool autoindex;                              // directory listing
-    std::string index;                           // default file
-    std::map<std::string, std::string> cgi;      // map of CGI paths to executables
+    GET,
+    POST,
+    DELETE
 };
+
+struct Route
+{
+    std::string path;                       // URL path
+    std::vector<Method> allow_methods;      // Allowed HTTP methods
+    std::string redirect_to;                // URL for HTTP redirection
+    std::string root;                       // Directory or file path for content
+    bool directory_listing;                 // Flag for directory listing
+    std::string default_file;               // Default file for directory requests
+    std::map<std::string, std::string> cgi; // CGI scripts mapping
+    std::string upload_path;                // Path for uploaded files
+};
+
 struct Server
 {
-    std::pair<std::string, int> listen; // host, port
-    std::vector<std::string> server_names;        // server names
-    std::map<int, std::string> error_pages;       // map status codes to URI paths
-    std::size_t client_max_body_size;             // size in bytes
-    std::map<std::string, Location> locations;    // map of URI paths to Location
-	int socket_fd;
+    std::vector<std::string> host;                                  // Hostnames
+    unsigned short port;                                            // Listening port
+    std::map<std::vector<unsigned short>, std::string> error_pages; // Custom error pages
+    size_t client_max_body_size;                                    // Maximum request body size
+    std::vector<Route> routes;                                      // Route configurations
 };
 
 class Config
 {
   public:
-    Config(const std::string &config_file) : config_file(config_file)
-    {
-    }
-    ~Config() {}
+    Config(const std::string &filePath);
+    void parseConfigFile();
+    void displayConfig() const;
 
-    Config(const Config &other)
-    {
-        *this = other;
-    }
-    Config &operator=(const Config &other)
-    {
-        if (this != &other)
-            servers = other.servers;
-        return *this;
-    }
-
-    const std::vector<Server> &getServers() const
-    {
-        return servers;
-    }
-
-    void parseConfig();
-
-  private:
-    std::string config_file;
     std::vector<Server> servers;
 
-    int stringToInt(const std::string &str);
+  private:
+    std::string filePath;
 
-    std::string parseToken(const std::string &token_name, std::string &line);
-    void parseServer(std::ifstream &file, Server &server);
-    void parseLocation(std::ifstream &file, Location &location);
+    const std::vector<std::string> split(const std::string &s, const std::string &delim) const;
+
+    void parseServerDirective(Server &server, std::string &line, std::ifstream &file);
+    void parseRouteDirective(Route &route, std::string &line, std::ifstream &file);
 };
