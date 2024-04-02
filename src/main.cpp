@@ -138,8 +138,9 @@ int main(/*int argc, const char *argv[]*/)
 				}
 				else {
 					log(INFO, "received: " + std::string(request.c_str()));
-					Response response(fd, request.c_str());
-					response.sendResponse();
+					HTTPRequest req(request);
+					Response rep(req);
+					send(client_sock, rep.toString().c_str(), rep.toString().size(), 0);
 				}
 			}
 		}
