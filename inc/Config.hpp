@@ -32,16 +32,19 @@ struct Route
 
 struct Server
 {
-    std::vector<std::string> host;                                  // Hostnames
+	std::string	host;                                               // Host ip
     unsigned short port;                                            // Listening port
+    std::vector<std::string> server_names;                          // Server names
     std::map<std::vector<unsigned short>, std::string> error_pages; // Custom error pages
     size_t client_max_body_size;                                    // Maximum request body size
     std::vector<Route> routes;                                      // Route configurations
+	int socket_fd;
 };
 
 class Config
 {
   public:
+  	Config(void);
     Config(const std::string &filePath);
     void parseConfigFile();
     void displayConfig() const;

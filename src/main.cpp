@@ -34,8 +34,8 @@ static void open_servers_socket(std::vector<Server>& servers) {
 
 		struct sockaddr_in addr;
 		addr.sin_family = AF_INET;
-		addr.sin_addr.s_addr = inet_addr(it->listen.first.c_str());
-		addr.sin_port = htons(it->listen.second);
+		addr.sin_addr.s_addr = inet_addr(it->host.c_str());
+		addr.sin_port = htons(it->port);
 		memset(&addr.sin_zero, 0, sizeof(addr.sin_zero));
 
 		if (bind(it->socket_fd, (struct sockaddr *)(&addr), sizeof(addr)) == -1)
@@ -55,41 +55,32 @@ Server* getServer(int sock_fd, std::vector<Server>
 }
 
 //tmp for testing
-// Config::Config(void) {
-// 	Config::ServerConfig server;
+Config::Config(void) {
+	Server server;
 
-// 	server.port = 4934;
-// 	server.host = "127.0.0.1";
-// 	this->servers.push_back(server);
+	server.port = 4934;
+	server.host = "127.0.0.1";
+	this->servers.push_back(server);
 
-// 	server.port = 36734;
-// 	server.host = "127.53.86.3";
-// 	this->servers.push_back(server);
-// }
+	server.port = 36734;
+	server.host = "127.53.86.3";
+	this->servers.push_back(server);
+}
 
-// const std::vector<Config::ServerConfig>& Config::getServers() const {
-// 	return (servers);
-// }
-
-int main(int argc, const char *argv[])
+int main(/*int argc, const char *argv[]*/)
 {
-    if (argc != 2)
-    {
-        std::cout << "Usage: " << argv[0] << " <config_file>" << std::endl;
-        return 1;
-    }
-    Config config(argv[1]);
-   // if (!config.parseConfig())
-   //     return 1;
+    // if (argc != 2)
+    // {
+    //     std::cout << "Usage: " << argv[0] << " <config_file>" << std::endl;
+    //     return 1;
+    // }
+    Config config;
 
-   // config.displayConfig();
-
-	std::vector<Server> servers = config.getServers();
 	int client_sock;
 	struct sockaddr_in client_addr;
 	socklen_t sin_len = sizeof(client_addr);
 
-	open_servers_socket(servers);
+	open_servers_socket(config.servers);
 
 	int epfd = epoll_create1(0);
 	if (epfd == -1)
@@ -97,11 +88,15 @@ int main(int argc, const char *argv[])
 
 	struct epoll_event ev, events[MAX_EVENTS];
 	ev.events = EPOLLIN;
-	for (std::size_t i = 0; i < servers.size(); ++i) {
-		ev.data.fd = servers[i].socket_fd;
-		if (epoll_ctl(epfd, EPOLL_CTL_ADD, servers[i].socket_fd, &ev) == -1)
+	for (std::size_t i = 0; i < config.servers.size(); ++i) {
+		ev.data.fd = config.servers[i].socket_fd;
+		if (epoll_ctl(epfd, EPOLL_CTL_ADD, config.servers[i].socket_fd, &ev) == -1)
 			log(FATAL, "epoll_ctl: server_sock");
 	}
+
+	std::cout << "\e[0;32mServer(s) started at:\n\e[0m";
+	for (std::size_t i = 0; i < config.servers.size(); ++i)
+		std::cout << config.servers[i].host << ":" << config.servers[i].port << "\n";
 
 	while (true)
 	{
@@ -109,7 +104,7 @@ int main(int argc, const char *argv[])
 		for (int n = 0; n < nfds; ++n)
 		{
 			const int fd = events[n].data.fd;
-			Server* server = getServer(fd, servers);
+			Server* server = getServer(fd, config.servers);
 			if (server != NULL) {
 				client_sock = accept(server->socket_fd, (struct sockaddr *)&client_addr, &sin_len);
 				if (client_sock < 0) {

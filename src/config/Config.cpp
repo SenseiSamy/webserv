@@ -1,6 +1,7 @@
 #include "Config.hpp"
 #include <iostream>
 #include <sstream>
+#include <cstdlib>
 
 Config::Config(const std::string &filePath) : filePath(filePath)
 {
@@ -116,9 +117,9 @@ void Config::parseServerDirective(Server &server, std::string &line, std::ifstre
             value = value.substr(0, commentPos);
 
         if ("host" == directive)
-            server.host = split(value, DELIMITER + std::string(WHITESPACE));
+            server.server_names = split(value, DELIMITER + std::string(WHITESPACE));
         else if ("port" == directive)
-            server.port = static_cast<unsigned short>(std::stoi(value));
+            server.port = static_cast<unsigned short>(std::atoi(value.c_str()));
         else if ("error_page" == directive)
         {
             std::vector<std::string> errorTokens = split(value, DELIMITER);
@@ -130,14 +131,14 @@ void Config::parseServerDirective(Server &server, std::string &line, std::ifstre
                 std::vector<unsigned short> codes;
                 for (size_t j = 0; j < errorPageTokens.size() - 1; j++)
                 {
-                    codes.push_back(static_cast<unsigned short>(std::stoi(errorPageTokens[j])));
+                    codes.push_back(static_cast<unsigned short>(std::atoi(errorPageTokens[j].c_str())));
                 }
 
                 server.error_pages[codes] = errorPageTokens.back();
             }
         }
         else if ("client_max_body_size" == directive)
-            server.client_max_body_size = std::stoul(value);
+            server.client_max_body_size = std::strtoul(value.c_str(), NULL, 10);
         else if ("route" == directive)
         {
             Route route;
@@ -149,13 +150,14 @@ void Config::parseServerDirective(Server &server, std::string &line, std::ifstre
 
 void Config::parseConfigFile()
 {
-    std::ifstream file(filePath);
+    std::ifstream file(filePath.c_str());
     if (!file.is_open())
     {
         throw std::runtime_error("Unable to open config file: " + filePath);
     }
 
     Server *currentServer = NULL;
+	(void)currentServer;
     std::string line;
     while (getline(file, line))
     {
