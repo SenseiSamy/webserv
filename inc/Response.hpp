@@ -1,11 +1,12 @@
-#include "main.hpp"
 #include "logger.hpp"
-#include <sstream>
 #include <fstream>
 #include <iostream>
-#include <string>
-#include <string.h>
 #include <map>
+#include <sstream>
+#include <string.h>
+#include <string>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <cstdlib>
 #include <ctime>
 
@@ -22,44 +23,54 @@ enum type
     UNKNOW
 };
 
-class HttpErrorCodes {
-private:
+class HttpErrorCodes
+{
+  private:
     typedef std::map<int, std::string> ErrorCodeMap;
     ErrorCodeMap httpErrorCodes;
 
-public:
+  public:
     // Default constructor
-    HttpErrorCodes() {
+    HttpErrorCodes()
+    {
         initializeErrorCodes();
     }
 
     // Copy constructor
-    HttpErrorCodes(const HttpErrorCodes& other) {
+    HttpErrorCodes(const HttpErrorCodes &other)
+    {
         httpErrorCodes = other.httpErrorCodes;
     }
 
     // Copy assignment operator
-    HttpErrorCodes& operator=(const HttpErrorCodes& other) {
-        if (this != &other) {
+    HttpErrorCodes &operator=(const HttpErrorCodes &other)
+    {
+        if (this != &other)
+        {
             httpErrorCodes = other.httpErrorCodes;
         }
         return *this;
     }
 
     // Destructor
-    ~HttpErrorCodes() {}
+    ~HttpErrorCodes()
+    {
+    }
 
-    std::string getDescription(int errorCode) const {
+    std::string getDescription(int errorCode) const
+    {
         ErrorCodeMap::const_iterator it = httpErrorCodes.find(errorCode);
-        if (it != httpErrorCodes.end()) {
+        if (it != httpErrorCodes.end())
+        {
             return it->second;
         }
         return "Unknown Error";
     }
 
-private:
+  private:
     // Initialize error codes
-    void initializeErrorCodes() {
+    void initializeErrorCodes()
+    {
         httpErrorCodes[100] = "Continue";
         httpErrorCodes[101] = "Switching Protocols";
         httpErrorCodes[102] = "Processing";
