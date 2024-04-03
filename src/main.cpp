@@ -137,10 +137,11 @@ int main(/*int argc, const char *argv[]*/)
 					close(fd);
 				}
 				else {
-					log(INFO, "received: " + std::string(request.c_str()));
+					// log(INFO, "received: " + std::string(request.c_str()));
 					HTTPRequest req(request);
 					Response rep(req);
-					send(client_sock, rep.toString().c_str(), rep.toString().size(), 0);
+					send(fd, rep.toString().c_str(), rep.toString().size(), 0);
+					close(fd);
 				}
 			}
 		}

@@ -3,28 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zizou2000</title>
-	<link rel="stylesheet" type="text/css" href="styles.css">
+    <title>Zizou2000v2</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
 </head>
 <body>
     <header>
         <h1>Welcome to Your Website</h1>
     </header>
 
-	<h2>Upload File</h2>
+    <h2>Upload File</h2>
 
-	<form action="/upload" method="post" enctype="multipart/form-data">
-		<input type="file" name="fileToUpload" id="fileToUpload">
-		<input type="submit" value="Upload File" name="submit">
-	</form>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="fileToUpload" id="fileToUpload">
+        <input type="submit" value="Upload File" name="submit">
+    </form>
 
     <section>
         <h2>The GOAT</h2>
-		<img 
-			src="https://ssb.wiki.gallery/images/9/98/Glutonny.jpg"
-			width="400"
-			height="341"/>
+        <img src="https://ssb.wiki.gallery/images/9/98/Glutonny.jpg" width="400" height="341"/>
         <p>This is the ultimate goat of ultimate</p>
     </section>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the default form submission behavior
+
+            var formData = new FormData(this); // Get form data
+            var xhr = new XMLHttpRequest();
+
+            xhr.open('POST', '/upload', true);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    // Handle successful upload
+                    console.log('File uploaded successfully');
+                } else {
+                    // Handle error
+                    console.error('Error uploading file');
+                }
+            };
+
+            xhr.onerror = function() {
+                // Handle network errors
+                console.error('Network error occurred');
+            };
+
+            xhr.send(formData); // Send form data via AJAX
+        });
+    </script>
 </body>
 </html>

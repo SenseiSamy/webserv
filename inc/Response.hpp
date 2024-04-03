@@ -195,42 +195,45 @@ class   HTTPRequest {
         std::map<std::string, std::string> headers;
         std::string body;
     
-        void parseRequest() {
-            std::istringstream stream(request);
-            std::string requestLine;
-            if (!std::getline(stream, requestLine)) {
-                // Invalid request format
-                return;
-            }
-    
-            // Extract request line
-            std::istringstream requestLineStream(requestLine);
-            if (!std::getline(requestLineStream, method, ' ') || !std::getline(requestLineStream, url, ' ')) {
-                // Invalid request line format
-                return;
-            }
-    
-            // Parse headers
-            std::string headerLine;
-            while (std::getline(stream, headerLine) && !headerLine.empty()) {
-                size_t colonPos = headerLine.find(':');
-                if (colonPos != std::string::npos) {
-                    std::string headerName = headerLine.substr(0, colonPos);
-                    std::string headerValue = headerLine.substr(colonPos + 1); // Skip the colon
-                    // Remove leading whitespace from the value
-                    size_t valueStart = headerValue.find_first_not_of(" \t");
-                    if (valueStart != std::string::npos) {
-                        headerValue = headerValue.substr(valueStart);
-                    }
-                    headers[headerName] = headerValue;
-                }
-            }
-    
-            // Parse body
-            std::stringstream bodyStream;
-            bodyStream << stream.rdbuf();
-            body = bodyStream.str();
+    void parseRequest() 
+    {
+        std::istringstream stream(request);
+        std::string requestLine;
+        if (!std::getline(stream, requestLine)) {
+            // Invalid request format
+            return;
         }
+    
+        // Extract request line
+        std::istringstream requestLineStream(requestLine);
+        if (!std::getline(requestLineStream, method, ' ') || !std::getline(requestLineStream, url, ' ')) {
+            // Invalid request line format
+            return;
+        }
+
+        // Extract headers lines
+        std::string line;
+        while (std::getline(stream, line))
+        {
+            std::string headername;
+            std::string headervalue;
+            size_t  colonPos = line.find_first_of(':');
+            if (line.empty() || colonPos == std::string::npos)
+                break;
+            else
+            {
+                headername = line.substr(0, colonPos);
+                headervalue = line.substr(colonPos + 1);
+                while (headername.find('\t') != std::string::npos)
+                    headername = headername.substr(headername.find('\t'));
+                headers[headername] = headervalue;
+            }
+        }
+        while (std::getline(stream, line))
+        {
+            body += line + "\n";
+        }
+    }
 };
 
 class   Response    {
@@ -382,21 +385,47 @@ class   Response    {
 				Get_handler();
 			else if (getRequest().getMethod() == "POST")
 			{
-				// std::cout << request. << std::endl;
-				// request.printHeaders();
 				std::string boundaries = request.getHeader("Content-Type");
 				size_t boundpos = boundaries.find("boundary=");
 				if (boundpos != std::string::npos)
 				{
 					boundaries = boundaries.substr(boundpos + 9);
-					std::string data = request.getBody();
-					// std::cout << data << std::endl;
-					size_t filestart = data.find("\r\n\r\n") + 4;
-					size_t fileend = data.find("\r\n--" + boundaries, filestart);
-					if (filestart != std::string::npos && fileend != std::string::npos)
-					{
-						std::string file = data.substr(filestart, fileend - filestart);
-					}
+                    // std::cout << boundaries << std::endl;
+					std::istringstream data(this->request.getBody());
+                    std::string filename;
+                    std::string line;
+                    int tokenheader = 2;
+                    while (std::getline(data, line) && tokenheader)
+                    {
+                        // std::cout << "ceci est une line :" << line << "\t tokenheader = " << tokenheader << std::endl;
+                        if (line.find(boundaries))
+                        {
+                            // std::cout << "ici boundaries" << std::endl;
+                        }
+                        if (line.find("filename=") != std::string::npos)
+                        {
+                            filename = line.substr(line.find("filename=") + 10);
+                            tokenheader--;
+                        }
+                        else if (line.find("Content-Type:") != std::string::npos)
+                            tokenheader--;
+                        if (tokenheader == 0)
+                            break;
+                        
+                    }
+                    filename = filename.substr(0,filename.size() - 2);
+                    // std::cout << filename << std::endl;
+                    std::cout << boundaries << std::endl;
+                    std::getline(data, line);
+                    std::ofstream file(filename.c_str(), std::ios::binary);
+                    while (std::getline(data, line))
+                    {
+                        std::string test = line;
+                        if (test.find(boundaries) != std::string::npos)
+                            break;
+                        file << line + "\n";
+                    }
+                    file.close();
 				}
 			}
 		}
