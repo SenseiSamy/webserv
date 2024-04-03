@@ -1,58 +1,59 @@
 #pragma once
 
-#include <cstring>
+#include <cstddef>
 #include <fstream>
 #include <map>
 #include <string>
 #include <vector>
 
-#define WHITESPACE " \t\n\r\f\v"
-#define COMMENT "#"
-#define EQUAL ":"
-#define DELIMITER ","
-
-enum Method
-{
-    GET,
-    POST,
-    DELETE
-};
-
-struct Route
-{
-    std::string path;                       // URL path
-    std::vector<Method> allow_methods;      // Allowed HTTP methods
-    std::string redirect_to;                // URL for HTTP redirection
-    std::string root;                       // Directory or file path for content
-    bool directory_listing;                 // Flag for directory listing
-    std::string default_file;               // Default file for directory requests
-    std::map<std::string, std::string> cgi; // CGI scripts mapping
-    std::string upload_path;                // Path for uploaded files
-};
-
-struct Server
-{
-    std::vector<std::string> host;                                  // Hostnames
-    unsigned short port;                                            // Listening port
-    std::map<std::vector<unsigned short>, std::string> error_pages; // Custom error pages
-    size_t client_max_body_size;                                    // Maximum request body size
-    std::vector<Route> routes;                                      // Route configurations
-};
-
 class Config
 {
-  public:
-    Config(const std::string &filePath);
-    void parseConfigFile();
-    void displayConfig() const;
-
-    std::vector<Server> servers;
-
   private:
-    std::string filePath;
+    struct RoutesData
+    {
+        std::vector<std::string> methods;
+        std::string redirect;
+        std::string root;
+        bool autoindex;
+        std::string index;
+        std::map<std::string, std::string> cgi;
+    };
 
-    const std::vector<std::string> split(const std::string &s, const std::string &delim) const;
+    struct ServerData
+    {
+        std::string host;
+        unsigned short port;
+        std::vector<std::string> server_names;
+        std::map<std::string, std::string> error_pages;
+        size_t body_size;
+        std::vector<RoutesData> routes;
+    };
 
-    void parseServerDirective(Server &server, std::string &line, std::ifstream &file);
-    void parseRouteDirective(Route &route, std::string &line, std::ifstream &file);
+    std::string _path;
+    std::ifstream _file;
+    std::vector<std::string> _tokens;
+    std::vector<ServerData> _servers;
+
+    void tokenize();
+
+    /* parsing */
+    void parseServer(ServerData &server);
+    void parseRoutes(ServerData &server);
+
+    /* syntax */
+    void syntaxServer(ServerData &server) const;
+    void syntaxRoutes(RoutesData &route) const;
+
+  public:
+    explicit Config(const std::string &path);
+    explicit Config(const Config &other);
+    ~Config();
+    Config &operator=(const Config &other);
+
+    const std::vector<ServerData> &getServers() const;
+    const std::string &getPath() const;
+
+    void syntaxConfig() const;
+
+    void parseConfig();
 };

@@ -1,6 +1,6 @@
 #include "Config.hpp"
 #include "Response.hpp"
-#include "logger.hpp"
+#include "Logger.hpp"
 #include <cstddef>
 #include <errno.h>
 #include <fcntl.h>

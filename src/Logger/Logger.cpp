@@ -1,4 +1,4 @@
-#include "logger.hpp"
+#include "Logger.hpp"
 #include <cstdlib>
 
 void log(int level, const std::string &message)
