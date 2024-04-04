@@ -2,8 +2,10 @@
 #include "Response.hpp"
 #include "logger.hpp"
 #include <cstddef>
+#include <cstdlib>
 #include <errno.h>
 #include <fcntl.h>
+#include <iterator>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,8 +47,7 @@ static void open_servers_socket(std::vector<Server>& servers) {
 	}
 }
 
-Server* getServer(int sock_fd, std::vector<Server>
-	&servers) {
+Server* get_server_to_connect(int sock_fd, std::vector<Server> &servers) {
 	for (std::size_t i = 0; i < servers.size(); ++i) {
 		if (sock_fd == servers[i].socket_fd)
 			return (&servers[i]);
@@ -54,16 +55,42 @@ Server* getServer(int sock_fd, std::vector<Server>
 	return (NULL);
 }
 
+Server& get_server_from_request(HTTPRequest req, Config conf) {
+	std::string host = req.getHeader("Host");
+	int			port;
+	std::size_t sep;
+	std::vector<Server>::iterator it;
+	if (host.empty())
+		return (conf.servers[0]);
+	sep = host.find(':');
+	if (sep == std::string::npos)
+		return (conf.servers[0]);
+	port = std::atoi(host.substr(sep + 1, std::string::npos).c_str());
+	host = host.substr(0, sep);
+	
+	for (it = conf.servers.begin(); it != conf.servers.end(); ++it) {
+		if (host == it->host && port == it->port)
+			return (*it);
+	}
+	for (it = conf.servers.begin(); it != conf.servers.end(); ++it) {
+		for (std::size_t i = 0; i < it->server_names.size(); ++i)
+			if (host == it->server_names[i])
+				return (*it);
+	}
+	return (conf.servers[0]);
+}
+
 //tmp for testing
 Config::Config(void) {
 	Server server;
 
-	server.port = 4934;
+	server.port = 8080;
 	server.host = "127.0.0.1";
 	this->servers.push_back(server);
 
 	server.port = 36734;
 	server.host = "127.53.86.3";
+	server.server_names.push_back("webserv42");
 	this->servers.push_back(server);
 }
 
@@ -104,7 +131,7 @@ int main(/*int argc, const char *argv[]*/)
 		for (int n = 0; n < nfds; ++n)
 		{
 			const int fd = events[n].data.fd;
-			Server* server = getServer(fd, config.servers);
+			Server* server = get_server_to_connect(fd, config.servers);
 			if (server != NULL) {
 				client_sock = accept(server->socket_fd, (struct sockaddr *)&client_addr, &sin_len);
 				if (client_sock < 0) {
@@ -139,8 +166,11 @@ int main(/*int argc, const char *argv[]*/)
 				else {
 					log(INFO, "received: " + std::string(request.c_str()));
 					HTTPRequest req(request);
-					Response rep(req);
-					send(client_sock, rep.toString().c_str(), rep.toString().size(), 0);
+					Server server = get_server_from_request(req, config);
+					std::cout << "\e[1mThe server to answer this request is: \e[1;32m" << server.host << ":" << server.port << "\e[0m\n";
+					Response rep(req, server);
+					send(fd, rep.toString().c_str(), rep.toString().size(), 0);
+					close(fd);
 				}
 			}
 		}
