@@ -9,7 +9,7 @@
 class Config
 {
   private:
-    struct RoutesData
+    struct Routes
     {
         std::vector<std::string> methods;
         std::string redirect;
@@ -19,30 +19,60 @@ class Config
         std::map<std::string, std::string> cgi;
     };
 
-    struct ServerData
+    struct Server
     {
         std::string host;
         unsigned short port;
         std::vector<std::string> server_names;
         std::map<std::string, std::string> error_pages;
         size_t body_size;
-        std::vector<RoutesData> routes;
+        std::vector<Routes> routes;
+    };
+
+    enum Token
+    {
+        SERVER,
+        ROUTES,
+        QUOTES,
+        BRACES_OPEN,
+        BRACES_CLOSE,
+        STRING,
+        SEMICOLON,
+        EQUAL,
+        COMMA,
+    };
+
+    enum SyntaxError
+    {
+        NO_ERROR,
+        BRACKETS_ERROR,
+        VARIABLES_ERROR,
+        SYNTAX_ERROR,
+    };
+
+    struct Tokens
+    {
+        std::string token;
+        size_t line;
+        size_t column;
+        Token type;
     };
 
     std::string _path;
     std::ifstream _file;
-    std::vector<std::string> _tokens;
-    std::vector<ServerData> _servers;
+    std::vector<Tokens> _tokens;
+    std::vector<Server> _servers;
 
+    int is_spearator(const char c) const;
     void tokenize();
 
     /* parsing */
-    void parseServer(ServerData &server);
-    void parseRoutes(ServerData &server);
+    void parse_server(Server &server);
+    void parse_routes(Server &server);
 
     /* syntax */
-    void syntaxServer(ServerData &server) const;
-    void syntaxRoutes(RoutesData &route) const;
+    int syntax_brackets() const;
+    int syntax_variables() const;
 
   public:
     explicit Config(const std::string &path);
@@ -50,10 +80,10 @@ class Config
     ~Config();
     Config &operator=(const Config &other);
 
-    const std::vector<ServerData> &getServers() const;
+    const std::vector<Server> &getServers() const;
     const std::string &getPath() const;
 
-    void syntaxConfig() const;
+    void syntax_config() const;
 
-    void parseConfig();
+    void parse_config();
 };
