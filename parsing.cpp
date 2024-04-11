@@ -33,101 +33,136 @@ typedef struct Server
 
 #endif // !PARSING_H
 
-int syntax_brackets(std::vector<std::string> &files_content)
+const std::vector<std::string> read_files(const char path[])
 {
+    std::vector<std::string> files_content;
+    std::ifstream file(path);
+
+    if (!file.is_open() || !file.good())
+    {
+        std::cerr << "Error: could not open file " << path << std::endl;
+        return files_content;
+    }
+
+    std::string line;
+    while (std::getline(file, line))
+    {
+        // delete comments
+        std::string::size_type end = line.find('#');
+        if (end != std::string::npos)
+            line = line.substr(0, end);
+        // delete leading and trailing whitespaces
+        while (line.size() > 0 && std::isspace(line[0]))
+            line.erase(0, 1);
+        while (line.size() > 0 && std::isspace(line[line.size() - 1]))
+            line.erase(line.size() - 1, 1);
+        files_content.push_back(line);
+    }
+
+    file.close();
+    if (files_content.size() == 0)
+        std::cerr << "Warning: file " << path << " is empty" << std::endl;
+    return files_content;
+}
+
+int syntax_keyword_routes(const std::vector<std::string> &files_content, std::size_t &line_number, std::size_t &column)
+{
+
+    return 0;
+}
+
+int syntax_keyword(const std::vector<std::string> &files_content)
+{
+    std::size_t line_number = 0;
+    std::size_t column = 0;
+
+    while (line_number < files_content.size())
+    {
+    }
+
+    return 0;
+}
+
+const std::string get_word(const std::string &line, std::size_t &column)
+{
+    std::string word;
+    while (column < line.size() && std::isspace(line[column]))
+        ++column;
+    while (column < line.size() && !std::isspace(line[column]))
+        word += line[column++];
+    return word;
+}
+
+int syntax_routes_keywords(const std::vector<std::string> &files_content, std::size_t &line_number, std::size_t &column)
+{
+    std::size_t i = line_number;
+    std::size_t j = column;
+    std::string word;
+
+    return 0;
+}
+
+int syntax_server_keywords(const std::vector<std::string> &files_content, std::size_t &line_number, std::size_t &column)
+{
+    // take the first word
+    
+    if ()
+}
+
+int syntax_brackets(const std::vector<std::string> &files_content)
+{
+    std::size_t line_number = 0;
+    ssize_t bracket_count = 0;
 
     for (std::size_t i = 0; i < files_content.size(); ++i)
     {
-        std::string::size_type end = files_content[i].find('#');
-        if (end == std::string::npos)
-            end = files_content[i].size();
-        files_content[i] = files_content[i].substr(0, end);
-    }
-
-    bool in_server = false;
-    bool in_routes = false;
-
-    std::string line;
-    for (std::size_t line_nb = 0; line_nb < files_content.size(); ++line_nb)
-    {
-        line = files_content[line_nb];
-        // display the line but with every { and } replaced in red
-        std::string display_line;
-        for (std::string::size_type column = 0; column < line.size(); ++column)
+        for (std::string::size_type column = 0; column < files_content[i].size(); ++column)
         {
-            if (line[column] == '{')
-                display_line += "\033[31m{\033[0m";
-            else if (line[column] == '}')
-                display_line += "\033[31m}\033[0m";
-            else
-                display_line += line[column];
-        }
-        std::cout << ">>> " << display_line << std::endl;
-
-        for (std::string::size_type column = 0; column < line.size(); ++column)
-        {
-            if (std::isspace(line[column]))
-                continue;
-            // check if the word was "server"
-            if (line.substr(column, 6) == "server" && (line[column + 6] == ' ' || line[column + 6] == '{'))
+            if (files_content[i][column] == '{')
             {
-                if (in_server)
-                    return (std::cerr << "Error: server block already opened at line " << line_nb << std::endl,
-                            EXIT_FAILURE);
-                in_server = true;
-                column += 6;
-                while (column < line.size() && std::isspace(line[column]))
-                    ++column;
-                if (column == line.size())
+                std::string directive;
+                if (column != 0)
                 {
-                    for (std::size_t j = line_nb + 1; j < files_content.size(); ++j)
+                    std::string::size_type rev_j = column;
+                    while (rev_j > 0 && std::isspace(files_content[i][rev_j - 1]))
+                        --rev_j;
+                    std::string::size_type start = rev_j;
+                    while (rev_j > 0 && !std::isspace(files_content[i][rev_j - 1]))
+                        --rev_j;
+                    directive = files_content[i].substr(rev_j, start - rev_j);
+                }
+                else if (i > 0)
+                {
+                    std::string::size_type prev_line = i - 1;
+                    while (prev_line > 0 && files_content[prev_line].size() == 0)
+                        --prev_line;
+                    if (files_content[prev_line].size() > 0)
                     {
-                        if (files_content[j].empty())
-                            continue;
-                        if (files_content[j][0] == '{')
-                            break;
-                        return (std::cerr << "Error: missing '{' after server at line " << line_nb << std::endl,
-                                EXIT_FAILURE);
+                        std::string::size_type prev_line_size = files_content[prev_line].size();
+                        while (prev_line_size > 0 && std::isspace(files_content[prev_line][prev_line_size - 1]))
+                            --prev_line_size;
+                        directive = files_content[prev_line].substr(0, prev_line_size);
                     }
                 }
+                if (directive != "routes"  && directive != "server")
+                    return (std::cout << "Error: unknown directive at line " << line_number + 1 << std::endl), 1;
+                ++bracket_count;
+                if (directive == "server" && syntax_server_keywords(files_content, line_number, column) != 0)
+                    return 1;
+                else if (directive == "routes" && syntax_routes_keywords(files_content, line_number, column) != 0)
+                    return 1;
             }
-            // check if the word was "routes"
-            else if (line.substr(column, 6) == "routes" && (line[column + 6] == ' ' || line[column + 6] == '{'))
-            {
-                if (!in_server)
-                    return (std::cerr << "Error: routes block outside of server block at line " << line_nb << std::endl,
-                            EXIT_FAILURE);
-                if (in_routes)
-                    return (std::cerr << "Error: routes block already opened at line " << line_nb << std::endl,
-                            EXIT_FAILURE);
-
-                in_routes = true;
-                column += 6;
-                while (column < line.size() && std::isspace(line[column]))
-                    ++column;
-                if (column == line.size() || line[column] != '{')
-                    return (std::cerr << "Error: missing '{' after routes at line " << line_nb << std::endl,
-                            EXIT_FAILURE);
-            }
-            // check if the word was "}"
-            else if (line[column] == '}')
-            {
-                if (in_routes)
-                {
-                    in_routes = false;
-                    continue;
-                }
-                if (in_server)
-                {
-                    in_server = false;
-                    continue;
-                }
-                return (std::cerr << "Error: '}' outside of server or routes block at line " << line_nb << std::endl,
-                        EXIT_FAILURE);
-            }
+            else if (files_content[i][column] == '}')
+                --bracket_count;
+            if (bracket_count < 0)
+                return (std::cout << "Error: too many closing brackets at line " << line_number + 1 << std::endl), 1;
         }
+        ++line_number;
     }
-    return EXIT_SUCCESS;
+    if (bracket_count > 0)
+        return (std::cout << "Error: too many opening brackets at line " << line_number + 1 << std::endl), 1;
+
+    return 0;
 }
 
 int main(int argc, const char *argv[])
@@ -138,39 +173,19 @@ int main(int argc, const char *argv[])
         return EXIT_FAILURE;
     }
 
-    // try to open the file
-    std::ifstream file(argv[1]);
-    if (!file.is_open())
-    {
-        std::cerr << "Error: could not open file " << argv[1] << std::endl;
+    std::vector<std::string> files_content = read_files(argv[1]);
+    if (files_content.size() == 0)
         return EXIT_FAILURE;
-    }
 
-    std::vector<std::string> files_content;
+    std::cout << "----------------------------------------" << std::endl;
+    for (std::size_t i = 0; i < files_content.size(); ++i)
+        std::cout << i + 1 << " >>> " << files_content[i] << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
 
-    // read the file
-    std::string line;
-    while (std::getline(file, line))
-        files_content.push_back(line);
-
-    // display the check_syntax result
-    if (syntax_brackets(files_content) == EXIT_SUCCESS)
-        std::cout << "Brackets syntax is correct" << std::endl;
+    if (syntax_brackets(files_content) != 0)
+        std::cout << "\033[1;31mSyntax error\033[0m" << std::endl;
     else
-        std::cout << "Brackets syntax is incorrect" << std::endl;
-    // parse the file
-    // std::vector<Tokens> tokens = tokenise(files_content);
-
-    // print the tokens
-    // std::cout << "--------------------------------------------" << std::endl;
-    // for (size_t i = 0; i < tokens.size(); ++i)
-    // {
-    //     std::cout << "Token: {" << tokens[i].token << "}\nLine: " << tokens[i].line << "\tColumn: " <<
-    //     tokens[i].column
-    //               << "\tIs string: " << tokens[i].is_string << std::endl;
-    //     std::cout << "--------------------------------------------" << std::endl;
-    // }
-
+        std::cout << "\033[1;32mSyntax is correct\033[0m" << std::endl;
     return EXIT_SUCCESS;
 }
 
@@ -184,5 +199,5 @@ g++ -Wall -Wextra -Werror -O0 -std=c++98 -ggdb3 parsing.cpp -o parsing
 TASK:
 
 Check brackets syntax ✅
-Check
+Check the keyword value syntax
 */
