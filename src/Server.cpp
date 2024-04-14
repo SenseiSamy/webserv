@@ -1,41 +1,42 @@
-#ifndef PARSING_H
-#define PARSING_H
-
+#include "Server.hpp"
+#include "Response.hpp"
+#include <arpa/inet.h>
 #include <cctype>
 #include <cstddef>
-#include <cstdlib>
+#include <cstring>
+#include <fcntl.h>
 #include <fstream>
 #include <iostream>
+#include <pthread.h>
 #include <sstream>
-
-#include <map>
 #include <string>
-#include <vector>
+#include <strings.h>
+#include <sys/epoll.h>
+#include <unistd.h>
 
-typedef struct Routes
+/* --------------- Server --------------- */
+Server::Server(const std::string &path) : _path(path)
 {
-    std::vector<std::string> methods;
-    std::string redirect;
-    std::string root;
-    bool autoindex;
-    std::string index;
-    std::map<std::string, std::string> cgi;
-    std::map<std::string, std::string> routes_pages;
-} Routes;
+    read_files();
 
-typedef struct Server
+    if (_files_content.empty())
+        throw std::runtime_error("Error: could not open file " + path);
+
+    if (syntax_brackets() == -1)
+        throw std::runtime_error("Error: syntax error in file " + path);
+
+    if (parsing_config() == -1)
+        throw std::runtime_error("Error: parsing error in file " + path);
+}
+
+Server::~Server()
 {
-    std::vector<std::string> host;
-    unsigned short port;
-    std::vector<std::string> server_names;
-    std::map<std::string, std::string> error_pages;
-    size_t body_size;
-    std::vector<Routes> routes;
-} Server;
+    _files_content.clear();
+}
 
-#endif // !PARSING_H
+/* -------------------------------------- */
 
-std::vector<std::string> split_line(const std::string &str)
+std::vector<std::string> Server::split_line(const std::string &str)
 {
     std::vector<std::string> words;
     std::string word;
@@ -72,15 +73,11 @@ std::vector<std::string> split_line(const std::string &str)
     return words;
 }
 
-std::vector<std::vector<std::string> > read_files(const char path[])
+void Server::read_files()
 {
-    std::vector<std::vector<std::string> > files_content;
-    std::ifstream file(path);
+    std::ifstream file(_path.c_str());
     if (!file.is_open() || !file.good())
-    {
-        std::cerr << "Error: could not open file " << path << std::endl;
-        return files_content;
-    }
+        std::cerr << "Error: could not open file " << _path << std::endl;
 
     std::string line;
     while (std::getline(file, line))
@@ -97,37 +94,33 @@ std::vector<std::vector<std::string> > read_files(const char path[])
         if (parsed_line.empty())
             continue;
 
-        files_content.push_back(parsed_line);
+        _files_content.push_back(parsed_line);
     }
 
     file.close();
-    return files_content;
 }
 
-int syntax_brackets(const std::vector<std::vector<std::string> > &files_content)
+int Server::syntax_brackets()
 {
-    int open_brackets = 0;
-    int close_brackets = 0;
+    size_t open_brackets = 0;
+    size_t close_brackets = 0;
     std::string last_word;
 
-    for (size_t line = 0; line < files_content.size(); ++line)
+    for (size_t line = 0; line < _files_content.size(); ++line)
     {
-        for (size_t i = 0; i < files_content[line].size(); ++i)
+        for (size_t i = 0; i < _files_content[line].size(); ++i)
         {
             // last word
             if (i > 0)
-                last_word = files_content[line][i - 1];
+                last_word = _files_content[line][i - 1];
             else if (line > 0)
-                last_word = files_content[line - 1].back();
-            std::string word = files_content[line][i];
+                last_word = _files_content[line - 1].back();
+            std::string word = _files_content[line][i];
             if (word == "{")
             {
                 ++open_brackets;
                 if (last_word != "server" && last_word != "routes")
-                {
-                    std::cerr << "Syntax error: Unexpected '{' at line " << line + 1 << "." << std::endl;
-                    return -1;
-                }
+                    return (std::cerr << "Syntax error: Unexpected '{' at line " << line + 1 << "." << std::endl, -1);
             }
             else if (word == "}")
                 ++close_brackets;
@@ -135,16 +128,13 @@ int syntax_brackets(const std::vector<std::vector<std::string> > &files_content)
     }
 
     if (open_brackets != close_brackets)
-    {
-        std::cerr << "Syntax error: Unbalanced brackets." << std::endl;
-        return -1;
-    }
+        return (std::cerr << "Syntax error: Unbalanced brackets." << std::endl, -1);
 
     return 0;
 }
 
-int parsing_routes(const std::vector<std::string> &token_args, Routes &new_routes, const std::string &current_word,
-                   size_t line)
+int Server::parsing_routes(const std::vector<std::string> &token_args, routes_data &new_routes,
+                           const std::string &current_word, size_t line)
 {
     if (current_word == "methods")
     {
@@ -209,8 +199,8 @@ int parsing_routes(const std::vector<std::string> &token_args, Routes &new_route
     return 0;
 }
 
-int parsing_server(const std::vector<std::string> &token_args, Server &new_server, const std::string &current_word,
-                   size_t line)
+int Server::parsing_server(const std::vector<std::string> &token_args, server_data &new_server,
+                           const std::string &current_word, size_t line)
 {
     if (current_word == "port")
     {
@@ -229,7 +219,7 @@ int parsing_server(const std::vector<std::string> &token_args, Server &new_serve
         if (token_args.size() < 1)
             return (std::cerr << "Syntax error: Invalid host at line: " << line + 1 << "." << std::endl, -1);
 
-        new_server.host = token_args;
+        new_server.host = token_args[0];
     }
     else if (current_word == "server_names")
     {
@@ -263,18 +253,18 @@ int parsing_server(const std::vector<std::string> &token_args, Server &new_serve
     return 0;
 }
 
-int parsing_config(const std::vector<std::vector<std::string> > &files_content, std::vector<Server> &server)
+int Server::parsing_config()
 {
     bool in_server = false;
     bool in_routes = false;
 
-    Server new_server;
-    Routes new_routes;
-    for (size_t line = 0; line < files_content.size(); ++line)
+    server_data new_server;
+    routes_data new_routes;
+    for (size_t line = 0; line < _files_content.size(); ++line)
     {
-        for (size_t i = 0; i < files_content[line].size(); ++i)
+        for (size_t i = 0; i < _files_content[line].size(); ++i)
         {
-            std::string current_word = files_content[line][i];
+            std::string current_word = _files_content[line][i];
             if (current_word == "server")
             {
                 if (in_server)
@@ -308,7 +298,7 @@ int parsing_config(const std::vector<std::vector<std::string> > &files_content, 
                 }
                 else if (in_server)
                 {
-                    server.push_back(new_server);
+                    servers.push_back(new_server);
                     in_server = false;
                 }
                 continue;
@@ -317,24 +307,24 @@ int parsing_config(const std::vector<std::vector<std::string> > &files_content, 
                 continue;
 
             ++i;
-            if (files_content[line][i] != "=")
+            if (_files_content[line][i] != "=")
                 return (std::cerr << "Syntax error: Missing '=' at line: " << line + 1 << "." << std::endl, -1);
             ++i;
             std::vector<std::string> token_args;
-            while (i < files_content[line].size())
+            while (i < _files_content[line].size())
             {
-                if (files_content[line][i] == ";")
+                if (_files_content[line][i] == ";")
                     break;
-                if (files_content[line][i][0] != '"' ||
-                    files_content[line][i][files_content[line][i].size() - 1] != '"')
+                if (_files_content[line][i][0] != '"' ||
+                    _files_content[line][i][_files_content[line][i].size() - 1] != '"')
                     return (std::cerr << "Syntax error: Missing '\"' at line: " << line + 1 << "." << std::endl, -1);
                 // Remove quotes
-                token_args.push_back(files_content[line][i].substr(1, files_content[line][i].size() - 2));
+                token_args.push_back(_files_content[line][i].substr(1, _files_content[line][i].size() - 2));
                 ++i;
             }
             if (token_args.empty())
                 return (std::cerr << "Syntax error: Missing arguments at line: " << line + 1 << "." << std::endl, -1);
-            if (i < files_content[line].size() - 1 && files_content[line][i + 1] != ";")
+            if (i < _files_content[line].size() - 1 && _files_content[line][i + 1] != ";")
                 return (std::cerr << "Syntax error: Missing ';' at line: " << line + 1 << "." << std::endl, -1);
 
             if (in_routes && token_args.size() >= 1)
@@ -354,104 +344,111 @@ int parsing_config(const std::vector<std::vector<std::string> > &files_content, 
     return 0;
 }
 
-int main(int argc, const char *argv[])
+/* --------------- Socket --------------- */
+
+int Server::open_socket()
 {
-    if (argc != 2)
+    for (std::vector<server_data>::iterator it = servers.begin(); it != servers.end(); ++it)
     {
-        std::cerr << "Usage: " << argv[0] << " <path to config file>" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    std::vector<std::vector<std::string> > files_content = read_files(argv[1]);
-    if (files_content.empty())
-        return EXIT_FAILURE;
-
-    // for (size_t i = 0; i < files_content.size(); ++i)
-    // {
-    //     std::cout << ">>> {";
-    //     for (size_t j = 0; j < files_content[i].size(); ++j)
-    //         std::cout << "\"" << files_content[i][j] << "\", ";
-    //     std::cout << "}" << std::endl;
-    // }
-
-    int result = syntax_brackets(files_content);
-    // if (result == 0)
-    //     std::cout << "Syntax is correct." << std::endl;
-    // else
-    //     std::cout << "Syntax error detected." << std::endl;
-
-    if (result == 0)
-    {
-        std::vector<Server> server;
-
-        result = parsing_config(files_content, server);
-        if (result == 0)
-            std::cout << "Keywords syntax is correct." << std::endl;
-        else
+        it->socket_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+        if (it->socket_fd < 0)
         {
-            std::cout << "Keywords syntax error detected." << std::endl;
-            return EXIT_FAILURE;
+            std::cerr << "Error: socket" << std::endl;
+            return 1;
         }
 
-
-        // display server content
-        std::cout << "----------------------------------------" << std::endl;
-        for (size_t i = 0; i < server.size(); ++i)
+        if (setsockopt(it->socket_fd, SOL_SOCKET, SO_REUSEADDR, &(it->opt), sizeof(it->opt)) == -1)
         {
-            std::cout << "Server " << i + 1 << ":" << std::endl;
-            std::cout << "  port: " << server[i].port << std::endl;
-            std::cout << "  host: ";
-            for (size_t j = 0; j < server[i].host.size(); ++j)
-                std::cout << server[i].host[j] << " ";
-            std::cout << std::endl;
-            std::cout << "  server_names: ";
-            for (size_t j = 0; j < server[i].server_names.size(); ++j)
-                std::cout << server[i].server_names[j] << " ";
-            std::cout << std::endl;
-            std::cout << "  error_pages: ";
-            for (std::map<std::string, std::string>::iterator it = server[i].error_pages.begin();
-                 it != server[i].error_pages.end(); ++it)
-                std::cout << it->first << " " << it->second << " ";
-            std::cout << std::endl;
-            std::cout << "  body_size: " << server[i].body_size << std::endl;
-
-            for (size_t j = 0; j < server[i].routes.size(); ++j)
-            {
-                std::cout << "  Routes " << j + 1 << ":" << std::endl;
-                std::cout << "    methods: ";
-                for (size_t k = 0; k < server[i].routes[j].methods.size(); ++k)
-                    std::cout << server[i].routes[j].methods[k] << " ";
-                std::cout << std::endl;
-                std::cout << "    redirect: " << server[i].routes[j].redirect << std::endl;
-                std::cout << "    root: " << server[i].routes[j].root << std::endl;
-                std::cout << "    autoindex: " << server[i].routes[j].autoindex << std::endl;
-                std::cout << "    default_index: " << server[i].routes[j].index << std::endl;
-                std::cout << "    cgi: ";
-                for (std::map<std::string, std::string>::iterator it = server[i].routes[j].cgi.begin();
-                     it != server[i].routes[j].cgi.end(); ++it)
-                    std::cout << it->first << " " << it->second << " ";
-                std::cout << std::endl;
-                std::cout << "    routes_pages: ";
-                for (std::map<std::string, std::string>::iterator it = server[i].routes[j].routes_pages.begin();
-                     it != server[i].routes[j].routes_pages.end(); ++it)
-                    std::cout << it->first << " " << it->second << " ";
-                std::cout << std::endl;
-            }
-            std::cout << "----------------------------------------" << std::endl;
+            std::cerr << "Error: setsockopt" << std::endl;
+            return 1;
         }
+
+        std::memset(&(it->addr), 0, sizeof(it->addr)); // Clear struct
+        it->addr.sin_family = AF_INET;
+        it->addr.sin_addr.s_addr = inet_addr(it->host.c_str());
+        it->addr.sin_port = htons(it->port);
+
+        if (bind(it->socket_fd, (struct sockaddr *)&(it->addr), sizeof(it->addr)) == -1)
+        {
+            std::cerr << "Error: bind" << std::endl;
+            return 1;
+        }
+        if (listen(it->socket_fd, 5) == -1)
+        {
+            std::cerr << "Error: listen" << std::endl;
+            return 1;
+        }
+        std::cout << "Server started on " << it->host << ":" << it->port << std::endl;
     }
-    return EXIT_SUCCESS;
+    return 0;
 }
+int Server::run()
+{
+    _sin_len = sizeof(_client_addr);
 
-/*
-DOC:
+    if (Server::open_socket() == 1)
+        return 1;
 
-g++ -Wall -Wextra -Werror -O0 -std=c++98 -ggdb3 parsing.cpp -o parsing
+    int epfd = epoll_create(1);
+    if (epfd == -1)
+    {
+        std::cerr << "Error: epoll_create" << std::endl;
+        return 1;
+    }
 
-./parsing example.conf
+    _ev.events = EPOLLIN | EPOLLET;
+    for (std::vector<server_data>::iterator it = servers.begin(); it != servers.end(); ++it)
+    {
+        _ev.data.fd = it->socket_fd;
+        if (epoll_ctl(epfd, EPOLL_CTL_ADD, it->socket_fd, &_ev) == -1)
+        {
+            std::cerr << "Error: epoll_ctl: server" << std::endl;
+            return 1;
+        }
+    }
 
-TASK:
+    while (1)
+    {
+        int nfds = epoll_wait(epfd, _events, MAX_EVENTS, -1);
+        for (int i = 0; i < nfds; ++i)
+        {
+            const int fd = _events[i].data.fd;
+            if (_events[i].data.fd == _client_sock)
+            {
+                _client_sock = accept(_client_sock, (struct sockaddr *)&_client_addr, &_sin_len);
+                if (_client_sock == -1)
+                {
+                    std::cerr << "Error: accept" << std::endl;
+                    return 1;
+                }
+                _ev.events = EPOLLIN | EPOLLET;
+                _ev.data.fd = _client_sock;
+                if (epoll_ctl(epfd, EPOLL_CTL_ADD, _client_sock, &_ev) == -1)
+                {
+                    std::cerr << "Error: epoll_ctl: client" << std::endl;
+                    return 1;
+                }
+            }
+            else
+            {
+                std::string response = "";
+                char buffer[1024];
 
-Check brackets syntax ✅
-Check the keyword value syntax
-*/
+                ssize_t count;
+                while ((count = read(_events[i].data.fd, buffer, sizeof(buffer) - 1)) > 0)
+                {
+                    buffer[count] = '\0';
+                    response += buffer;
+                }
+                if (count == -1 && errno != EAGAIN)
+                {
+                    std::cerr << "Error: recv" << std::endl;
+                    return 1;
+                }
+                Response http_response(fd, response.c_str());
+                http_response.sendResponse();
+            }
+        }
+    }
+    return 0; // Normally won't reach here
+}
