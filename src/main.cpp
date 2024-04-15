@@ -2,7 +2,6 @@
 #include "Server.hpp"
 
 #include <arpa/inet.h>
-#include <cstddef>
 #include <fcntl.h>
 #include <strings.h>
 

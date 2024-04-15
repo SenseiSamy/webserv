@@ -23,6 +23,7 @@ class Server
 
     struct server_data
     {
+		int _listen_fd;
         std::string host;
         unsigned short port;
         std::vector<std::string> server_names;
@@ -35,7 +36,6 @@ class Server
 
   private:
     int _epoll_fd;
-    int _listen_fd;
     static const int MAX_EVENTS = 10;
 
     std::string _path;
@@ -55,7 +55,9 @@ class Server
     int syntax_brackets();
 
     /* socket */
-    int open_socket();
+    int open_sockets();
+
+	server_data* get_server_to_connect(int sock_fd);
 
   public:
     explicit Server(const std::string &path);
