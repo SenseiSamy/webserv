@@ -19,7 +19,7 @@ Server::Server(const std::string &path) : _path(path)
 {
     read_files();
 
-    if (_files_content.empty())
+    if (_file_config_content.empty())
         throw std::runtime_error("Error: could not open file " + path);
 
     if (syntax_brackets() == -1)
@@ -31,7 +31,7 @@ Server::Server(const std::string &path) : _path(path)
 
 Server::~Server()
 {
-    _files_content.clear();
+    _file_config_content.clear();
 }
 
 /* -------------------------------------- */
@@ -94,7 +94,7 @@ void Server::read_files()
         if (parsed_line.empty())
             continue;
 
-        _files_content.push_back(parsed_line);
+        _file_config_content.push_back(parsed_line);
     }
 
     file.close();
@@ -106,16 +106,16 @@ int Server::syntax_brackets()
     size_t close_brackets = 0;
     std::string last_word;
 
-    for (size_t line = 0; line < _files_content.size(); ++line)
+    for (size_t line = 0; line < _file_config_content.size(); ++line)
     {
-        for (size_t i = 0; i < _files_content[line].size(); ++i)
+        for (size_t i = 0; i < _file_config_content[line].size(); ++i)
         {
             // last word
             if (i > 0)
-                last_word = _files_content[line][i - 1];
+                last_word = _file_config_content[line][i - 1];
             else if (line > 0)
-                last_word = _files_content[line - 1].back();
-            std::string word = _files_content[line][i];
+                last_word = _file_config_content[line - 1].back();
+            std::string word = _file_config_content[line][i];
             if (word == "{")
             {
                 ++open_brackets;
@@ -260,11 +260,11 @@ int Server::parsing_config()
 
     server_data new_server;
     routes_data new_routes;
-    for (size_t line = 0; line < _files_content.size(); ++line)
+    for (size_t line = 0; line < _file_config_content.size(); ++line)
     {
-        for (size_t i = 0; i < _files_content[line].size(); ++i)
+        for (size_t i = 0; i < _file_config_content[line].size(); ++i)
         {
-            std::string current_word = _files_content[line][i];
+            std::string current_word = _file_config_content[line][i];
             if (current_word == "server")
             {
                 if (in_server)
@@ -307,24 +307,24 @@ int Server::parsing_config()
                 continue;
 
             ++i;
-            if (_files_content[line][i] != "=")
+            if (_file_config_content[line][i] != "=")
                 return (std::cerr << "Syntax error: Missing '=' at line: " << line + 1 << "." << std::endl, -1);
             ++i;
             std::vector<std::string> token_args;
-            while (i < _files_content[line].size())
+            while (i < _file_config_content[line].size())
             {
-                if (_files_content[line][i] == ";")
+                if (_file_config_content[line][i] == ";")
                     break;
-                if (_files_content[line][i][0] != '"' ||
-                    _files_content[line][i][_files_content[line][i].size() - 1] != '"')
+                if (_file_config_content[line][i][0] != '"' ||
+                    _file_config_content[line][i][_file_config_content[line][i].size() - 1] != '"')
                     return (std::cerr << "Syntax error: Missing '\"' at line: " << line + 1 << "." << std::endl, -1);
                 // Remove quotes
-                token_args.push_back(_files_content[line][i].substr(1, _files_content[line][i].size() - 2));
+                token_args.push_back(_file_config_content[line][i].substr(1, _file_config_content[line][i].size() - 2));
                 ++i;
             }
             if (token_args.empty())
                 return (std::cerr << "Syntax error: Missing arguments at line: " << line + 1 << "." << std::endl, -1);
-            if (i < _files_content[line].size() - 1 && _files_content[line][i + 1] != ";")
+            if (i < _file_config_content[line].size() - 1 && _file_config_content[line][i + 1] != ";")
                 return (std::cerr << "Syntax error: Missing ';' at line: " << line + 1 << "." << std::endl, -1);
 
             if (in_routes && token_args.size() >= 1)
@@ -348,107 +348,83 @@ int Server::parsing_config()
 
 int Server::open_socket()
 {
-    for (std::vector<server_data>::iterator it = servers.begin(); it != servers.end(); ++it)
-    {
-        it->socket_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-        if (it->socket_fd < 0)
-        {
-            std::cerr << "Error: socket" << std::endl;
-            return 1;
-        }
+    _listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (_listen_fd == -1)
+        return -1;
 
-        if (setsockopt(it->socket_fd, SOL_SOCKET, SO_REUSEADDR, &(it->opt), sizeof(it->opt)) == -1)
-        {
-            std::cerr << "Error: setsockopt" << std::endl;
-            return 1;
-        }
+    sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(8080); // Example port
 
-        std::memset(&(it->addr), 0, sizeof(it->addr)); // Clear struct
-        it->addr.sin_family = AF_INET;
-        it->addr.sin_addr.s_addr = inet_addr(it->host.c_str());
-        it->addr.sin_port = htons(it->port);
+    if (bind(_listen_fd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0)
+        return -1;
 
-        if (bind(it->socket_fd, (struct sockaddr *)&(it->addr), sizeof(it->addr)) == -1)
-        {
-            std::cerr << "Error: bind" << std::endl;
-            return 1;
-        }
-        if (listen(it->socket_fd, 5) == -1)
-        {
-            std::cerr << "Error: listen" << std::endl;
-            return 1;
-        }
-        std::cout << "Server started on " << it->host << ":" << it->port << std::endl;
-    }
+    if (listen(_listen_fd, SOMAXCONN) < 0)
+        return -1;
+
+    _epoll_fd = epoll_create(1);
+    if (_epoll_fd == -1)
+        return -1;
+
+    epoll_event event;
+    event.events = EPOLLIN | EPOLLET; // Edge-triggered read events
+    event.data.fd = _listen_fd;
+
+    if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, _listen_fd, &event) < 0)
+        return -1;
+
     return 0;
 }
+
 int Server::run()
 {
-    _sin_len = sizeof(_client_addr);
+    epoll_event events[MAX_EVENTS];
 
-    if (Server::open_socket() == 1)
-        return 1;
-
-    int epfd = epoll_create(1);
-    if (epfd == -1)
+    while (true)
     {
-        std::cerr << "Error: epoll_create" << std::endl;
-        return 1;
-    }
+        int num_events = epoll_wait(_epoll_fd, events, MAX_EVENTS, -1);
+        if (num_events < 0)
+            return -1;
 
-    _ev.events = EPOLLIN | EPOLLET;
-    for (std::vector<server_data>::iterator it = servers.begin(); it != servers.end(); ++it)
-    {
-        _ev.data.fd = it->socket_fd;
-        if (epoll_ctl(epfd, EPOLL_CTL_ADD, it->socket_fd, &_ev) == -1)
+        for (int i = 0; i < num_events; ++i)
         {
-            std::cerr << "Error: epoll_ctl: server" << std::endl;
-            return 1;
-        }
-    }
-
-    while (1)
-    {
-        int nfds = epoll_wait(epfd, _events, MAX_EVENTS, -1);
-        for (int i = 0; i < nfds; ++i)
-        {
-            const int fd = _events[i].data.fd;
-            if (_events[i].data.fd == _client_sock)
+            if (events[i].data.fd == _listen_fd)
             {
-                _client_sock = accept(_client_sock, (struct sockaddr *)&_client_addr, &_sin_len);
-                if (_client_sock == -1)
+                // Handle new connection
+                sockaddr_in client_addr;
+                socklen_t client_addr_size = sizeof(client_addr);
+                int client_fd = accept(_listen_fd, (sockaddr *)&client_addr, &client_addr_size);
+
+                if (client_fd != -1)
                 {
-                    std::cerr << "Error: accept" << std::endl;
-                    return 1;
-                }
-                _ev.events = EPOLLIN | EPOLLET;
-                _ev.data.fd = _client_sock;
-                if (epoll_ctl(epfd, EPOLL_CTL_ADD, _client_sock, &_ev) == -1)
-                {
-                    std::cerr << "Error: epoll_ctl: client" << std::endl;
-                    return 1;
+                    fcntl(client_fd, F_SETFL, O_NONBLOCK);
+                    epoll_event client_event;
+                    client_event.events = EPOLLIN | EPOLLET; // Edge-triggered read events
+                    client_event.data.fd = client_fd;
+                    epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_fd, &client_event);
                 }
             }
             else
             {
-                std::string response = "";
-                char buffer[1024];
+                std::string request;
+                char buffer[4096];
+                int bytes_read = recv(events[i].data.fd, buffer, sizeof(buffer), 0);
+                if (bytes_read > 0)
+                {
+                    buffer[bytes_read] = '\0';
+                    request += buffer;
+                }
+                else
+                {
+                    epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
+                    close(events[i].data.fd);
+                }
 
-                ssize_t count;
-                while ((count = read(_events[i].data.fd, buffer, sizeof(buffer) - 1)) > 0)
-                {
-                    buffer[count] = '\0';
-                    response += buffer;
-                }
-                if (count == -1 && errno != EAGAIN)
-                {
-                    std::cerr << "Error: recv" << std::endl;
-                    return 1;
-                }
-                Response http_response(fd, response.c_str());
-                http_response.sendResponse();
+                Response response(events[i].data.fd, request.c_str());
+                response.sendResponse();
             }
         }
     }
-    return 0; // Normally won't reach here
+    return 0;
 }

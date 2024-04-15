@@ -7,7 +7,7 @@
         "name": "(gdb) Lancer",
         "type": "cppdbg",
         "request": "launch",
-        "program": "${workspaceFolder}/parsing",
+        "program": "${workspaceFolder}/webserv",
         "args": ["${workspaceFolder}/example.conf"],
         "stopAtEntry": false,
         "cwd": "${fileDirname}",

@@ -7,9 +7,6 @@
 #include <sys/epoll.h>
 #include <vector>
 
-#define PORT 8080
-#define MAX_EVENTS 64
-
 class Server
 {
   protected:
@@ -32,29 +29,17 @@ class Server
         std::map<std::string, std::string> error_pages;
         size_t body_size;
         std::vector<routes_data> routes;
-
-        int socket_fd;
-        struct sockaddr_in addr;
-        int opt;
-
-        // Constructor with corrected member initialization order
-        server_data() : socket_fd(-1), opt(1)
-        {
-        }
     };
 
     std::vector<server_data> servers;
 
   private:
-    int _client_sock;
-    struct sockaddr_in _client_addr;
-    socklen_t _sin_len;
-    int _epfd;
-    struct epoll_event _ev;
-    struct epoll_event _events[MAX_EVENTS];
+    int _epoll_fd;
+    int _listen_fd;
+    static const int MAX_EVENTS = 10;
 
     std::string _path;
-    std::vector<std::vector<std::string> > _files_content;
+    std::vector<std::vector<std::string> > _file_config_content;
 
     std::vector<std::string> split_line(const std::string &str);
     void read_files();
@@ -68,7 +53,7 @@ class Server
 
     /* syntax */
     int syntax_brackets();
-    
+
     /* socket */
     int open_socket();
 
