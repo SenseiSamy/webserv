@@ -295,11 +295,13 @@ int Server::parsing_config()
                 {
                     new_server.routes.push_back(new_routes);
                     in_routes = false;
+                    new_routes = routes_data();
                 }
                 else if (in_server)
                 {
                     servers.push_back(new_server);
                     in_server = false;
+                    new_server = server_data();
                 }
                 continue;
             }
@@ -348,27 +350,27 @@ int Server::parsing_config()
 
 int Server::open_sockets()
 {
-	for (std::vector<Server::server_data>::iterator it = servers.begin();
-		it != servers.end(); ++it) {
-		it->_listen_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-		if (it->_listen_fd < 0)
-			log(FATAL, "open_servers_socket: socket: " + std::string(strerror(errno)));
+    for (std::vector<Server::server_data>::iterator it = servers.begin(); it != servers.end(); ++it)
+    {
+        it->_listen_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+        if (it->_listen_fd < 0)
+            log(FATAL, "open_servers_socket: socket: " + std::string(strerror(errno)));
 
-		int optval = 1;
-		if (setsockopt(it->_listen_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
-			log(FATAL, "open_servers_socket: setsockopt: " + std::string(strerror(errno)));
+        int optval = 1;
+        if (setsockopt(it->_listen_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
+            log(FATAL, "open_servers_socket: setsockopt: " + std::string(strerror(errno)));
 
-		struct sockaddr_in addr;
-		addr.sin_family = AF_INET;
-		addr.sin_addr.s_addr = inet_addr(it->host.c_str());
-		addr.sin_port = htons(it->port);
-		memset(&addr.sin_zero, 0, sizeof(addr.sin_zero));
+        struct sockaddr_in addr;
+        addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = inet_addr(it->host.c_str());
+        addr.sin_port = htons(it->port);
+        memset(&addr.sin_zero, 0, sizeof(addr.sin_zero));
 
-		if (bind(it->_listen_fd, (struct sockaddr *)(&addr), sizeof(addr)) == -1)
-			log(FATAL, "open_servers_socket: bind: " + std::string(strerror(errno)));
-		if (listen(it->_listen_fd, 5) == -1)
-			log(FATAL, "open_servers_socket: listen: " + std::string(strerror(errno)));
-	}
+        if (bind(it->_listen_fd, (struct sockaddr *)(&addr), sizeof(addr)) == -1)
+            log(FATAL, "open_servers_socket: bind: " + std::string(strerror(errno)));
+        if (listen(it->_listen_fd, 5) == -1)
+            log(FATAL, "open_servers_socket: listen: " + std::string(strerror(errno)));
+    }
 
     _epoll_fd = epoll_create(1);
     if (_epoll_fd == -1)
@@ -376,31 +378,34 @@ int Server::open_sockets()
 
     epoll_event event;
     event.events = EPOLLIN | EPOLLET; // Edge-triggered read events
-	for (std::size_t i = 0; i < servers.size(); ++i) {
-		event.data.fd = servers[i]._listen_fd;
-		if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, servers[i]._listen_fd, &event) == -1)
-			log(FATAL, "epoll_ctl: server_sock");
-	}
+    for (std::size_t i = 0; i < servers.size(); ++i)
+    {
+        event.data.fd = servers[i]._listen_fd;
+        if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, servers[i]._listen_fd, &event) == -1)
+            log(FATAL, "epoll_ctl: server_sock");
+    }
 
     return 0;
 }
 
-Server::server_data* Server::get_server_to_connect(int sock_fd) {
-	for (std::size_t i = 0; i < servers.size(); ++i) {
-		if (sock_fd == servers[i]._listen_fd)
-			return (&servers[i]);
-	}
-	return (NULL);
+Server::server_data *Server::get_server_to_connect(int sock_fd)
+{
+    for (std::size_t i = 0; i < servers.size(); ++i)
+    {
+        if (sock_fd == servers[i]._listen_fd)
+            return (&servers[i]);
+    }
+    return (NULL);
 }
 
 int Server::run()
 {
     epoll_event ev, events[MAX_EVENTS];
-	int client_sock;
-	sockaddr_in client_addr;
-	socklen_t client_addr_size = sizeof(client_addr);
+    int client_sock;
+    sockaddr_in client_addr;
+    socklen_t client_addr_size = sizeof(client_addr);
 
-	open_sockets();
+    open_sockets();
 
     while (true)
     {
@@ -410,46 +415,52 @@ int Server::run()
 
         for (int n = 0; n < num_events; ++n)
         {
-			const int fd = events[n].data.fd;
-			Server::server_data* server = get_server_to_connect(fd);
-			if (server != NULL) {
-				client_sock = accept(server->_listen_fd, (struct sockaddr *)&client_addr, &client_addr_size);
-				if (client_sock < 0) {
-					log(ERROR, "accept error: " + std::string(strerror(errno)));
-					continue;
-				}
-				fcntl(client_sock, F_SETFL, O_NONBLOCK);
-				ev.events = EPOLLIN | EPOLLET;
-				ev.data.fd = client_sock;
-				if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_sock, &ev) == -1) {
-					log(ERROR, "epoll_ctl: client_sock");
-					return (-1);
-				}
-			}
-			else if ((events[n].events & EPOLLERR) ||
-				(events[n].events & EPOLLHUP) ||
-				(!(events[n].events & EPOLLIN))) {
-				close(fd);
-			}
-			else {
-				std::string request("");
-				char buffer[1024];
-				ssize_t count;
-				while ((count = read(fd, buffer, sizeof(buffer) - 1)) > 0) {
-					buffer[count] = '\0';
-					request += buffer;
-				}
-				if (count == -1 && errno != EAGAIN) {
-					log(ERROR, "recv error: " + std::string(strerror(errno)));
-					close(fd);
-				}
-				else {
-					log(INFO, "received: " + std::string(request.c_str()));
-					Response rep(fd, request.c_str());
-					rep.sendResponse();
-					close(fd);
-				}
-			}
+            const int fd = events[n].data.fd;
+            Server::server_data *server = get_server_to_connect(fd);
+            if (server != NULL)
+            {
+                client_sock = accept(server->_listen_fd, (struct sockaddr *)&client_addr, &client_addr_size);
+                if (client_sock < 0)
+                {
+                    log(ERROR, "accept error: " + std::string(strerror(errno)));
+                    continue;
+                }
+                fcntl(client_sock, F_SETFL, O_NONBLOCK);
+                ev.events = EPOLLIN | EPOLLET;
+                ev.data.fd = client_sock;
+                if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_sock, &ev) == -1)
+                {
+                    log(ERROR, "epoll_ctl: client_sock");
+                    return (-1);
+                }
+            }
+            else if ((events[n].events & EPOLLERR) || (events[n].events & EPOLLHUP) || (!(events[n].events & EPOLLIN)))
+            {
+                close(fd);
+            }
+            else
+            {
+                std::string request("");
+                char buffer[1024];
+                ssize_t count;
+                while ((count = read(fd, buffer, sizeof(buffer) - 1)) > 0)
+                {
+                    buffer[count] = '\0';
+                    request += buffer;
+                }
+                if (count == -1 && errno != EAGAIN)
+                {
+                    log(ERROR, "recv error: " + std::string(strerror(errno)));
+                    close(fd);
+                }
+                else
+                {
+                    log(INFO, "received: " + std::string(request.c_str()));
+                    Response rep(fd, request.c_str());
+                    rep.sendResponse();
+                    close(fd);
+                }
+            }
         }
     }
     return 0;
