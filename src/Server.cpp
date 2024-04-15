@@ -435,9 +435,7 @@ int Server::run()
                 }
             }
             else if ((events[n].events & EPOLLERR) || (events[n].events & EPOLLHUP) || (!(events[n].events & EPOLLIN)))
-            {
                 close(fd);
-            }
             else
             {
                 std::string request("");

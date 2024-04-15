@@ -23,13 +23,14 @@ class Server
 
     struct server_data
     {
-		int _listen_fd;
         std::string host;
         unsigned short port;
         std::vector<std::string> server_names;
         std::map<std::string, std::string> error_pages;
         size_t body_size;
         std::vector<routes_data> routes;
+        
+        int _listen_fd;
     };
 
     std::vector<server_data> servers;
@@ -39,7 +40,7 @@ class Server
     static const int MAX_EVENTS = 10;
 
     std::string _path;
-    std::vector<std::vector<std::string> > _file_config_content;
+    std::vector<std::vector<std::string>> _file_config_content;
 
     std::vector<std::string> split_line(const std::string &str);
     void read_files();
@@ -57,7 +58,7 @@ class Server
     /* socket */
     int open_sockets();
 
-	server_data* get_server_to_connect(int sock_fd);
+    server_data *get_server_to_connect(int sock_fd);
 
   public:
     explicit Server(const std::string &path);
