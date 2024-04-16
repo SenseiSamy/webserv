@@ -1,16 +1,23 @@
-#include "Logger.hpp"
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #include <sstream>
 #include <string.h>
 #include <string>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <vector>
 
 #define GET 1
 #define POST 2
 #define DELETE 3
+
+#define HEADER_COLOR "\033[1;34m"
+#define RESPONSE_COLOR "\033[1;35m"
+#define LINE_NUMBER_COLOR "\033[1;33m"
+#define RESET_COLOR "\033[0m"
 
 enum type
 {
@@ -196,7 +203,8 @@ class Response
     // Destructor
     ~Response()
     {
-        close(client_sock);
+        if (client_sock != -1)
+            close(client_sock);
     }
 
     // Copy constructor
@@ -223,7 +231,7 @@ class Response
         std::ifstream file(filename.c_str());
         if (!file.is_open())
         {
-            log(ERROR, "filename:" + std::string(strerror(errno)));
+            std::cerr << "sendResponse: " << strerror(errno) << std::endl;
             generateHTTPError(404);
         }
         else
@@ -236,6 +244,36 @@ class Response
 
             std::string httpResponse = generateHTTPResponse(response);
             send(client_sock, httpResponse.c_str(), httpResponse.size(), 0);
+
+            std::stringstream ss(request);
+            std::vector<std::string> lines;
+
+            while (std::getline(ss, line))
+                lines.push_back(line);
+
+            size_t max_digits = 0;
+            if (!lines.empty())
+            {
+                size_t max_line = lines.size() - 1;
+                while (max_line > 0)
+                {
+                    max_line /= 10;
+                    max_digits++;
+                }
+            }
+
+            std::cout << HEADER_COLOR
+                      << "===================================================================" << RESET_COLOR
+                      << std::endl;
+            std::cout << RESPONSE_COLOR << "Response sent to client: " << RESET_COLOR << client_sock << std::endl;
+            for (size_t i = 0; i < lines.size(); i++)
+            {
+                std::cout << LINE_NUMBER_COLOR << std::setw(max_digits) << std::right << i << " >>> " << RESET_COLOR
+                          << lines[i] << std::endl;
+            }
+            std::cout << HEADER_COLOR
+                      << "===================================================================" << RESET_COLOR
+                      << std::endl;
         }
     }
 

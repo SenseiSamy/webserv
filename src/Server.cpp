@@ -3,9 +3,11 @@
 #include <arpa/inet.h>
 #include <cctype>
 #include <cstddef>
+#include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <pthread.h>
 #include <sstream>
@@ -21,10 +23,8 @@ Server::Server(const std::string &path) : _path(path)
 
     if (_file_config_content.empty())
         throw std::runtime_error("Error: could not open file " + path);
-
     if (syntax_brackets() == -1)
         throw std::runtime_error("Error: syntax error in file " + path);
-
     if (parsing_config() == -1)
         throw std::runtime_error("Error: parsing error in file " + path);
 }
@@ -354,11 +354,11 @@ int Server::open_sockets()
     {
         it->_listen_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
         if (it->_listen_fd < 0)
-            log(FATAL, "open_servers_socket: socket: " + std::string(strerror(errno)));
+            return (std::cerr << "open_sockets: socket: " << strerror(errno) << std::endl, -1);
 
         int optval = 1;
         if (setsockopt(it->_listen_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
-            log(FATAL, "open_servers_socket: setsockopt: " + std::string(strerror(errno)));
+            return (std::cerr << "open_sockets: setsockopt: " << strerror(errno) << std::endl, -1);
 
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
@@ -367,14 +367,16 @@ int Server::open_sockets()
         memset(&addr.sin_zero, 0, sizeof(addr.sin_zero));
 
         if (bind(it->_listen_fd, (struct sockaddr *)(&addr), sizeof(addr)) == -1)
-            log(FATAL, "open_servers_socket: bind: " + std::string(strerror(errno)));
+            return (std::cerr << "open_sockets: bind: " << strerror(errno) << std::endl, -1);
         if (listen(it->_listen_fd, 5) == -1)
-            log(FATAL, "open_servers_socket: listen: " + std::string(strerror(errno)));
+            return (std::cerr << "open_sockets: listen: " << strerror(errno) << std::endl, -1);
+
+        std::cout << "Server started on " << it->host << ":" << it->port << std::endl;
     }
 
     _epoll_fd = epoll_create(1);
     if (_epoll_fd == -1)
-        return -1;
+        return (std::cerr << "open_sockets: epoll_create: " << strerror(errno) << std::endl, -1);
 
     epoll_event event;
     event.events = EPOLLIN | EPOLLET; // Edge-triggered read events
@@ -382,7 +384,7 @@ int Server::open_sockets()
     {
         event.data.fd = servers[i]._listen_fd;
         if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, servers[i]._listen_fd, &event) == -1)
-            log(FATAL, "epoll_ctl: server_sock");
+            return (std::cerr << "open_sockets: epoll_ctl: " << strerror(errno) << std::endl, -1);
     }
 
     return 0;
@@ -422,7 +424,7 @@ int Server::run()
                 client_sock = accept(server->_listen_fd, (struct sockaddr *)&client_addr, &client_addr_size);
                 if (client_sock < 0)
                 {
-                    log(ERROR, "accept error: " + std::string(strerror(errno)));
+                    std::cerr << "run: accept: " << strerror(errno) << std::endl;
                     continue;
                 }
                 fcntl(client_sock, F_SETFL, O_NONBLOCK);
@@ -430,7 +432,7 @@ int Server::run()
                 ev.data.fd = client_sock;
                 if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_sock, &ev) == -1)
                 {
-                    log(ERROR, "epoll_ctl: client_sock");
+                    std::cerr << "run: epoll_ctl: " << strerror(errno) << std::endl;
                     return (-1);
                 }
             }
@@ -448,12 +450,45 @@ int Server::run()
                 }
                 if (count == -1 && errno != EAGAIN)
                 {
-                    log(ERROR, "recv error: " + std::string(strerror(errno)));
+                    std::cerr << "run: read: " << strerror(errno) << std::endl;
                     close(fd);
                 }
                 else
                 {
-                    log(INFO, "received: " + std::string(request.c_str()));
+                    std::stringstream ss(request);
+                    std::string line;
+                    std::vector<std::string> lines;
+
+                    while (std::getline(ss, line))
+                    {
+                        lines.push_back(line);
+                    }
+
+                    size_t max_digits = 0;
+                    if (!lines.empty())
+                    {
+                        size_t max_line = lines.size() - 1;
+                        while (max_line > 0)
+                        {
+                            max_line /= 10;
+                            max_digits++;
+                        }
+                    }
+
+                    std::cout << HEADER_COLOR
+                              << "===================================================================" << RESET_COLOR
+                              << std::endl;
+                    std::cout << REQUEST_COLOR << "Request from " << inet_ntoa(client_addr.sin_addr) << ":"
+                              << ntohs(client_addr.sin_port) << RESET_COLOR << std::endl;
+                    for (size_t i = 0; i < lines.size(); i++)
+                    {
+                        std::cout << LINE_NUMBER_COLOR << std::setw(max_digits) << std::right << i << " >>> "
+                                  << RESET_COLOR << lines[i] << std::endl;
+                    }
+                    std::cout << HEADER_COLOR
+                              << "===================================================================" << RESET_COLOR
+                              << std::endl;
+
                     Response rep(fd, request.c_str());
                     rep.sendResponse();
                     close(fd);

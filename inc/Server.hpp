@@ -7,6 +7,12 @@
 #include <sys/epoll.h>
 #include <vector>
 
+#define HEADER_COLOR "\033[1;34m"
+#define REQUEST_COLOR "\033[1;32m"
+#define LINE_NUMBER_COLOR "\033[1;33m"
+#define RESET_COLOR "\033[0m"
+
+
 class Server
 {
   protected:
