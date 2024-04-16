@@ -119,7 +119,7 @@ int Server::syntax_brackets()
             if (word == "{")
             {
                 ++open_brackets;
-                if (last_word != "server" && last_word != "routes")
+                if (last_word != "server" && last_word != "route")
                     return (std::cerr << "Syntax error: Unexpected '{' at line " << line + 1 << "." << std::endl, -1);
             }
             else if (word == "}")
@@ -275,14 +275,14 @@ int Server::parsing_config()
                 ++i;
                 continue;
             }
-            else if (current_word == "routes")
+            else if (current_word == "route")
             {
                 if (!in_server)
                     return (std::cerr << "Syntax error: We are not in a server block at line: " << line + 1 << "."
                                       << std::endl,
                             -1);
                 if (in_routes)
-                    return (std::cerr << "Syntax error: We are already in a routes block at line: " << line + 1 << "."
+                    return (std::cerr << "Syntax error: We are already in a route block at line: " << line + 1 << "."
                                       << std::endl,
                             -1);
                 in_routes = true;
@@ -293,7 +293,7 @@ int Server::parsing_config()
             {
                 if (in_routes)
                 {
-                    new_server.routes.push_back(new_routes);
+                    new_server.route.push_back(new_routes);
                     in_routes = false;
                     new_routes = routes_data();
                 }

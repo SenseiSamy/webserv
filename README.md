@@ -40,7 +40,7 @@ Respectez les règles suivantes pour assurer une interprétation correcte par le
 
 **Format Général**
 - Chaque instruction doit être placée à l'intérieur d'un bloc `server{...}`.
-- Les blocs `server` peuvent contenir des sous-blocs `routes` pour des configurations spécifiques aux itinéraires.
+- Les blocs `server` peuvent contenir des sous-blocs `route` pour des configurations spécifiques aux itinéraires.
 
 **Syntaxe de Base**
 - Les paires clé/valeur sont séparées par un signe égal `=` et les valeurs doivent être entre guillemets `"..."`.
@@ -63,7 +63,7 @@ Respectez les règles suivantes pour assurer une interprétation correcte par le
 
 | Clé             | Description                                        |
 |-----------------|----------------------------------------------------|
-| `methods`       | Méthodes HTTP autorisées pour les routes.          |
+| `methods`       | Méthodes HTTP autorisées pour les route.          |
 | `redirect`      | URL de redirection pour cette route.               |
 | `root`          | Répertoire racine pour les fichiers de cette route.|
 | `autoindex`     | Active ou désactive l'indexation automatique.      |

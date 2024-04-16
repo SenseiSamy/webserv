@@ -34,7 +34,7 @@ class Server
         std::vector<std::string> server_names;
         std::map<std::string, std::string> error_pages;
         size_t body_size;
-        std::vector<routes_data> routes;
+        std::vector<routes_data> route;
         
         int _listen_fd;
     };

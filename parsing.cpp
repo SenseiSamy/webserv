@@ -30,7 +30,7 @@ typedef struct Server
     std::vector<std::string> server_names;
     std::map<std::string, std::string> error_pages;
     size_t body_size;
-    std::vector<Routes> routes;
+    std::vector<Routes> route;
 } Server;
 
 #endif // !PARSING_H
@@ -123,7 +123,7 @@ int syntax_brackets(const std::vector<std::vector<std::string> > &files_content)
             if (word == "{")
             {
                 ++open_brackets;
-                if (last_word != "server" && last_word != "routes")
+                if (last_word != "server" && last_word != "route")
                 {
                     std::cerr << "Syntax error: Unexpected '{' at line " << line + 1 << "." << std::endl;
                     return -1;
@@ -285,14 +285,14 @@ int parsing_config(const std::vector<std::vector<std::string> > &files_content, 
                 ++i;
                 continue;
             }
-            else if (current_word == "routes")
+            else if (current_word == "route")
             {
                 if (!in_server)
                     return (std::cerr << "Syntax error: We are not in a server block at line: " << line + 1 << "."
                                       << std::endl,
                             -1);
                 if (in_routes)
-                    return (std::cerr << "Syntax error: We are already in a routes block at line: " << line + 1 << "."
+                    return (std::cerr << "Syntax error: We are already in a route block at line: " << line + 1 << "."
                                       << std::endl,
                             -1);
                 in_routes = true;
@@ -303,7 +303,7 @@ int parsing_config(const std::vector<std::vector<std::string> > &files_content, 
             {
                 if (in_routes)
                 {
-                    new_server.routes.push_back(new_routes);
+                    new_server.route.push_back(new_routes);
                     in_routes = false;
                 }
                 else if (in_server)
@@ -415,25 +415,25 @@ int main(int argc, const char *argv[])
             std::cout << std::endl;
             std::cout << "  body_size: " << server[i].body_size << std::endl;
 
-            for (size_t j = 0; j < server[i].routes.size(); ++j)
+            for (size_t j = 0; j < server[i].route.size(); ++j)
             {
                 std::cout << "  Routes " << j + 1 << ":" << std::endl;
                 std::cout << "    methods: ";
-                for (size_t k = 0; k < server[i].routes[j].methods.size(); ++k)
-                    std::cout << server[i].routes[j].methods[k] << " ";
+                for (size_t k = 0; k < server[i].route[j].methods.size(); ++k)
+                    std::cout << server[i].route[j].methods[k] << " ";
                 std::cout << std::endl;
-                std::cout << "    redirect: " << server[i].routes[j].redirect << std::endl;
-                std::cout << "    root: " << server[i].routes[j].root << std::endl;
-                std::cout << "    autoindex: " << server[i].routes[j].autoindex << std::endl;
-                std::cout << "    default_index: " << server[i].routes[j].index << std::endl;
+                std::cout << "    redirect: " << server[i].route[j].redirect << std::endl;
+                std::cout << "    root: " << server[i].route[j].root << std::endl;
+                std::cout << "    autoindex: " << server[i].route[j].autoindex << std::endl;
+                std::cout << "    default_index: " << server[i].route[j].index << std::endl;
                 std::cout << "    cgi: ";
-                for (std::map<std::string, std::string>::iterator it = server[i].routes[j].cgi.begin();
-                     it != server[i].routes[j].cgi.end(); ++it)
+                for (std::map<std::string, std::string>::iterator it = server[i].route[j].cgi.begin();
+                     it != server[i].route[j].cgi.end(); ++it)
                     std::cout << it->first << " " << it->second << " ";
                 std::cout << std::endl;
                 std::cout << "    routes_pages: ";
-                for (std::map<std::string, std::string>::iterator it = server[i].routes[j].routes_pages.begin();
-                     it != server[i].routes[j].routes_pages.end(); ++it)
+                for (std::map<std::string, std::string>::iterator it = server[i].route[j].routes_pages.begin();
+                     it != server[i].route[j].routes_pages.end(); ++it)
                     std::cout << it->first << " " << it->second << " ";
                 std::cout << std::endl;
             }
