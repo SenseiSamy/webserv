@@ -15,6 +15,7 @@
 #include <strings.h>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include "HTTPRequest.hpp"
 
 /* --------------- Server --------------- */
 Server::Server(const std::string &path) : _path(path)
@@ -350,7 +351,7 @@ int Server::parsing_config()
 
 int Server::open_sockets()
 {
-    for (std::vector<Server::server_data>::iterator it = servers.begin(); it != servers.end(); ++it)
+    for (std::vector<server_data>::iterator it = servers.begin(); it != servers.end(); ++it)
     {
         it->_listen_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
         if (it->_listen_fd < 0)
@@ -390,7 +391,7 @@ int Server::open_sockets()
     return 0;
 }
 
-Server::server_data *Server::get_server_to_connect(int sock_fd)
+server_data *Server::get_server_to_connect(int sock_fd)
 {
     for (std::size_t i = 0; i < servers.size(); ++i)
     {
@@ -398,6 +399,31 @@ Server::server_data *Server::get_server_to_connect(int sock_fd)
             return (&servers[i]);
     }
     return (NULL);
+}
+
+server_data& Server::get_server_from_request(HTTPRequest req) {
+	std::string host = req.getHeader("Host");
+	int			port;
+	std::size_t sep;
+	std::vector<server_data>::iterator it;
+	if (host.empty())
+		return (servers[0]);
+	sep = host.find(':');
+	if (sep == std::string::npos)
+		return (servers[0]);
+	port = std::atoi(host.substr(sep + 1, std::string::npos).c_str());
+	host = host.substr(0, sep);
+	
+	for (it = servers.begin(); it != servers.end(); ++it) {
+		if (host == it->host && port == it->port)
+			return (*it);
+	}
+	for (it = servers.begin(); it != servers.end(); ++it) {
+		for (std::size_t i = 0; i < it->server_names.size(); ++i)
+			if (host == it->server_names[i])
+				return (*it);
+	}
+	return (servers[0]);
 }
 
 int Server::run()
@@ -418,7 +444,7 @@ int Server::run()
         for (int n = 0; n < num_events; ++n)
         {
             const int fd = events[n].data.fd;
-            Server::server_data *server = get_server_to_connect(fd);
+            server_data *server = get_server_to_connect(fd);
             if (server != NULL)
             {
                 client_sock = accept(server->_listen_fd, (struct sockaddr *)&client_addr, &client_addr_size);
@@ -489,8 +515,9 @@ int Server::run()
                               << "===================================================================" << RESET_COLOR
                               << std::endl;
 
-                    Response rep(fd, request.c_str());
-                    rep.sendResponse();
+					HTTPRequest req(request);
+                    Response response(req, get_server_from_request(req));
+                    send(fd, response.toString().c_str(), response.toString().size(), 0);
                     close(fd);
                 }
             }
