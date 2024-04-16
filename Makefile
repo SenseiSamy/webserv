@@ -1,11 +1,11 @@
 CXX = g++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g3
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -ggdb3
 
 SRC_DIR = src
 INC_DIR = inc
 OBJ_DIR = obj
 
-SRC_FILES =  $(SRC_DIR)/main.cpp $(SRC_DIR)/logger/logger.cpp $(SRC_DIR)/cgi/cgi.cpp $(SRC_DIR)/cgi/meta_variables.cpp $(SRC_DIR)/config/Config.cpp
+SRC_FILES =  $(SRC_DIR)/main.cpp $(SRC_DIR)/Logger/Logger.cpp $(SRC_DIR)/cgi/cgi.cpp $(SRC_DIR)/cgi/meta_variables.cpp $(SRC_DIR)/Server.cpp
 OBJ_FILES = $(SRC_FILES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 NAME = webserv
 
