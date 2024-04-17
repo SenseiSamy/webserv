@@ -205,16 +205,14 @@ class   Response    {
                     }
                     filename = filename.substr(0,filename.size() - 2);
                     // std::cout << filename << std::endl;
-                    std::cout << boundaries << std::endl;
                     std::getline(data, line);
                     std::ofstream file(filename.c_str(), std::ios::binary);
-                    while (std::getline(data, line))
-                    {
-                        std::string test = line;
-                        if (test.find(boundaries) != std::string::npos)
-                            break;
-                        file << line + "\n";
-                    }
+					char	buff[1];
+					while (!data.eof())
+					{
+						data.read(buff, 1);
+						file.write(buff, 1);
+					}
                     file.close();
 				}
 			}

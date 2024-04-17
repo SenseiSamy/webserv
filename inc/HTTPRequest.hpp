@@ -65,6 +65,7 @@ class   HTTPRequest {
         std::string method;
         std::string url;
         std::map<std::string, std::string> headers;
+		size_t	content_lenght;
         std::string body;
     
     void parseRequest() 
@@ -101,10 +102,20 @@ class   HTTPRequest {
                 headers[headername] = headervalue;
             }
         }
-        while (std::getline(stream, line))
-        {
-            body += line + "\n";
-        }
+        if (!method.compare("POST"))
+		{
+			std::stringstream temp;
+			temp << headers["Content-Lenght"];
+			temp >> content_lenght;
+			size_t	count = 0;
+			char buff[1];
+			while (count < content_lenght && !stream.eof())
+			{
+				stream.read(buff, 1);
+				body.push_back(buff[0]);
+				count++;
+			}
+		}
     }
 };
 
