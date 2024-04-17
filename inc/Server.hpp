@@ -2,23 +2,20 @@
 #define SERVER_HPP
 
 #include "HTTPRequest.hpp"
-#include <cstddef>
-#include <map>
-#include <netinet/in.h>
-#include <string>
-#include <sys/epoll.h>
-#include <vector>
 #include <arpa/inet.h>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
+#include <iomanip>
+#include <map>
+#include <netinet/in.h>
 #include <pthread.h>
 #include <string>
 #include <strings.h>
 #include <sys/epoll.h>
 #include <unistd.h>
-#include <iomanip>
+#include <vector>
 
 #define HEADER_COLOR "\033[1;34m"
 #define REQUEST_COLOR "\033[1;32m"
@@ -77,7 +74,7 @@ class Server
     server_data *get_server_to_connect(int sock_fd);
     server_data &get_server_from_request(HTTPRequest req);
 
-	void print_log(HTTPRequest &req, server_data &server) const;
+    void print_log(HTTPRequest &req, server_data &server) const;
 
   public:
     explicit Server(const std::string &path);
