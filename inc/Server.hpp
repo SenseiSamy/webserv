@@ -77,6 +77,8 @@ class Server
     server_data *get_server_to_connect(int sock_fd);
     server_data &get_server_from_request(HTTPRequest req);
 
+	void print_log(HTTPRequest &req, server_data &server) const;
+
   public:
     explicit Server(const std::string &path);
     virtual ~Server();

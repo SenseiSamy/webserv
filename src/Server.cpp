@@ -415,6 +415,21 @@ server_data &Server::get_server_from_request(HTTPRequest req)
     return (servers[0]);
 }
 
+void Server::print_log(HTTPRequest &req, server_data &server) const
+{
+	std::stringstream ss(req.getRequest());
+	std::string line;
+	const char* box_color = "\e[38;2;255;148;253m";
+
+	std::cout << box_color << "╭─ Request to server " << req.getHeader("Host") << " (" << server.host << ":" << server.port << ")\e[0m\n";
+	while (std::getline(ss, line)) {
+		line.erase(line.size() - 1);
+		if (!line.empty())
+			std::cout << box_color << "│ \e[0m" << line << "\n";
+	}
+	std::cout << box_color << "╰───────────────────\e[0m\n\n";
+}
+
 int Server::run()
 {
     epoll_event ev, events[MAX_EVENTS];
@@ -470,42 +485,10 @@ int Server::run()
                 }
                 else
                 {
-                    std::stringstream ss(request);
-                    std::string line;
-                    std::vector<std::string> lines;
-
-                    while (std::getline(ss, line))
-                    {
-                        lines.push_back(line);
-                    }
-
-                    size_t max_digits = 0;
-                    if (!lines.empty())
-                    {
-                        size_t max_line = lines.size() - 1;
-                        while (max_line > 0)
-                        {
-                            max_line /= 10;
-                            max_digits++;
-                        }
-                    }
-
-                    std::cout << HEADER_COLOR
-                              << "===================================================================" << RESET_COLOR
-                              << std::endl;
-                    std::cout << REQUEST_COLOR << "Request from " << inet_ntoa(client_addr.sin_addr) << ":"
-                              << ntohs(client_addr.sin_port) << RESET_COLOR << std::endl;
-                    for (size_t i = 0; i < lines.size(); i++)
-                    {
-                        std::cout << LINE_NUMBER_COLOR << std::setw(max_digits) << std::right << i << " >>> "
-                                  << RESET_COLOR << lines[i] << std::endl;
-                    }
-                    std::cout << HEADER_COLOR
-                              << "===================================================================" << RESET_COLOR
-                              << std::endl;
-
                     HTTPRequest req(request);
-                    Response response(req, get_server_from_request(req));
+					server_data& server = get_server_from_request(req);
+					print_log(req, server);
+                    Response response(req, server);
                     send(fd, response.toString().c_str(), response.toString().size(), 0);
                     close(fd);
                 }

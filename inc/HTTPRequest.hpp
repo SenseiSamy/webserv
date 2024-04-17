@@ -41,6 +41,10 @@ class   HTTPRequest {
         std::string getBody() const {
             return body;
         }
+
+		std::string getRequest() const {
+			return (request);
+		}
     
         void printRequest() const {
             std::cout << "Method: " << method << std::endl;
@@ -97,6 +101,7 @@ class   HTTPRequest {
             {
                 headername = line.substr(0, colonPos);
                 headervalue = line.substr(colonPos + 1);
+				headervalue.erase(headervalue.size() - 1);
                 while (headername.find('\t') != std::string::npos)
                     headername = headername.substr(headername.find('\t'));
                 headers[headername] = headervalue;
