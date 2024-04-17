@@ -205,6 +205,7 @@ class   Response    {
                     }
                     filename = filename.substr(0,filename.size() - 2);
                     // std::cout << filename << std::endl;
+                    std::cout << boundaries << std::endl;
                     std::getline(data, line);
                     std::ofstream file(filename.c_str(), std::ios::binary);
 					char	buff[1];

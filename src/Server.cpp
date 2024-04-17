@@ -461,7 +461,7 @@ int Server::run()
                 while ((count = read(fd, buffer, sizeof(buffer) - 1)) > 0)
                 {
                     buffer[count] = '\0';
-                    request += buffer;
+                    request.append(buffer, count);
                 }
                 if (count == -1 && errno != EAGAIN)
                 {
