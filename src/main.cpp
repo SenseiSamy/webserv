@@ -1,8 +1,4 @@
-#include "Response.hpp"
 #include "Server.hpp"
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <strings.h>
 
 int main(int argc, const char *argv[])
 {

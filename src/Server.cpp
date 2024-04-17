@@ -1,29 +1,14 @@
 #include "Server.hpp"
-#include "Response.hpp"
-#include <arpa/inet.h>
-#include <cctype>
-#include <cstddef>
-#include <cstdlib>
-#include <cstring>
-#include <fcntl.h>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <pthread.h>
-#include <sstream>
-#include <string>
-#include <strings.h>
-#include <sys/epoll.h>
-#include <unistd.h>
 #include "HTTPRequest.hpp"
+#include "Response.hpp"
 
 /* --------------- Server --------------- */
 Server::Server(const std::string &path) : _path(path)
 {
-    read_files();
-
+    if (read_files() == -1)
+        throw std::runtime_error("Error: cannot open the file " + path);
     if (_file_config_content.empty())
-        throw std::runtime_error("Error: could not open file " + path);
+        throw std::runtime_error("Error: config file cannot be empty");
     if (syntax_brackets() == -1)
         throw std::runtime_error("Error: syntax error in file " + path);
     if (parsing_config() == -1)
@@ -74,11 +59,11 @@ std::vector<std::string> Server::split_line(const std::string &str)
     return words;
 }
 
-void Server::read_files()
+int Server::read_files()
 {
     std::ifstream file(_path.c_str());
     if (!file.is_open() || !file.good())
-        std::cerr << "Error: could not open file " << _path << std::endl;
+        return (-1);
 
     std::string line;
     while (std::getline(file, line))
@@ -99,6 +84,7 @@ void Server::read_files()
     }
 
     file.close();
+    return (0);
 }
 
 int Server::syntax_brackets()
@@ -372,7 +358,7 @@ int Server::open_sockets()
         if (listen(it->_listen_fd, 5) == -1)
             return (std::cerr << "open_sockets: listen: " << strerror(errno) << std::endl, -1);
 
-        std::cout << "Server started on " << it->host << ":" << it->port << std::endl;
+        std::cout << "Server started on \033[1;34m" << it->host << ":" << it->port << "\033[0m" << std::endl;
     }
 
     _epoll_fd = epoll_create(1);
@@ -401,29 +387,32 @@ server_data *Server::get_server_to_connect(int sock_fd)
     return (NULL);
 }
 
-server_data& Server::get_server_from_request(HTTPRequest req) {
-	std::string host = req.getHeader("Host");
-	int			port;
-	std::size_t sep;
-	std::vector<server_data>::iterator it;
-	if (host.empty())
-		return (servers[0]);
-	sep = host.find(':');
-	if (sep == std::string::npos)
-		return (servers[0]);
-	port = std::atoi(host.substr(sep + 1, std::string::npos).c_str());
-	host = host.substr(0, sep);
-	
-	for (it = servers.begin(); it != servers.end(); ++it) {
-		if (host == it->host && port == it->port)
-			return (*it);
-	}
-	for (it = servers.begin(); it != servers.end(); ++it) {
-		for (std::size_t i = 0; i < it->server_names.size(); ++i)
-			if (host == it->server_names[i])
-				return (*it);
-	}
-	return (servers[0]);
+server_data &Server::get_server_from_request(HTTPRequest req)
+{
+    std::string host = req.getHeader("Host");
+    int port;
+    std::size_t sep;
+    std::vector<server_data>::iterator it;
+    if (host.empty())
+        return (servers[0]);
+    sep = host.find(':');
+    if (sep == std::string::npos)
+        return (servers[0]);
+    port = std::atoi(host.substr(sep + 1, std::string::npos).c_str());
+    host = host.substr(0, sep);
+
+    for (it = servers.begin(); it != servers.end(); ++it)
+    {
+        if (host == it->host && port == it->port)
+            return (*it);
+    }
+    for (it = servers.begin(); it != servers.end(); ++it)
+    {
+        for (std::size_t i = 0; i < it->server_names.size(); ++i)
+            if (host == it->server_names[i])
+                return (*it);
+    }
+    return (servers[0]);
 }
 
 int Server::run()
@@ -515,7 +504,7 @@ int Server::run()
                               << "===================================================================" << RESET_COLOR
                               << std::endl;
 
-					HTTPRequest req(request);
+                    HTTPRequest req(request);
                     Response response(req, get_server_from_request(req));
                     send(fd, response.toString().c_str(), response.toString().size(), 0);
                     close(fd);

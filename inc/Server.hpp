@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SERVER_HPP
+#define SERVER_HPP
 
 #include "HTTPRequest.hpp"
 #include <cstddef>
@@ -7,6 +8,17 @@
 #include <string>
 #include <sys/epoll.h>
 #include <vector>
+#include <arpa/inet.h>
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
+#include <fcntl.h>
+#include <pthread.h>
+#include <string>
+#include <strings.h>
+#include <sys/epoll.h>
+#include <unistd.h>
+#include <iomanip>
 
 #define HEADER_COLOR "\033[1;34m"
 #define REQUEST_COLOR "\033[1;32m"
@@ -39,15 +51,15 @@ struct server_data
 class Server
 {
   private:
-  	std::vector<server_data> servers;
+    std::vector<server_data> servers;
     int _epoll_fd;
     static const int MAX_EVENTS = 10;
 
     std::string _path;
-    std::vector< std::vector<std::string> > _file_config_content;
+    std::vector<std::vector<std::string> > _file_config_content;
 
     std::vector<std::string> split_line(const std::string &str);
-    void read_files();
+    int read_files();
 
     /* parsing */
     int parsing_routes(const std::vector<std::string> &token_args, routes_data &new_routes,
@@ -74,3 +86,5 @@ class Server
     void syntax_config() const;
     void parse_config();
 };
+
+#endif // !SERVER_HPP
