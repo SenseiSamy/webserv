@@ -417,17 +417,19 @@ server_data &Server::get_server_from_request(HTTPRequest req)
 
 void Server::print_log(HTTPRequest &req, server_data &server) const
 {
-	std::stringstream ss(req.getRequest());
-	std::string line;
-	const char* box_color = "\e[38;2;255;148;253m";
+    std::stringstream ss(req.getRequest());
+    std::string line;
+    const char *box_color = "\e[38;2;255;148;253m";
 
-	std::cout << box_color << "╭─ Request to server " << req.getHeader("Host") << " (" << server.host << ":" << server.port << ")\e[0m\n";
-	while (std::getline(ss, line)) {
-		line.erase(line.size() - 1);
-		if (!line.empty())
-			std::cout << box_color << "│ \e[0m" << line << "\n";
-	}
-	std::cout << box_color << "╰───────────────────\e[0m\n\n";
+    std::cout << box_color << "╭─ Request to server " << req.getHeader("Host") << " (" << server.host << ":"
+              << server.port << ")\e[0m" << std::endl;
+    while (std::getline(ss, line))
+    {
+        line.erase(line.size() - 1);
+        if (!line.empty())
+            std::cout << box_color << "│ \e[0m" << line << std::endl;
+    }
+    std::cout << box_color << "╰───────────────────\e[0m" << std::endl;
 }
 
 int Server::run()
@@ -486,8 +488,8 @@ int Server::run()
                 else
                 {
                     HTTPRequest req(request);
-					server_data& server = get_server_from_request(req);
-					print_log(req, server);
+                    server_data &server = get_server_from_request(req);
+                    print_log(req, server);
                     Response response(req, server);
                     send(fd, response.toString().c_str(), response.toString().size(), 0);
                     close(fd);
