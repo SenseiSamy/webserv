@@ -16,7 +16,6 @@
 #include <cstring>
 #include <string>
 #include <map>
-#include <iostream>
 
 char**	mapToEnv(std::map<std::string, std::string>& metaVar)
 {

@@ -1,17 +1,19 @@
 CXX = g++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g3
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -ggdb3
 
 SRC_DIR = src
 INC_DIR = inc
-OBJ_DIR = obj
+OBJ_DIR = .obj
 
-SRC_FILES =  $(SRC_DIR)/main.cpp $(SRC_DIR)/logger/logger.cpp $(SRC_DIR)/cgi/cgi.cpp $(SRC_DIR)/cgi/meta_variables.cpp $(SRC_DIR)/config/Config.cpp
+SRC_FILES =  $(SRC_DIR)/main.cpp $(SRC_DIR)/cgi/cgi.cpp $(SRC_DIR)/cgi/meta_variables.cpp $(SRC_DIR)/Server.cpp
 OBJ_FILES = $(SRC_FILES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 NAME = webserv
 
 RED=\033[0;31m
 GREEN=\033[0;32m
 NC=\033[0m
+
+-include $(OBJ_FILES:.o=.d)
 
 all: $(NAME)
 
@@ -23,7 +25,7 @@ $(NAME): $(OBJ_FILES)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@printf "${GREEN}Compiling $<...${NC}\n"
 	@mkdir -p $(@D)
-	@$(CXX) $(CXXFLAGS) -I $(INC_DIR) -c -o $@ $<
+	@$(CXX) $(CXXFLAGS) -I $(INC_DIR) -c -o $@ $< -MMD
 
 clean:
 	@printf "${RED}Cleaning...${NC}\n"
