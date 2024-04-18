@@ -184,37 +184,45 @@ class   Response    {
 					std::istringstream data(this->request.getBody());
                     std::string filename;
                     std::string line;
+					size_t	bodyread = 0;
                     int tokenheader = 2;
                     while (std::getline(data, line) && tokenheader)
                     {
-                        // std::cout << "ceci est une line :" << line << "\t tokenheader = " << tokenheader << std::endl;
-                        if (line.find(boundaries))
-                        {
-                            // std::cout << "ici boundaries" << std::endl;
-                        }
-                        if (line.find("filename=") != std::string::npos)
+                        if (line.find(boundaries) != std::string::npos)
+						{
+							bodyread += line.length();
+						}
+                        else if (line.find("filename=") != std::string::npos)
                         {
                             filename = line.substr(line.find("filename=") + 10);
                             tokenheader--;
+							bodyread += line.length();
                         }
                         else if (line.find("Content-Type:") != std::string::npos)
-                            tokenheader--;
+                        {
+							bodyread += line.length();
+							tokenheader--;
+						}    
                         if (tokenheader == 0)
                             break;
-                        
                     }
+					std::cout << bodyread<< std::endl;
                     filename = filename.substr(0,filename.size() - 2);
                     // std::cout << filename << std::endl;
-                    std::cout << boundaries << std::endl;
                     std::getline(data, line);
                     std::ofstream file(filename.c_str(), std::ios::binary);
-					char	buff[1];
-					while (!data.eof())
+					char	buff[5000];
+					size_t	contentadd = 1;
+					while (5000 * contentadd < request.getContent_Lenght())
 					{
-						data.read(buff, 1);
-						file.write(buff, 1);
+						data.read(buff, 5000);
+						file.write(buff, 5000);
+						contentadd++;
 					}
+					data.read(buff, request.getContent_Lenght() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
+					file.write(buff, request.getContent_Lenght() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
                     file.close();
+					std::cout << "post done" << std::endl;
 				}
 			}
 		}

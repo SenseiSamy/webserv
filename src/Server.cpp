@@ -470,40 +470,6 @@ int Server::run()
                 }
                 else
                 {
-                    std::stringstream ss(request);
-                    std::string line;
-                    std::vector<std::string> lines;
-
-                    while (std::getline(ss, line))
-                    {
-                        lines.push_back(line);
-                    }
-
-                    size_t max_digits = 0;
-                    if (!lines.empty())
-                    {
-                        size_t max_line = lines.size() - 1;
-                        while (max_line > 0)
-                        {
-                            max_line /= 10;
-                            max_digits++;
-                        }
-                    }
-
-                    std::cout << HEADER_COLOR
-                              << "===================================================================" << RESET_COLOR
-                              << std::endl;
-                    std::cout << REQUEST_COLOR << "Request from " << inet_ntoa(client_addr.sin_addr) << ":"
-                              << ntohs(client_addr.sin_port) << RESET_COLOR << std::endl;
-                    for (size_t i = 0; i < lines.size(); i++)
-                    {
-                        std::cout << LINE_NUMBER_COLOR << std::setw(max_digits) << std::right << i << " >>> "
-                                  << RESET_COLOR << lines[i] << std::endl;
-                    }
-                    std::cout << HEADER_COLOR
-                              << "===================================================================" << RESET_COLOR
-                              << std::endl;
-
                     HTTPRequest req(request);
                     Response response(req, get_server_from_request(req));
                     send(fd, response.toString().c_str(), response.toString().size(), 0);

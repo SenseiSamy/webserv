@@ -29,6 +29,10 @@ class   HTTPRequest {
         std::string getURL() const {
             return url;
         }
+        
+        std::size_t getContent_Lenght() const {
+            return content_lenght;
+        }
     
         std::string getHeader(const std::string& name) const {
             std::map<std::string, std::string>::const_iterator it = headers.find(name);
@@ -105,15 +109,15 @@ class   HTTPRequest {
         if (!method.compare("POST"))
 		{
 			std::stringstream temp;
-			temp << headers["Content-Lenght"];
+			temp << headers["Content-Length"];
 			temp >> content_lenght;
+            body += "\r\n\r\n";
 			size_t	count = 0;
-			char buff[1];
+			char buff[5000];
 			while (count < content_lenght && !stream.eof())
 			{
-				stream.read(buff, 1);
-				body.push_back(buff[0]);
-				count++;
+				stream.read(buff, 5000);
+				body.append(buff, stream.gcount());
 			}
 		}
     }
