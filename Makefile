@@ -48,7 +48,7 @@ re: fclean all
 scan-build: clean
 	@scan-build make
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re scan-build update_makeindex
 
 MAKEINDEX = 0
 $(OBJ_FILES): | update_makeindex
