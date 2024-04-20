@@ -1,32 +1,20 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include "HTTPRequest.hpp"
-#include <arpa/inet.h>
-#include <cstddef>
-#include <cstdlib>
-#include <cstring>
-#include <fcntl.h>
-#include <iomanip>
-#include <map>
-#include <netinet/in.h>
-#include <pthread.h>
-#include <string>
-#include <strings.h>
-#include <sys/epoll.h>
-#include <unistd.h>
-#include <vector>
+#include "Request.hpp"
 
-#define HEADER_COLOR "\033[1;34m"
-#define REQUEST_COLOR "\033[1;32m"
-#define LINE_NUMBER_COLOR "\033[1;33m"
-#define RESET_COLOR "\033[0m"
+#include <iostream>
+#include <cerrno>
+
+#include <map>
+#include <string>
+#include <vector>
 
 struct routes_data
 {
+    std::string root;
     std::vector<std::string> methods;
     std::string redirect;
-    std::string root;
     bool autoindex;
     std::string index;
     std::map<std::string, std::string> cgi;
@@ -48,7 +36,7 @@ struct server_data
 class Server
 {
   private:
-    std::vector<server_data> servers;
+    std::vector<server_data> _servers;
     int _epoll_fd;
     static const int MAX_EVENTS = 10;
 
@@ -72,18 +60,26 @@ class Server
     int open_sockets();
 
     server_data *get_server_to_connect(int sock_fd);
-    server_data &get_server_from_request(HTTPRequest req);
+    server_data &get_server_from_request(Request req);
 
-    void print_log(HTTPRequest &req, server_data &server) const;
+    void print_log(Request &req, server_data &server) const;
 
   public:
     explicit Server(const std::string &path);
-    virtual ~Server();
+    ~Server();
 
     int run();
 
     void syntax_config() const;
     void parse_config();
+
+    const std::vector<server_data> get_servers() const;
+    const std::vector<std::vector<std::string> > get_file_config_content() const;
+    const std::string &get_path() const;
+
+    void display_servers() const;
+    void display_file_config_content() const;
+    void display_path() const;
 };
 
 #endif // !SERVER_HPP
