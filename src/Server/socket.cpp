@@ -1,4 +1,5 @@
 #include "Server.hpp"
+
 #include <arpa/inet.h>
 #include <cstring>
 #include <netinet/in.h>
@@ -23,7 +24,7 @@ int Server::open_sockets()
         addr.sin_port = htons(it->port);
         memset(&addr.sin_zero, 0, sizeof(addr.sin_zero));
 
-        if (bind(it->_listen_fd, (struct sockaddr *)(&addr), sizeof(addr)) == -1)
+        if (bind(it->_listen_fd, (struct sockaddr*)(&addr), sizeof(addr)) == -1)
             return (std::cerr << "open_sockets: bind: " << strerror(errno) << std::endl, -1);
         if (listen(it->_listen_fd, 5) == -1)
             return (std::cerr << "open_sockets: listen: " << strerror(errno) << std::endl, -1);

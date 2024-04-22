@@ -66,7 +66,7 @@ ErrorCodes::ErrorCodes()
     _error_codes[511] = "Network Authentication Required";
 }
 
-ErrorCodes::ErrorCodes(const ErrorCodes &other)
+ErrorCodes::ErrorCodes(const ErrorCodes& other)
 {
     *this = other;
 }
@@ -75,7 +75,7 @@ ErrorCodes::~ErrorCodes()
 {
 }
 
-ErrorCodes &ErrorCodes::operator=(const ErrorCodes &other)
+ErrorCodes& ErrorCodes::operator=(const ErrorCodes& other)
 {
     if (this != &other)
         this->_error_codes = other._error_codes;

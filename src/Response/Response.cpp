@@ -1,14 +1,15 @@
 #include "Response.hpp"
+
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
-#include <cstdlib>
 
-Response::Response(Request req, server_data &serv) : _request(req), _server(serv)
+Response::Response(Request req, server_data& serv) : _request(req), _server(serv)
 {
     generate_response();
 }
 
-Response &Response::operator=(const Response &other)
+Response& Response::operator=(const Response& other)
 {
     if (this != &other)
     {

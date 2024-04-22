@@ -3,9 +3,8 @@
 
 #include "Request.hpp"
 
-#include <iostream>
 #include <cerrno>
-
+#include <iostream>
 #include <map>
 #include <string>
 #include <vector>
@@ -43,14 +42,14 @@ class Server
     std::string _path;
     std::vector<std::vector<std::string> > _file_config_content;
 
-    std::vector<std::string> split_line(const std::string &str);
+    std::vector<std::string> split_line(const std::string& str);
     int read_files();
 
     /* parsing */
-    int parsing_routes(const std::vector<std::string> &token_args, routes_data &new_routes,
-                       const std::string &current_word, size_t line);
-    int parsing_server(const std::vector<std::string> &token_args, server_data &new_server,
-                       const std::string &current_word, size_t line);
+    int parsing_routes(const std::vector<std::string>& token_args, routes_data& new_routes,
+                       const std::string& current_word, size_t line);
+    int parsing_server(const std::vector<std::string>& token_args, server_data& new_server,
+                       const std::string& current_word, size_t line);
     int parsing_config();
 
     /* syntax */
@@ -59,13 +58,13 @@ class Server
     /* socket */
     int open_sockets();
 
-    server_data *get_server_to_connect(int sock_fd);
-    server_data &get_server_from_request(Request req);
+    server_data* get_server_to_connect(int sock_fd);
+    server_data& get_server_from_request(Request req);
 
-    void print_log(Request &req, server_data &server) const;
+    void print_log(Request& req, server_data& server) const;
 
   public:
-    explicit Server(const std::string &path);
+    explicit Server(const std::string& path);
     ~Server();
 
     int run();
@@ -75,7 +74,7 @@ class Server
 
     const std::vector<server_data> get_servers() const;
     const std::vector<std::vector<std::string> > get_file_config_content() const;
-    const std::string &get_path() const;
+    const std::string& get_path() const;
 
     void display_servers() const;
     void display_file_config_content() const;

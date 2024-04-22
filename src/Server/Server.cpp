@@ -1,14 +1,16 @@
 #include "Server.hpp"
+
 #include "Response.hpp"
+
 #include <cstring>
-#include <netinet/in.h>
-#include <sys/epoll.h>
 #include <fcntl.h>
-#include <unistd.h>
+#include <netinet/in.h>
 #include <sstream>
+#include <sys/epoll.h>
+#include <unistd.h>
 
 /* --------------- Server --------------- */
-Server::Server(const std::string &path) : _path(path)
+Server::Server(const std::string& path) : _path(path)
 {
     if (read_files() == -1)
         throw std::runtime_error("Error: cannot open the file " + path);
@@ -25,7 +27,7 @@ Server::~Server()
     _file_config_content.clear();
 }
 
-server_data *Server::get_server_to_connect(int sock_fd)
+server_data* Server::get_server_to_connect(int sock_fd)
 {
     for (std::size_t i = 0; i < _servers.size(); ++i)
     {
@@ -35,7 +37,7 @@ server_data *Server::get_server_to_connect(int sock_fd)
     return (NULL);
 }
 
-server_data &Server::get_server_from_request(Request req)
+server_data& Server::get_server_from_request(Request req)
 {
     std::string host = req.get_headers_key("Host");
     int port;
@@ -64,11 +66,11 @@ server_data &Server::get_server_from_request(Request req)
     return (_servers[0]);
 }
 
-void Server::print_log(Request &req, server_data &server) const
+void Server::print_log(Request& req, server_data& server) const
 {
     std::stringstream ss(req.get_request());
     std::string line;
-    const char *box_color = "\e[38;2;255;148;253m";
+    const char* box_color = "\e[38;2;255;148;253m";
 
     std::cout << box_color << "╭─ Request to server " << req.get_headers_key("Host") << " (" << server.host << ":"
               << server.port << ")\e[0m" << std::endl;
@@ -99,10 +101,10 @@ int Server::run()
         for (int n = 0; n < num_events; ++n)
         {
             const int fd = events[n].data.fd;
-            server_data *server = get_server_to_connect(fd);
+            server_data* server = get_server_to_connect(fd);
             if (server != NULL)
             {
-                client_sock = accept(server->_listen_fd, (struct sockaddr *)&client_addr, &client_addr_size);
+                client_sock = accept(server->_listen_fd, (struct sockaddr*)&client_addr, &client_addr_size);
                 if (client_sock < 0)
                 {
                     std::cerr << "run: accept: " << strerror(errno) << std::endl;
@@ -137,7 +139,7 @@ int Server::run()
                 else
                 {
                     Request req(request);
-                    server_data &server = get_server_from_request(req);
+                    server_data& server = get_server_from_request(req);
                     print_log(req, server);
                     Response response(req, server);
                     send(fd, response.to_string().c_str(), response.to_string().size(), 0);

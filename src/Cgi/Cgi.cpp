@@ -1,4 +1,5 @@
 #include "Cgi.hpp"
+
 #include <cstdlib>
 #include <cstring>
 #include <sys/socket.h>
@@ -9,29 +10,29 @@ Cgi::Cgi()
 {
 }
 
-Cgi::Cgi(const Cgi &other)
+Cgi::Cgi(const Cgi& other)
 {
-	*this = other;
+    *this = other;
 }
 
-Cgi &Cgi::operator=(const Cgi &other)
+Cgi& Cgi::operator=(const Cgi& other)
 {
-	if (this != &other)
-	{
-	}
-	return *this;
+    if (this != &other)
+    {
+    }
+    return (*this);
 }
 
 Cgi::~Cgi()
 {
 }
 
-bool Cgi::is_cgi_request(std::string &request)
+bool Cgi::is_cgi_request(std::string& request)
 {
     return (request.compare(0, 13, "GET /cgi-bin/") == 0);
 }
 
-int Cgi::fork_and_exec(std::map<std::string, std::string> &meta_var, int *fd, int pid)
+int Cgi::fork_and_exec(std::map<std::string, std::string>& meta_var, int* fd, int pid)
 {
     if (pipe(fd) == -1)
         return (EXIT_FAILURE);
@@ -39,7 +40,7 @@ int Cgi::fork_and_exec(std::map<std::string, std::string> &meta_var, int *fd, in
     if (pid == 0)
     {
         dup2(fd[1], STDOUT_FILENO);
-        char *args[] = {strdup("test"), NULL};
+        char* args[] = {strdup("test"), NULL};
         std::string scriptPath = "www" + meta_var["SCRIPT_NAME"];
         execve(scriptPath.c_str(), args, map_to_env(meta_var));
         exit(EXIT_FAILURE);
@@ -50,7 +51,7 @@ int Cgi::fork_and_exec(std::map<std::string, std::string> &meta_var, int *fd, in
     return (EXIT_SUCCESS);
 }
 
-std::string Cgi::get_cgi_output(int *fd)
+std::string Cgi::get_cgi_output(int* fd)
 {
     std::string rep("HTTP/1.1 200 OK\n");
     char buf[128];
@@ -70,7 +71,7 @@ std::string Cgi::get_cgi_output(int *fd)
     return (rep);
 }
 
-int Cgi::handle_cgi(std::string &request, int sock)
+int Cgi::handle_cgi(std::string& request, int sock)
 {
     std::map<std::string, std::string> meta_var = generate_meta_variables(request);
     std::string rep;

@@ -6,14 +6,14 @@
 class ErrorCodes
 {
   private:
-    typedef std::map<int, std::string> error_code_map;
-    error_code_map _error_codes;
+    std::map<int, std::string> _error_codes;
 
   public:
     ErrorCodes();
-    ErrorCodes(const ErrorCodes &other);
+    ErrorCodes(const ErrorCodes& other);
     ~ErrorCodes();
-    ErrorCodes &operator=(const ErrorCodes &other);
+    ErrorCodes& operator=(const ErrorCodes& other);
 
+    const std::map<int, std::string>& get_error_codes() const;
     const std::string get_description(int error_code) const;
 };

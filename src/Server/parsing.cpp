@@ -1,9 +1,10 @@
 #include "Server.hpp"
+
 #include <fstream>
 #include <iostream>
 #include <sstream>
 
-std::vector<std::string> Server::split_line(const std::string &str)
+std::vector<std::string> Server::split_line(const std::string& str)
 {
     std::vector<std::string> words;
     std::string word;
@@ -68,8 +69,8 @@ int Server::read_files()
     return (0);
 }
 
-int Server::parsing_routes(const std::vector<std::string> &token_args, routes_data &new_routes,
-                           const std::string &current_word, size_t line)
+int Server::parsing_routes(const std::vector<std::string>& token_args, routes_data& new_routes,
+                           const std::string& current_word, size_t line)
 {
     if (current_word == "methods")
     {
@@ -134,8 +135,8 @@ int Server::parsing_routes(const std::vector<std::string> &token_args, routes_da
     return 0;
 }
 
-int Server::parsing_server(const std::vector<std::string> &token_args, server_data &new_server,
-                           const std::string &current_word, size_t line)
+int Server::parsing_server(const std::vector<std::string>& token_args, server_data& new_server,
+                           const std::string& current_word, size_t line)
 {
     if (current_word == "port")
     {

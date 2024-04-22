@@ -1,12 +1,13 @@
 #include "Request.hpp"
+
 #include <sstream>
 
-Request::Request(const std::string &request) : _request(request)
+Request::Request(const std::string& request) : _request(request)
 {
     parseRequest();
 }
 
-Request::Request(const Request &other)
+Request::Request(const Request& other)
 {
     _request = other._request;
     _method = other._method;
@@ -20,7 +21,7 @@ Request::~Request()
 {
 }
 
-Request &Request::operator=(const Request &other)
+Request& Request::operator=(const Request& other)
 {
     if (this != &other)
     {
