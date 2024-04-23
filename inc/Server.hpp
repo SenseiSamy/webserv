@@ -12,6 +12,7 @@
 struct routes_data
 {
     std::string root;
+    std::string rewrite;
     std::vector<std::string> methods;
     std::string redirect;
     bool autoindex;
