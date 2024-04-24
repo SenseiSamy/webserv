@@ -30,13 +30,17 @@ class Response
     std::string _body;
     std::map<std::string, std::string> _headers;
     Request _request;
+	std::string _true_url;
     server_data _server;
+	routes_data* _route;
 
     void find_type();
     void add_content_type();
     void generateHTTPError(int num);
     void add_content_length();
     void get_handler();
+	void select_route();
+	bool check_and_rewrite_url();
 
   public:
     Response(Request req, server_data& serv);

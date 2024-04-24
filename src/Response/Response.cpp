@@ -1,11 +1,20 @@
 #include "Response.hpp"
-
+#include "Server.hpp"
+#include <cstring>
+#include <limits.h>
+#include <linux/limits.h>
+#include <unistd.h>
+#include <cstddef>
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
 
 Response::Response(Request req, server_data& serv) : _request(req), _server(serv)
 {
+	select_route();
+	if (check_and_rewrite_url() == false)
+		
+	std::cout << "_true_url = " << _true_url << "\n";
     generate_response();
 }
 
@@ -111,6 +120,37 @@ void Response::generateHTTPError(int num)
         _body += "width=\"800\"\nheight=\"600\"\n/>";
         _body += "</div>\n</body>\n</html>\n\r";
     }
+}
+
+void Response::select_route()
+{
+	const std::string request = _request.get_url();
+	for (std::size_t i = 0; i < _server.route.size(); ++i) {
+		if (request.find(_server.route[i].root) == 0) {
+			_route = &_server.route[i];
+			return;
+		}
+	}
+	_route = NULL;
+}
+
+// function that gets rid of the . and .., and checks if the url stays in the
+// server directory
+bool Response::check_and_rewrite_url()
+{
+	_true_url = "www" + _request.get_url();
+	std::cout << "true_url before: " << _true_url << "\n";
+	char path[PATH_MAX];
+	if (realpath(_true_url.c_str(), path) == NULL)
+		return (false);
+	_true_url = path;
+	if (getcwd(path, PATH_MAX) == NULL)
+		return (false);
+	std::cout << "current workdir: " << path << "\n";
+	if (_true_url.find(path) != 0)
+		return (false);
+	_true_url.erase(0, std::string(path).size() + 1);
+	return (true);
 }
 
 void Response::get_handler()
