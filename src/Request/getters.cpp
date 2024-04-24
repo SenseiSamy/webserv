@@ -1,33 +1,31 @@
 #include "Request.hpp"
 
-const std::string& Request::get_request() const
-{
-    return _request;
-}
-
 const std::string& Request::get_method() const
 {
     return _method;
 }
 
-const std::string& Request::get_url() const
+const std::string& Request::get_uri() const
 {
-    return _url;
+    return _uri;
 }
 
-const std::map<std::string, std::string>& Request::get_headers() const
+const std::string& Request::get_version() const
+{
+    return _version;
+}
+
+const std::map<std::string, std::string>& Request::get_header() const
 {
     return _headers;
 }
 
-const std::string& Request::get_headers_key(const std::string& key) const
+const std::string Request::get_header_value(const std::string& key) const
 {
-    return _headers.at(key);
-}
-
-size_t Request::get_content_lenght() const
-{
-    return _content_lenght;
+    std::map<std::string, std::string>::const_iterator it = _headers.find(key);
+    if (it != _headers.end())
+        return it->second;
+    return "";
 }
 
 const std::string& Request::get_body() const

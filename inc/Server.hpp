@@ -1,17 +1,15 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#pragma once
 
-#include "Request.hpp"
-
-#include <cerrno>
-#include <iostream>
 #include <map>
 #include <string>
 #include <vector>
 
+class Request;
+
 struct routes_data
 {
     std::string root;
+    std::string rewrite;
     std::vector<std::string> methods;
     std::string redirect;
     bool autoindex;
@@ -24,6 +22,7 @@ struct server_data
 {
     std::string host;
     unsigned short port;
+    std::string root;
     std::vector<std::string> server_names;
     std::map<std::string, std::string> error_pages;
     size_t body_size;
@@ -35,13 +34,13 @@ struct server_data
 class Server
 {
   private:
-    std::vector<server_data> _servers;
     int _epoll_fd;
     static const int MAX_EVENTS = 10;
 
     std::string _path;
     std::vector<std::vector<std::string> > _file_config_content;
 
+    /* utils */
     std::vector<std::string> split_line(const std::string& str);
     int read_files();
 
@@ -64,7 +63,9 @@ class Server
     void print_log(Request& req, server_data& server) const;
 
   public:
-    explicit Server(const std::string& path);
+    std::vector<server_data> _servers;
+
+    Server(const std::string& path);
     ~Server();
 
     int run();
@@ -80,5 +81,3 @@ class Server
     void display_file_config_content() const;
     void display_path() const;
 };
-
-#endif // !SERVER_HPP

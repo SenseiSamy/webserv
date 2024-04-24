@@ -1,185 +1,213 @@
 #include "Response.hpp"
 
-#include <cstdlib>
+#include <cstdio>
+#include <ctime>
 #include <fstream>
+#include <iostream>
+#include <map>
 #include <sstream>
 
-Response::Response(Request req, server_data& serv) : _request(req), _server(serv)
+Response::Response(const Request& req, const server_data& server)
+    : _req(req), _server(server), _http_version("HTTP/1.1"), _status_code(200)
 {
-    generate_response();
-}
-
-Response& Response::operator=(const Response& other)
-{
-    if (this != &other)
-    {
-        this->_request = other._request;
-        this->_server = other._server;
-    }
-    return *this;
 }
 
 Response::~Response()
 {
 }
 
-const std::string Response::to_string() const
+std::string Response::get_status_message(int status_code)
 {
-    std::stringstream ss;
-    ss << _status_code;
-    std::stringstream dd;
-    dd << _body.length();
-    std::string response = "HTTP/1.1 ";
-    response += ss.str() + " " + _status_message + "\r\n";
+    switch (status_code)
+    {
+        case 200:
+            return "OK";
+        case 404:
+            return "Not Found";
+        case 500:
+            return "Internal Server Error";
+        default:
+            return "Unknown Status";
+    }
+}
 
+std::string Response::serialize() const
+{
+    std::ostringstream response_stream;
+    response_stream << _http_version << " " << _status_code << " " << get_status_message(_status_code) << "\r\n";
     for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
-        response += it->first + ": " + it->second + "\r\n";
-
-    response += "\r\n";
-    response += _body;
-    return response;
+        response_stream << it->first << ": " << it->second << "\r\n";
+    response_stream << "\r\n" << _body;
+    return response_stream.str();
 }
 
-void Response::find_type()
+std::string Response::get_mime_type(const std::string& filename)
 {
-    std::string filename = get_request().get_url();
-    if (filename == "/")
-        this->_type = HTML;
-    else if (filename.find(".html") != std::string::npos)
-        this->_type = HTML;
-    else if (filename.find(".css") != std::string::npos)
-        this->_type = CSS;
-    else if (filename.find(".jpg") != std::string::npos)
-        this->_type = JPG;
-    else if (filename.find(".ico") != std::string::npos)
-        this->_type = ICO;
-    else
-        this->_type = UNKNOW;
-}
+    static std::map<std::string, std::string> mime_types;
+    mime_types[".html"] = "text/html";
+    mime_types[".txt"] = "text/plain";
+    mime_types[".jpg"] = "image/jpeg";
+    mime_types[".png"] = "image/png";
+    mime_types[".gif"] = "image/gif";
+    mime_types[".css"] = "text/css";
+    mime_types[".js"] = "application/javascript";
 
-void Response::add_content_type()
-{
-    if (_type == HTML)
-        set_headers("Content-Type", "text/html");
-    else if (_type == CSS)
-        set_headers("Content-Type", "text/css");
-    else if (_type == JPG)
-        set_headers("Content-Type", "image/jpeg");
-    else if (_type == ICO)
-        set_headers("Content-Type", "image/vnd.microsoft.icon");
-}
-
-void Response::generateHTTPError(int num)
-{
-    std::ifstream file("www/ErrorPage");
-    std::string line;
-    setStatusCode(num);
-    setStatusMessage(_hec.get_description(num));
-    while (std::getline(file, line))
-        _body += line + "\n";
-    file.close();
-    std::srand(time(0));
-    std::stringstream ss;
-    ss << num;
-    int randnum = std::rand();
-    if (randnum % 4 == 0)
+    size_t dot_pos = filename.rfind('.');
+    if (dot_pos != std::string::npos)
     {
-        _body += "<img src=\"https://http.cat/";
-        _body += ss.str() + "\" alt=\"Centered Image\"\n";
-        _body += "width=\"800\"\nheight=\"600\"\n/>";
-        _body += "</div>\n</body>\n</html>\n\r";
+        std::string ext = filename.substr(dot_pos);
+        if (mime_types.count(ext))
+            return mime_types[ext];
     }
-    else if (randnum % 4 == 1)
-    {
-        _body += "<img src=\"https://http.dog/";
-        _body += ss.str() + ".jpg\" alt=\"Centered Image\"\n";
-        _body += "width=\"800\"\nheight=\"600\"\n/>";
-        _body += "</div>\n</body>\n</html>\n\r";
-    }
+    return "application/octet-stream"; // Default MIME type
+}
 
-    else if (randnum % 4 == 2)
+void Response::handle_get()
+{
+    std::string resource_path = _server.root + _req.get_uri();
+    std::ifstream file(resource_path.c_str(), std::ios::binary);
+    if (!file)
     {
-        _body += "<img src=\"https://http.pizza/";
-        _body += ss.str() + ".jpg\" alt=\"Centered Image\"\n";
-        _body += "width=\"800\"\nheight=\"600\"\n/>";
-        _body += "</div>\n</body>\n</html>\n\r";
+        std::cerr << "File not found: " << resource_path << std::endl;
+        _body = "Error 404: Not Found\n";
+        set_header("Content-Type", "text/plain");
+        _status_code = 404; // Not Found
     }
     else
     {
-        _body += "<img src=\"https://httpgoats.com/";
-        _body += ss.str() + ".jpg\" alt=\"Centered Image\"\n";
-        _body += "width=\"800\"\nheight=\"600\"\n/>";
-        _body += "</div>\n</body>\n</html>\n\r";
+        std::ostringstream ss;
+        ss << file.rdbuf();
+        _body = ss.str();
+        file.close();
+
+        set_header("Content-Type", get_mime_type(resource_path));
+        _status_code = 200; // OK
     }
 }
+/* -------------- POST -------------- */
 
-void Response::get_handler()
+std::string Response::get_boundary(const std::string& header)
 {
-    Response::find_type();
-    std::string filename = "www" + get_request().get_url();
-    if (get_request().get_url() == "/")
-        filename = "www/index.html";
-    std::ifstream file(filename.c_str());
-    if (file.is_open())
-    {
-        setStatusCode(200);
-        setStatusMessage(_hec.get_description(200));
-        add_content_type();
-        std::string line;
-        while (std::getline(file, line))
-            _body += line + "\n";
-        add_content_type();
-        set_content_lenght();
-    }
-    else
-        generateHTTPError(404);
+    size_t pos = header.find("boundary=");
+    if (pos != std::string::npos)
+        return header.substr(pos + 9); // Length of 'boundary=' is 9
+    return "";
 }
 
-void Response::generate_response()
+bool Response::parse_multipart_form_data(const std::string& data, const std::string& boundary,
+                                         std::vector<std::string>& files)
 {
-    if (get_request().get_method() == "GET")
-        Response::get_handler();
-    else if (get_request().get_method() == "POST")
+    size_t pos = 0, start;
+    std::string delimiter = "--" + boundary + "\r\n";
+    std::string end_delimiter = "--" + boundary + "--";
+    while ((start = data.find(delimiter, pos)) != std::string::npos)
     {
-        std::string boundaries = _request.get_headers_key("Content-Type");
-        size_t boundpos = boundaries.find("boundary=");
-        if (boundpos != std::string::npos)
+        start += delimiter.length();
+        size_t end = data.find("\r\n", start);
+        if (end == std::string::npos)
+            return false;
+
+        std::string content_disposition = data.substr(start, end - start);
+        std::string filename_key = "filename=\"";
+        size_t filename_pos = content_disposition.find(filename_key);
+        if (filename_pos != std::string::npos)
         {
-            boundaries = boundaries.substr(boundpos + 9);
-            // std::cout << boundaries << std::endl;
-            std::istringstream data(this->_request.get_body());
-            std::string filename;
-            std::string line;
-            int tokenheader = 2;
-            while (std::getline(data, line) && tokenheader)
+            filename_pos += filename_key.length();
+            size_t filename_end = content_disposition.find("\"", filename_pos);
+            std::string filename = content_disposition.substr(filename_pos, filename_end - filename_pos);
+            files.push_back(filename);
+
+            // Find start of file data
+            pos = data.find("\r\n\r\n", end) + 4; // Skip two CRLFs
+            end = data.find(delimiter, pos) - 2;  // Stop at the CRLF before the next part
+            if (end == std::string::npos || end <= pos)
+                return false;
+
+            // Save file data to /tmp
+            std::string full_path = "/tmp/" + filename;
+            std::ofstream file(full_path.c_str(), std::ios::binary);
+            if (!file.write(data.c_str() + pos, end - pos))
             {
-                // std::cout << "ceci est une line :" << line << "\t tokenheader = " << tokenheader << std::endl;
-                if (line.find(boundaries))
-                {
-                    // std::cout << "ici boundaries" << std::endl;
-                }
-                if (line.find("filename=") != std::string::npos)
-                {
-                    filename = line.substr(line.find("filename=") + 10);
-                    tokenheader--;
-                }
-                else if (line.find("Content-Type:") != std::string::npos)
-                    tokenheader--;
-                if (tokenheader == 0)
-                    break;
-            }
-            filename = filename.substr(0, filename.size() - 2);
-            // std::cout << filename << std::endl;
-            std::cout << boundaries << std::endl;
-            std::getline(data, line);
-            std::ofstream file(filename.c_str(), std::ios::binary);
-            char buff[1];
-            while (!data.eof())
-            {
-                data.read(buff, 1);
-                file.write(buff, 1);
+                file.close();
+                return false;
             }
             file.close();
         }
+        pos = end + delimiter.length();
     }
+    return true;
+}
+
+void Response::handle_post()
+{
+    std::string content_type = _req.get_header_value("Content-Type");
+    std::string boundary = get_boundary(content_type);
+    const std::string& data = _req.get_body();
+
+    if (content_type.find("multipart/form-data") != std::string::npos && !boundary.empty())
+    {
+        std::vector<std::string> uploaded_files;
+        if (!parse_multipart_form_data(data, boundary, uploaded_files))
+        {
+            _body = "Error processing uploaded files";
+            _status_code = 500; // Internal Server Error
+        }
+        else
+        {
+            _body = "Files uploaded successfully: ";
+            for (size_t i = 0; i < uploaded_files.size(); i++)
+                _body += uploaded_files[i] + " ";
+            _status_code = 200; // OK
+        }
+    }
+    else
+    {
+        _body = "Unsupported Media Type or incorrect data";
+        _status_code = 415; // Unsupported Media Type
+    }
+    set_header("Content-Type", "text/plain");
+}
+
+/* -------------- DELETE -------------- */
+
+void Response::handle_delete()
+{
+    std::string resource_path = "/tmp" + _req.get_uri(); // Assuming files to delete are in /tmp
+
+    // Check if the file exists and can be accessed
+    std::ifstream file(resource_path.c_str());
+    if (!file)
+    {
+        _body = "Resource not found: " + resource_path;
+        _status_code = 404; // Not Found
+        set_header("Content-Type", "text/plain");
+        return;
+    }
+    file.close(); // Close the file before attempting to delete it
+
+    // Attempt to delete the file
+    if (std::remove(resource_path.c_str()) == 0)
+    {
+        _body = "Resource " + resource_path + " deleted successfully";
+        _status_code = 200; // OK
+    }
+    else
+    {
+        // Check errno for the specific error
+        switch (errno)
+        {
+            case EACCES:
+                _body = "Permission denied to delete resource: " + resource_path;
+                _status_code = 403; // Forbidden
+                break;
+            case ENOENT:
+                _body = "Resource not found: " + resource_path;
+                _status_code = 404; // Not Found
+                break;
+            default:
+                _body = "Error deleting resource: " + resource_path;
+                _status_code = 500; // Internal Server Error
+        }
+    }
+    set_header("Content-Type", "text/plain");
 }

@@ -1,5 +1,7 @@
 #include "Server.hpp"
 
+#include <iostream>
+
 void Server::display_servers() const
 {
     for (size_t i = 0; i < _servers.size(); i++)

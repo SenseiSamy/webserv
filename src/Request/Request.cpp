@@ -2,82 +2,38 @@
 
 #include <sstream>
 
-Request::Request(const std::string& request) : _request(request)
+Request::Request(const std::string& request) : _original_request(request)
 {
-    parseRequest();
-}
-
-Request::Request(const Request& other)
-{
-    _request = other._request;
-    _method = other._method;
-    _url = other._url;
-    _headers = other._headers;
-    _content_lenght = other._content_lenght;
-    _body = other._body;
+    parse_request(_original_request);
 }
 
 Request::~Request()
 {
 }
 
-Request& Request::operator=(const Request& other)
+void Request::parse_request(const std::string& request)
 {
-    if (this != &other)
-    {
-        _request = other._request;
-        _method = other._method;
-        _url = other._url;
-        _headers = other._headers;
-        _content_lenght = other._content_lenght;
-        _body = other._body;
-    }
-    return *this;
-}
-
-void Request::parseRequest()
-{
-    std::istringstream stream(_request);
-    std::string requestLine;
-    if (!std::getline(stream, requestLine))
-        return;
-
-    // Extract request line
-    std::istringstream requestLineStream(requestLine);
-    if (!std::getline(requestLineStream, _method, ' ') || !std::getline(requestLineStream, _url, ' '))
-        return;
-
-    // Extract headers lines
+    std::istringstream request_stream(request);
     std::string line;
-    while (std::getline(stream, line))
+
+    std::getline(request_stream, line);
+
+    std::istringstream line_stream(line);
+    line_stream >> _method >> _uri >> _version;
+
+    // Lire les en-têtes
+    while (std::getline(request_stream, line) && line != "\r")
     {
-        std::string headername;
-        std::string headervalue;
-        size_t colonPos = line.find_first_of(':');
-        if (line.empty() || colonPos == std::string::npos)
-            break;
-        else
+        std::size_t pos = line.find(':');
+        if (pos != std::string::npos)
         {
-            headername = line.substr(0, colonPos);
-            headervalue = line.substr(colonPos + 1);
-            headervalue.erase(headervalue.size() - 1);
-            while (headername.find('\t') != std::string::npos)
-                headername = headername.substr(headername.find('\t'));
-            _headers[headername] = headervalue;
+            std::string name = line.substr(0, pos);
+            std::string value = line.substr(pos + 2); // +2 pour sauter ": "
+            _headers[name] = value;
         }
     }
-    if (!_method.compare("POST"))
-    {
-        std::stringstream temp;
-        temp << _headers["Content-Lenght"];
-        temp >> _content_lenght;
-        size_t count = 0;
-        char buff[1];
-        while (count < _content_lenght && !stream.eof())
-        {
-            stream.read(buff, 1);
-            _body.push_back(buff[0]);
-            count++;
-        }
-    }
+
+    // Lecture du corps de la requête (optionnel)
+    while (std::getline(request_stream, line))
+        _body += line;
 }

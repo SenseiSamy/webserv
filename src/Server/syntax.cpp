@@ -1,5 +1,7 @@
 #include "Server.hpp"
 
+#include <iostream>
+
 int Server::syntax_brackets()
 {
     size_t open_brackets = 0;

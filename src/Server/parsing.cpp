@@ -32,9 +32,7 @@ std::vector<std::string> Server::split_line(const std::string& str)
                 words.push_back(std::string(1, str[i]));
         }
         else
-        {
             word += str[i];
-        }
     }
     if (!word.empty())
         words.push_back(word);
@@ -94,6 +92,13 @@ int Server::parsing_routes(const std::vector<std::string>& token_args, routes_da
             return (std::cerr << "Syntax error: Invalid root at line: " << line + 1 << "." << std::endl, -1);
 
         new_routes.root = token_args[0];
+    }
+    else if (current_word == "rewrite")
+    {
+        if (token_args.size() != 1)
+            return (std::cerr << "Syntax error: Invalid rewrite at line: " << line + 1 << "." << std::endl, -1);
+
+        new_routes.rewrite = token_args[0];
     }
     else if (current_word == "autoindex")
     {
@@ -156,6 +161,13 @@ int Server::parsing_server(const std::vector<std::string>& token_args, server_da
             return (std::cerr << "Syntax error: Invalid host at line: " << line + 1 << "." << std::endl, -1);
 
         new_server.host = token_args[0];
+    }
+    else if (current_word == "root")
+    {
+        if (token_args.size() != 1)
+            return (std::cerr << "Syntax error: Invalid root at line: " << line + 1 << "." << std::endl, -1);
+
+        new_server.root = token_args[0];
     }
     else if (current_word == "server_names")
     {

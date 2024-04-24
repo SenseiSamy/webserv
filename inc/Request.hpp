@@ -6,29 +6,29 @@
 class Request
 {
   private:
-    std::string _request;
+    std::string _original_request;
+
     std::string _method;
-    std::string _url;
+    std::string _uri;
+    std::string _version;
     std::map<std::string, std::string> _headers;
-    size_t _content_lenght;
     std::string _body;
 
-    void parseRequest();
+    void parse_request(const std::string& request);
 
   public:
     Request(const std::string& request);
-    Request(const Request& other);
     ~Request();
-    Request& operator=(const Request& other);
 
-    const std::string& get_request() const;
+    /* Getters */
     const std::string& get_method() const;
-    const std::string& get_url() const;
-    const std::map<std::string, std::string>& get_headers() const;
-    const std::string& get_headers_key(const std::string& key) const;
-    size_t get_content_lenght() const;
+    const std::string& get_uri() const;
+    const std::string& get_version() const;
+    const std::map<std::string, std::string>& get_header() const;
+    const std::string get_header_value(const std::string& headerName) const;
     const std::string& get_body() const;
 
-    void display_request() const;
-    void display_headers() const;
+    /* display */
+    void display_original_request(int port, const std::string& host) const;
+    void display_request(int port, const std::string& host) const;
 };

@@ -1,11 +1,13 @@
 #include "Server.hpp"
 
+#include "Request.hpp"
 #include "Response.hpp"
 
+#include <cerrno>
 #include <cstring>
 #include <fcntl.h>
+#include <iostream>
 #include <netinet/in.h>
-#include <sstream>
 #include <sys/epoll.h>
 #include <unistd.h>
 
@@ -37,50 +39,14 @@ server_data* Server::get_server_to_connect(int sock_fd)
     return (NULL);
 }
 
-server_data& Server::get_server_from_request(Request req)
+// Helper function to generate and send HTTP response
+void send_response(int client_sock, const Request& request)
 {
-    std::string host = req.get_headers_key("Host");
-    int port;
-    std::size_t sep;
-    std::vector<server_data>::iterator it;
-    if (host.empty())
-        return (_servers[0]);
-    sep = host.find(':');
-    if (sep == std::string::npos)
-        return (_servers[0]);
-    std::stringstream ss(host.substr(sep + 1));
-    ss >> port;
-    host = host.substr(0, sep);
+    Response response(request, server_data());
+    std::string response_data = response.serialize();
 
-    for (it = _servers.begin(); it != _servers.end(); ++it)
-    {
-        if (host == it->host && port == it->port)
-            return (*it);
-    }
-    for (it = _servers.begin(); it != _servers.end(); ++it)
-    {
-        for (std::size_t i = 0; i < it->server_names.size(); ++i)
-            if (host == it->server_names[i])
-                return (*it);
-    }
-    return (_servers[0]);
-}
-
-void Server::print_log(Request& req, server_data& server) const
-{
-    std::stringstream ss(req.get_request());
-    std::string line;
-    const char* box_color = "\e[38;2;255;148;253m";
-
-    std::cout << box_color << "╭─ Request to server " << req.get_headers_key("Host") << " (" << server.host << ":"
-              << server.port << ")\e[0m" << std::endl;
-    while (std::getline(ss, line))
-    {
-        line.erase(line.size() - 1);
-        if (!line.empty())
-            std::cout << box_color << "│ \e[0m" << line << std::endl;
-    }
-    std::cout << box_color << "╰───────────────────\e[0m" << std::endl;
+    write(client_sock, response_data.c_str(), response_data.size());
+    close(client_sock);
 }
 
 int Server::run()
@@ -138,12 +104,24 @@ int Server::run()
                 }
                 else
                 {
-                    Request req(request);
-                    server_data& server = get_server_from_request(req);
-                    print_log(req, server);
-                    Response response(req, server);
-                    send(fd, response.to_string().c_str(), response.to_string().size(), 0);
-                    close(fd);
+                    std::string request_data("");
+                    char buffer[1024];
+                    ssize_t count;
+                    while ((count = read(fd, buffer, sizeof(buffer) - 1)) > 0)
+                    {
+                        buffer[count] = '\0';
+                        request_data.append(buffer, count);
+                    }
+                    if (count == -1 && errno != EAGAIN)
+                    {
+                        std::cerr << "run: read: " << strerror(errno) << std::endl;
+                        close(fd);
+                    }
+                    else if (!request_data.empty())
+                    {
+                        Request req(request_data);
+                        send_response(fd, req);
+                    }
                 }
             }
         }

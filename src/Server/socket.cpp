@@ -2,9 +2,11 @@
 
 #include <arpa/inet.h>
 #include <cstring>
+#include <iostream>
 #include <netinet/in.h>
 #include <ostream>
 #include <sys/epoll.h>
+#include <cerrno>
 
 int Server::open_sockets()
 {

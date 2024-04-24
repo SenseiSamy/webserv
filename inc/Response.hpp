@@ -1,66 +1,50 @@
 #pragma once
 
-#include "ErrorCodes.hpp"
 #include "Request.hpp"
 #include "Server.hpp"
 
 #include <map>
 #include <string>
 
-#define GET 1
-#define POST 2
-#define DELETE 3
-
-enum type
-{
-    HTML,
-    CSS,
-    JPG,
-    ICO,
-    UNKNOW
-};
-
 class Response
 {
   private:
-    int _status_code;
-    int _type;
-    ErrorCodes _hec;
-    std::string _status_message;
-    std::string _body;
-    std::map<std::string, std::string> _headers;
-    Request _request;
+    Request _req;
     server_data _server;
 
-    void find_type();
-    void add_content_type();
-    void generateHTTPError(int num);
-    void add_content_length();
-    void get_handler();
+    std::string _http_version;
+    int _status_code;
+    std::map<std::string, std::string> _headers;
+    std::string _body;
+
+    static std::string get_status_message(int status_code);
+
+    static std::string get_mime_type(const std::string& filename);
+    /* Post functions */
+    std::string get_boundary(const std::string& header);
+    bool parse_multipart_form_data(const std::string& data, const std::string& boundary,
+                                   std::vector<std::string>& files);
+
+    /* Delete functions */
 
   public:
-    Response(Request req, server_data& serv);
-    Response& operator=(const Response& other);
+    Response(const Request& req, const server_data& server);
     ~Response();
 
-    // getters
-    const int& get_status_code() const;
-    const int& get_type() const;
-    const ErrorCodes& get_hec() const;
-    const std::string& get_status_message() const;
-    const std::string& get_body() const;
+    /* Getters */
+    const std::string& get_http_version() const;
+    int get_status_code() const;
     const std::map<std::string, std::string>& get_headers() const;
-    const std::string& get_headers_key(const std::string& key) const;
-    const Request& get_request() const;
-    const server_data& get_server() const;
+    const std::string& get_body() const;
 
-    // setters
-    void setStatusCode(int code);
-    void setStatusMessage(const std::string& message);
-    void setBody(const std::string& responseBody);
-    void set_headers(const std::string& key, const std::string& value);
-    void set_content_lenght();
+    /* Setters */
+    void set_header(const std::string& key, const std::string& value);
+    void set_body(const std::string& body);
 
-    const std::string to_string() const;
-    void generate_response();
+    std::string serialize() const;
+
+    // Handling different HTTP methods
+    void handle_get();
+    void handle_post();
+    void handle_delete();
 };
