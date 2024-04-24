@@ -69,15 +69,15 @@ void Request::parseRequest()
     if (!_method.compare("POST"))
     {
         std::stringstream temp;
-        temp << _headers["Content-Lenght"];
-        temp >> _content_lenght;
-        size_t count = 0;
-        char buff[1];
-        while (count < _content_lenght && !stream.eof())
-        {
-            stream.read(buff, 1);
-            _body.push_back(buff[0]);
-            count++;
-        }
+		temp << _headers["Content-Length"];
+		temp >> _content_lenght;
+        _body += "\r\n\r\n";
+		size_t	count = 0;
+		char buff[5000];
+		while (count < _content_lenght && !stream.eof())
+		{
+			stream.read(buff, 5000);
+			_body.append(buff, stream.gcount());
+		}
     }
 }
