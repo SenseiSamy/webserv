@@ -148,9 +148,9 @@ void Response::post_handler()
         int tokenheader = 2;
         while (std::getline(data, line) && tokenheader)
         {
-            if (line.find(boundaries))						
+            if (line.find(boundaries) != std::string::npos)						
                 bodyread += line.length();
-            if (line.find("filename=") != std::string::npos)
+            else if (line.find("filename=") != std::string::npos)
             {
                 filename = line.substr(line.find("filename=") + 10);
                 tokenheader--;
@@ -166,7 +166,10 @@ void Response::post_handler()
         }
         filename = filename.substr(0, filename.size() - 2);
         std::getline(data, line);
+        // std::cout << filename << std::endl;
         std::ofstream file(filename.c_str(), std::ios::binary);
+        // if (file.is_open())
+            // std::cout << "file open" << std::endl;
         char	buff[5000];
         size_t	contentadd = 1;
         while (5000 * contentadd < _request.get_content_lenght())
@@ -175,8 +178,8 @@ void Response::post_handler()
             file.write(buff, 5000);
             contentadd++;
         }
-        data.read(buff, _request.get_content_lenght() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
-        file.write(buff, _request.get_content_lenght() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
+        data.read(buff, _request.get_content_lenght() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 13)));
+        file.write(buff, _request.get_content_lenght() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 13)));
         file.close();
         setStatusCode(201);
         setStatusMessage(_hec.get_description(201));

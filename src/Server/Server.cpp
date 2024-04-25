@@ -140,7 +140,7 @@ int Server::run()
                 {
                     Request req(request);
                     server_data& server = get_server_from_request(req);
-                    print_log(req, server);
+                    // print_log(req, server);
                     Response response(req, server);
                     send(fd, response.to_string().c_str(), response.to_string().size(), 0);
                     close(fd);
