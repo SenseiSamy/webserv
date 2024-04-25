@@ -7,8 +7,7 @@ OBJ_DIR = .obj
 
 NAME = webserv
 
-# $(shell find src -name "*.cpp")
-SRC_FILES = src/main.cpp src/Server/syntax.cpp src/Server/Server.cpp src/Server/display.cpp src/Server/getters.cpp src/Server/parsing.cpp src/Server/socket.cpp src/Response/Response.cpp src/Response/setters.cpp src/Response/display.cpp src/Response/getters.cpp src/Request/Request.cpp src/Request/display.cpp src/Request/getters.cpp src/Cgi/meta_variables.cpp src/Cgi/Cgi.cpp
+SRC_FILES = $(shell find src -name "*.cpp")
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRC_FILES))
 DEP_FILES = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.d, $(SRC_FILES))
 
