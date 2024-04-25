@@ -41,31 +41,25 @@ class Server
     std::vector<std::vector<std::string> > _file_config_content;
 
     /* utils */
-    std::vector<std::string> split_line(const std::string& str);
+    std::vector<std::string> split_line(const std::string &str);
     int read_files();
 
     /* parsing */
-    int parsing_routes(const std::vector<std::string>& token_args, routes_data& new_routes,
-                       const std::string& current_word, size_t line);
-    int parsing_server(const std::vector<std::string>& token_args, server_data& new_server,
-                       const std::string& current_word, size_t line);
+    int parsing_routes(const std::vector<std::string> &token_args, routes_data &new_routes,
+                       const std::string &current_word, size_t line);
+    int parsing_server(const std::vector<std::string> &token_args, server_data &new_server,
+                       const std::string &current_word, size_t line);
     int parsing_config();
 
     /* syntax */
     int syntax_brackets();
-
-    /* socket */
-    int open_sockets();
-
-    server_data* get_server_to_connect(int sock_fd);
-    server_data& get_server_from_request(Request req);
-
-    void print_log(Request& req, server_data& server) const;
+    
+    int handle_new_connection(int server_fd);
 
   public:
     std::vector<server_data> _servers;
 
-    Server(const std::string& path);
+    Server(const std::string &path);
     ~Server();
 
     int run();
@@ -75,7 +69,7 @@ class Server
 
     const std::vector<server_data> get_servers() const;
     const std::vector<std::vector<std::string> > get_file_config_content() const;
-    const std::string& get_path() const;
+    const std::string &get_path() const;
 
     void display_servers() const;
     void display_file_config_content() const;

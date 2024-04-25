@@ -1,11 +1,13 @@
 #include "Response.hpp"
 
 #include <cstdio>
+#include <cstring>
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <sstream>
+#include <sys/socket.h>
 
 Response::Response(const Request& req, const server_data& server)
     : _req(req), _server(server), _http_version("HTTP/1.1"), _status_code(200)
@@ -210,4 +212,11 @@ void Response::handle_delete()
         }
     }
     set_header("Content-Type", "text/plain");
+}
+
+void Response::send_response(int client_fd)
+{
+    std::string response = serialize();
+    if (send(client_fd, response.c_str(), response.length(), 0) == -1)
+        std::cerr << "Error: send: " << std::strerror(errno) << std::endl;
 }

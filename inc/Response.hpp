@@ -47,4 +47,6 @@ class Response
     void handle_get();
     void handle_post();
     void handle_delete();
+
+    void send_response(int client_fd);
 };

@@ -29,6 +29,6 @@ class Request
     const std::string& get_body() const;
 
     /* display */
-    void display_original_request(int port, const std::string& host) const;
-    void display_request(int port, const std::string& host) const;
+    void display_original_request() const;
+    void display() const;
 };

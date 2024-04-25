@@ -4,35 +4,20 @@
 #include <map>
 #include <string>
 
-void Request::display_original_request(int port, const std::string& host) const
+void Request::display_original_request() const
 {
-    std::cout << "\e[38;2;255;148;253m"
-              << "╭─ Request to server " << host << ":" << port << "\e[0m" << std::endl;
-    for (std::string::size_type i = 0; i < _original_request.size(); ++i)
-    {
-        if (_original_request[i] == '\r')
-            std::cout << std::endl
-                      << "\e[38;2;255;148;253m"
-                      << "│ "
-                      << "\e[0m";
-        else
-            std::cout << _original_request[i];
-    }
-    std::cout << "\e[38;2;255;148;253m"
-              << "╰───────────────────\e[0m" << std::endl;
+    std::cout << _original_request << std::endl;
 }
 
-void Request::display_request(int port, const std::string& host) const
+void Request::display() const
 {
-    std::cout << "\e[38;2;255;148;253m"
-              << "╭─ Request to server " << host << ":" << port << "\e[0m" << std::endl;
-    std::cout << "\e[38;2;255;148;253m"
-              << "│ " << _method << " " << _uri << " " << _version << "\e[0m" << std::endl;
+    std::cout << "Method: " << _method << std::endl;
+    std::cout << "URI: " << _uri << std::endl;
+    std::cout << "Version: " << _version << std::endl;
+    std::cout << "Headers: " << std::endl;
     for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
-        std::cout << "\e[38;2;255;148;253m"
-                  << "│ " << it->first << ": " << it->second << "\e[0m" << std::endl;
-    std::cout << "\e[38;2;255;148;253m"
-              << "│ " << _body << "\e[0m" << std::endl;
-    std::cout << "\e[38;2;255;148;253m"
-              << "╰───────────────────\e[0m" << std::endl;
+    {
+        std::cout << it->first << ": " << it->second << std::endl;
+    }
+    std::cout << "Body: " << _body << std::endl;
 }
