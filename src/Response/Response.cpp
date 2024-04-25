@@ -4,6 +4,9 @@
 #include <fstream>
 #include <sstream>
 
+#define BUFFER_SIZE 5000
+#define EMPTY_BYTES 13
+
 Response::Response(Request req, server_data& serv) : _request(req), _server(serv)
 {
     generate_response();
@@ -136,6 +139,11 @@ void Response::get_handler()
 
 void Response::post_handler()
 {
+    if (this->get_request().get_headers().empty())
+    {
+        this->generateHTTPError(400);
+        return ;
+    }
     std::string boundaries = _request.get_headers_key("Content-Type");
     size_t boundpos = boundaries.find("boundary=");
     if (boundpos != std::string::npos)
@@ -164,28 +172,36 @@ void Response::post_handler()
             if (tokenheader == 0)
                 break;
         }
-        filename = filename.substr(0, filename.size() - 2);
-        std::getline(data, line);
-        // std::cout << filename << std::endl;
-        std::ofstream file(filename.c_str(), std::ios::binary);
-        // if (file.is_open())
-            // std::cout << "file open" << std::endl;
-        char	buff[5000];
-        size_t	contentadd = 1;
-        while (5000 * contentadd < _request.get_content_lenght())
+        if (filename.empty() || tokenheader)
         {
-            data.read(buff, 5000);
-            file.write(buff, 5000);
+            this->generateHTTPError(400);
+            return ;
+        }
+        //filename.size - 2 pour enlever le retour a la ligne
+        filename = filename.substr(0, filename.size() - 2);
+        //skipping empty line
+        std::getline(data, line);
+        std::ofstream file(filename.c_str(), std::ios::binary);
+        char	buff[BUFFER_SIZE];
+        size_t	contentadd = 1;
+        while (BUFFER_SIZE * contentadd < _request.get_content_lenght())
+        {
+            data.read(buff, BUFFER_SIZE);
+            file.write(buff, BUFFER_SIZE);
+            // this->_body.append(buff, BUFFER_SIZE);
             contentadd++;
         }
-        data.read(buff, _request.get_content_lenght() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 13)));
-        file.write(buff, _request.get_content_lenght() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 13)));
+        data.read(buff, _request.get_content_lenght() - (BUFFER_SIZE * (contentadd - 1) + (bodyread + boundaries.length() + EMPTY_BYTES)));
+        file.write(buff, _request.get_content_lenght() - (BUFFER_SIZE * (contentadd - 1) + (bodyread + boundaries.length() + EMPTY_BYTES)));
+        // this->_body.append(buff, _request.get_content_lenght() - (BUFFER_SIZE * (contentadd - 1) + (bodyread + boundaries.length() + EMPTY_BYTES)));
         file.close();
         setStatusCode(201);
         setStatusMessage(_hec.get_description(201));
         add_content_type();
-        set_content_lenght();
+        // set_content_lenght();
     }
+    else
+        this->generateHTTPError(400);
 }
 
 void Response::generate_response()

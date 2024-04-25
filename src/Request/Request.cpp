@@ -39,6 +39,7 @@ void Request::parseRequest()
 {
     std::istringstream stream(_request);
     std::string requestLine;
+    _headers[""] = "";
     if (!std::getline(stream, requestLine))
         return;
 
