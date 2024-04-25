@@ -124,7 +124,6 @@ void Response::get_handler()
     {
         setStatusCode(200);
         setStatusMessage(_hec.get_description(200));
-        add_content_type();
         std::string line;
         while (std::getline(file, line))
             _body += line + "\n";
@@ -135,60 +134,61 @@ void Response::get_handler()
         generateHTTPError(404);
 }
 
+void Response::post_handler()
+{
+    std::string boundaries = _request.get_headers_key("Content-Type");
+    size_t boundpos = boundaries.find("boundary=");
+    if (boundpos != std::string::npos)
+    {
+        boundaries = boundaries.substr(boundpos + 9);
+        std::istringstream data(this->_request.get_body());
+        std::string filename;
+        std::string line;
+        size_t	bodyread = 0;
+        int tokenheader = 2;
+        while (std::getline(data, line) && tokenheader)
+        {
+            if (line.find(boundaries))						
+                bodyread += line.length();
+            if (line.find("filename=") != std::string::npos)
+            {
+                filename = line.substr(line.find("filename=") + 10);
+                tokenheader--;
+                bodyread += line.length();
+            }
+            else if (line.find("Content-Type:") != std::string::npos)
+            {
+                tokenheader--;
+                bodyread += line.length();
+            }
+            if (tokenheader == 0)
+                break;
+        }
+        filename = filename.substr(0, filename.size() - 2);
+        std::getline(data, line);
+        std::ofstream file(filename.c_str(), std::ios::binary);
+        char	buff[5000];
+        size_t	contentadd = 1;
+        while (5000 * contentadd < _request.get_content_lenght())
+        {
+            data.read(buff, 5000);
+            file.write(buff, 5000);
+            contentadd++;
+        }
+        data.read(buff, _request.get_content_lenght() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
+        file.write(buff, _request.get_content_lenght() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
+        file.close();
+        setStatusCode(201);
+        setStatusMessage(_hec.get_description(201));
+        add_content_type();
+        set_content_lenght();
+    }
+}
+
 void Response::generate_response()
 {
     if (get_request().get_method() == "GET")
         Response::get_handler();
     else if (get_request().get_method() == "POST")
-    {
-        std::string boundaries = _request.get_headers_key("Content-Type");
-        size_t boundpos = boundaries.find("boundary=");
-        if (boundpos != std::string::npos)
-        {
-            boundaries = boundaries.substr(boundpos + 9);
-            // std::cout << boundaries << std::endl;
-            std::istringstream data(this->_request.get_body());
-            std::string filename;
-            std::string line;
-            size_t	bodyread = 0;
-            int tokenheader = 2;
-            while (std::getline(data, line) && tokenheader)
-            {
-                // std::cout << "ceci est une line :" << line << "\t tokenheader = " << tokenheader << std::endl;
-                if (line.find(boundaries))
-                {       							
-                    bodyread += line.length();
-                }
-                if (line.find("filename=") != std::string::npos)
-                {
-                    filename = line.substr(line.find("filename=") + 10);
-                    tokenheader--;
-                    bodyread += line.length();
-                }
-                else if (line.find("Content-Type:") != std::string::npos)
-                {
-                    tokenheader--;
-                    bodyread += line.length();
-                }
-                if (tokenheader == 0)
-                    break;
-            }
-            filename = filename.substr(0, filename.size() - 2);
-            // std::cout << filename << std::endl;
-            std::cout << boundaries << std::endl;
-            std::getline(data, line);
-            std::ofstream file(filename.c_str(), std::ios::binary);
-            char	buff[5000];
-            size_t	contentadd = 1;
-            while (5000 * contentadd < _request.get_content_lenght())
-            {
-                data.read(buff, 5000);
-                file.write(buff, 5000);
-                contentadd++;
-            }
-            data.read(buff, _request.get_content_lenght() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
-            file.write(buff, _request.get_content_lenght() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
-            file.close();
-        }
-    }
+        Response::post_handler();
 }

@@ -35,7 +35,7 @@ class Response
     void find_type();
     void add_content_type();
     void generateHTTPError(int num);
-    void add_content_length();
+    void post_handler();
     void get_handler();
 
   public:
