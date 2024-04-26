@@ -30,7 +30,7 @@ class Response
     std::string _body;
     std::map<std::string, std::string> _headers;
     Request _request;
-	std::string _true_url;
+	std::string _url;
     server_data _server;
 	routes_data* _route;
 
@@ -40,7 +40,10 @@ class Response
     void add_content_length();
     void get_handler();
 	void select_route();
-	bool check_and_rewrite_url();
+	int check_and_rewrite_url();
+	bool is_a_directory();
+	void redirect();
+	void directory_listing();
 
   public:
     Response(Request req, server_data& serv);
