@@ -1,5 +1,4 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#pragma once
 
 #include "Request.hpp"
 
@@ -25,6 +24,7 @@ struct server_data
 {
     std::string host;
     unsigned short port;
+    std::string root;
     std::vector<std::string> server_names;
     std::map<std::string, std::string> error_pages;
     size_t body_size;
@@ -81,5 +81,3 @@ class Server
     void display_file_config_content() const;
     void display_path() const;
 };
-
-#endif // !SERVER_HPP

@@ -4,12 +4,12 @@
 #include <fstream>
 #include <sstream>
 
-Response::Response(Request req, server_data& serv) : _request(req), _server(serv)
+Response::Response(Request req, server_data &serv) : _request(req), _server(serv)
 {
     generate_response();
 }
 
-Response& Response::operator=(const Response& other)
+Response &Response::operator=(const Response &other)
 {
     if (this != &other)
     {
@@ -67,50 +67,33 @@ void Response::add_content_type()
         set_headers("Content-Type", "image/jpeg");
     else if (_type == ICO)
         set_headers("Content-Type", "image/vnd.microsoft.icon");
+    else
+        set_headers("Content-Type", "text/plain");
 }
 
 void Response::generateHTTPError(int num)
 {
-    std::ifstream file("www/ErrorPage");
-    std::string line;
-    setStatusCode(num);
-    setStatusMessage(_hec.get_description(num));
-    while (std::getline(file, line))
-        _body += line + "\n";
-    file.close();
-    std::srand(time(0));
-    std::stringstream ss;
-    ss << num;
-    int randnum = std::rand();
-    if (randnum % 4 == 0)
-    {
-        _body += "<img src=\"https://http.cat/";
-        _body += ss.str() + "\" alt=\"Centered Image\"\n";
-        _body += "width=\"800\"\nheight=\"600\"\n/>";
-        _body += "</div>\n</body>\n</html>\n\r";
-    }
-    else if (randnum % 4 == 1)
-    {
-        _body += "<img src=\"https://http.dog/";
-        _body += ss.str() + ".jpg\" alt=\"Centered Image\"\n";
-        _body += "width=\"800\"\nheight=\"600\"\n/>";
-        _body += "</div>\n</body>\n</html>\n\r";
-    }
+    std::stringstream ss_num;
+    ss_num << num;
+    std::string num_str = ss_num.str();
 
-    else if (randnum % 4 == 2)
+    std::string error_page_path = _server.error_pages[num_str];
+    std::ifstream file(error_page_path.c_str());
+    if (file)
     {
-        _body += "<img src=\"https://http.pizza/";
-        _body += ss.str() + ".jpg\" alt=\"Centered Image\"\n";
-        _body += "width=\"800\"\nheight=\"600\"\n/>";
-        _body += "</div>\n</body>\n</html>\n\r";
+        std::stringstream ss;
+        ss << file.rdbuf();
+        _body = ss.str();
+        file.close();
     }
     else
     {
-        _body += "<img src=\"https://httpgoats.com/";
-        _body += ss.str() + ".jpg\" alt=\"Centered Image\"\n";
-        _body += "width=\"800\"\nheight=\"600\"\n/>";
-        _body += "</div>\n</body>\n</html>\n\r";
+        std::stringstream ss;
+        ss << num;
+        _body = "<html><body><h1>Error " + ss.str() + " - " + _hec.get_description(num) + "</h1></body></html>";
     }
+    add_content_type();
+    set_content_lenght();
 }
 
 void Response::get_handler()
@@ -150,13 +133,13 @@ void Response::generate_response()
             std::istringstream data(this->_request.get_body());
             std::string filename;
             std::string line;
-            size_t	bodyread = 0;
+            size_t bodyread = 0;
             int tokenheader = 2;
             while (std::getline(data, line) && tokenheader)
             {
                 // std::cout << "ceci est une line :" << line << "\t tokenheader = " << tokenheader << std::endl;
                 if (line.find(boundaries))
-                {       							
+                {
                     bodyread += line.length();
                 }
                 if (line.find("filename=") != std::string::npos)
@@ -178,16 +161,18 @@ void Response::generate_response()
             std::cout << boundaries << std::endl;
             std::getline(data, line);
             std::ofstream file(filename.c_str(), std::ios::binary);
-            char	buff[5000];
-            size_t	contentadd = 1;
+            char buff[5000];
+            size_t contentadd = 1;
             while (5000 * contentadd < _request.get_content_lenght())
             {
                 data.read(buff, 5000);
                 file.write(buff, 5000);
                 contentadd++;
             }
-            data.read(buff, _request.get_content_lenght() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
-            file.write(buff, _request.get_content_lenght() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
+            data.read(buff, _request.get_content_lenght() -
+                                (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
+            file.write(buff, _request.get_content_lenght() -
+                                 (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
             file.close();
         }
     }

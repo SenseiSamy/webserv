@@ -6,6 +6,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #define GET 1
 #define POST 2
@@ -39,26 +40,26 @@ class Response
     void get_handler();
 
   public:
-    Response(Request req, server_data& serv);
-    Response& operator=(const Response& other);
+    Response(Request req, server_data &serv);
+    Response &operator=(const Response &other);
     ~Response();
 
     // getters
-    const int& get_status_code() const;
-    const int& get_type() const;
-    const ErrorCodes& get_hec() const;
-    const std::string& get_status_message() const;
-    const std::string& get_body() const;
-    const std::map<std::string, std::string>& get_headers() const;
-    const std::string& get_headers_key(const std::string& key) const;
-    const Request& get_request() const;
-    const server_data& get_server() const;
+    const int &get_status_code() const;
+    const int &get_type() const;
+    const ErrorCodes &get_hec() const;
+    const std::string &get_status_message() const;
+    const std::string &get_body() const;
+    const std::map<std::string, std::string> &get_headers() const;
+    const std::string &get_headers_key(const std::string &key) const;
+    const Request &get_request() const;
+    const server_data &get_server() const;
 
     // setters
     void setStatusCode(int code);
-    void setStatusMessage(const std::string& message);
-    void setBody(const std::string& responseBody);
-    void set_headers(const std::string& key, const std::string& value);
+    void setStatusMessage(const std::string &message);
+    void setBody(const std::string &responseBody);
+    void set_headers(const std::string &key, const std::string &value);
     void set_content_lenght();
 
     const std::string to_string() const;
