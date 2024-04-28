@@ -31,6 +31,7 @@ class Response
     std::map<std::string, std::string> _headers;
     Request _request;
 	std::string _url;
+	std::string _path_to_root;
     server_data _server;
 	routes_data* _route;
 

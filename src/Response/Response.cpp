@@ -9,6 +9,9 @@
 
 Response::Response(Request req, server_data& serv) : _request(req), _server(serv)
 {
+	char tmp[PATH_MAX];
+	_path_to_root = realpath("www", tmp);
+
 	select_route();
 	generate_response();
 }
