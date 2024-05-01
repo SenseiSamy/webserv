@@ -1,52 +1,49 @@
-#pragma once
+#ifndef RESPONSE_HPP
+#define RESPONSE_HPP
 
 #include "Request.hpp"
 #include "Server.hpp"
-
+#include <cstddef>
 #include <map>
 #include <string>
 
 class Response
 {
   private:
-    Request _req;
-    server_data _server;
-
-    std::string _http_version;
     int _status_code;
-    std::map<std::string, std::string> _headers;
+    int _type;
+    std::string _status_message;
     std::string _body;
+    std::map<std::string, std::string> _header;
 
-    static std::string get_status_message(int status_code);
+    Request _request;
+    std::map<unsigned short, std::string> _error_map;
+    std::string _uri;
+    std::string _path_root;
 
-    static std::string get_mime_type(const std::string& filename);
-    /* Post functions */
-    std::string get_boundary(const std::string& header);
-    bool parse_multipart_form_data(const std::string& data, const std::string& boundary,
-                                   std::vector<std::string>& files);
+    server _server;
 
-    /* Delete functions */
+    int _get();
+    int _post();
+    int _delete();
 
   public:
-    Response(const Request& req, const server_data& server);
+    Response();
+    Response(const Request &request, const server &server);
+    Response(const Response &response);
+    Response &operator=(const Response &response);
     ~Response();
 
-    /* Getters */
-    const std::string& get_http_version() const;
-    int get_status_code() const;
-    const std::map<std::string, std::string>& get_headers() const;
-    const std::string& get_body() const;
+    // Getters
 
-    /* Setters */
-    void set_header(const std::string& key, const std::string& value);
-    void set_body(const std::string& body);
+    // Setters
 
-    std::string serialize() const;
+    // Displays
+    std::ostream &operator<<(std::ostream &os) const;
 
-    // Handling different HTTP methods
-    void handle_get();
-    void handle_post();
-    void handle_delete();
-
-    void send_response(int client_fd);
+    // Others
+    std::string to_string(size_t i) const;
+    int send_response();
 };
+
+#endif // RESPONSE_HPP

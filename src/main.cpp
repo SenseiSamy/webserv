@@ -1,22 +1,27 @@
 #include "Server.hpp"
 
+#include <cstdlib>
 #include <iostream>
 
-int main(int argc, const char* argv[])
+int main(int argc, const char *argv[])
 {
     if (argc != 2)
     {
-        std::cout << "Usage: " << argv[0] << " <config_file>" << std::endl;
-        return 1;
+        std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;
+        return EXIT_FAILURE;
     }
+
     try
     {
         Server server(argv[1]);
+        server.display();
         server.run();
     }
-    catch (const std::exception&)
+    catch (const std::exception &e)
     {
-        return 1;
+        std::cerr << e.what() << std::endl;
+        return EXIT_FAILURE;
     }
-    return 0;
+
+    return EXIT_SUCCESS;
 }

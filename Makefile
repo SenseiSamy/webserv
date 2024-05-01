@@ -1,26 +1,28 @@
-CXX = g++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -ggdb3
+CXX := g++
+CXXFLAGS := -std=c++98 -Wall -Wextra -Werror -pedantic -g
 
-SRC_DIR = src
-INC_DIR = inc
-OBJ_DIR = .obj
+NAME := webserv
 
-NAME = webserv
+SRC_DIR := src
+INC_DIR := inc
+OBJ_DIR := .obj
 
-SRC_FILES = $(shell find src -name "*.cpp")
-OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRC_FILES))
-DEP_FILES = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.d, $(SRC_FILES))
+SRC := $(shell find $(SRC_DIR) -name "*.cpp")
+OBJ := $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+DEP := $(OBJ:%.o=%.d)
+
+INC := -I$(INC_DIR)
 
 all: $(NAME)
 
-$(NAME): $(OBJ_FILES)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+$(NAME): $(OBJ)
+	$(CXX) $(CXXFLAGS) $(INC) $^ -o $@
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) -I$(INC_DIR) -MMD -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(INC) -MMD -c $< -o $@
 
--include $(DEP_FILES)
+-include $(DEP)
 
 clean:
 	rm -rf $(OBJ_DIR)
@@ -30,7 +32,4 @@ fclean: clean
 
 re: fclean all
 
-scan-build: clean
-	scan-build make
-
-.PHONY: all clean fclean re scan-build
+.PHONY: all clean fclean re

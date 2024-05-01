@@ -2,38 +2,88 @@
 
 #include <sstream>
 
-Request::Request(const std::string& request) : _original_request(request)
+Request::Request() : _client_fd(0), _request(""), _method(""), _uri(""), _header(), _content_length(0), _body("")
 {
-    parse_request(_original_request);
+}
+
+Request::Request(int listen_fd, const std::string &request)
+    : _client_fd(listen_fd), _request(request), _method(""), _uri(""), _header(), _content_length(0), _body("")
+{
+}
+
+Request::Request(const Request &request)
+{
+    if (this != &request)
+    {
+        _client_fd = request._client_fd;
+        _request = request._request;
+        _method = request._method;
+        _uri = request._uri;
+        _header = request._header;
+        _content_length = request._content_length;
+        _body = request._body;
+    }
 }
 
 Request::~Request()
 {
 }
 
-void Request::parse_request(const std::string& request)
+Request &Request::operator=(const Request &request)
 {
-    std::istringstream request_stream(request);
-    std::string line;
-
-    std::getline(request_stream, line);
-
-    std::istringstream line_stream(line);
-    line_stream >> _method >> _uri >> _version;
-
-    // Lire les en-têtes
-    while (std::getline(request_stream, line) && line != "\r")
+    if (this != &request)
     {
-        std::size_t pos = line.find(':');
+        _client_fd = request._client_fd;
+        _request = request._request;
+        _method = request._method;
+        _uri = request._uri;
+        _header = request._header;
+        _content_length = request._content_length;
+        _body = request._body;
+    }
+    return *this;
+}
+
+void Request::clear()
+{
+    _client_fd = 0;
+    _request.clear();
+    _method.clear();
+    _uri.clear();
+    _header.clear();
+    _content_length = 0;
+    _body.clear();
+}
+
+void Request::parse_request_line()
+{
+}
+
+void Request::parse()
+{
+    // clear the request
+    clear();
+
+    // create a string stream from the request
+    std::stringstream ss(_request);
+
+    // get the method and uri
+    ss >> _method >> _uri;
+
+    // get the header
+    std::string line;
+    while (std::getline(ss, line) && line != "\r")
+    {
+        size_t pos = line.find(':');
         if (pos != std::string::npos)
-        {
-            std::string name = line.substr(0, pos);
-            std::string value = line.substr(pos + 2); // +2 pour sauter ": "
-            _headers[name] = value;
-        }
+            _header[line.substr(0, pos)] = line.substr(pos + 2);
     }
 
-    // Lecture du corps de la requête (optionnel)
-    while (std::getline(request_stream, line))
-        _body += line;
+    // get the content-length
+    std::string content_length = get_header_key("Content-Length");
+    std::stringstream content_length_ss(content_length);
+    content_length_ss >> _content_length;
+
+    // get the body
+    _body = ss.str();
 }

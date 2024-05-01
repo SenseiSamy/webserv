@@ -1,77 +1,111 @@
-#pragma once
+#ifndef SERVER_HPP
+#define SERVER_HPP
 
+// types
+#include <cstddef>
 #include <map>
-#include <string>
+#include <sys/types.h>
 #include <vector>
 
-class Request;
+// fonctions
+#include <cerrno>
+#include <cstring>
+#include <netinet/in.h>
+#include <ostream>
+#include <unistd.h>
 
-struct routes_data
+#ifndef MAX_EVENTS
+#define MAX_EVENTS 64
+#endif
+
+typedef struct route
 {
-    std::string root;
-    std::string rewrite;
-    std::vector<std::string> methods;
-    std::string redirect;
-    bool autoindex;
-    std::string index;
-    std::map<std::string, std::string> cgi;
-    std::map<std::string, std::string> routes_pages;
-};
+    // required
+    std::string path; // /kapouet
 
-struct server_data
+    // optional
+    std::vector<std::string> accepted_methods; // GET
+    std::string root;                          // /tmp/www
+    std::string file_path;                     // /var/www/html
+    bool autoindex;                            // true
+    std::string default_file;                  // index.html
+
+    /// cgi
+    std::string cgi_extension;   // .php
+    std::string cgi_handler;     // /usr/bin/php-cgi
+    std::string cgi_upload_path; // /tmp/upload
+    bool cgi_upload_enable;      // true
+} route;
+
+typedef struct server
 {
-    std::string host;
-    unsigned short port;
-    std::string root;
-    std::vector<std::string> server_names;
-    std::map<std::string, std::string> error_pages;
-    size_t body_size;
-    std::vector<routes_data> route;
+    struct sockaddr_in addr;
+    int listen_fd;
 
-    int _listen_fd;
-};
+    // required
+    std::string host;    // 127.0.0.1
+    ssize_t port; // 8080
+
+    // optional
+    std::string root;                               // /var/www/html
+    std::string server_names;                       // example.com
+    bool default_server;                            // true
+    size_t max_body_size;                           // 1000000
+    std::map<std::string, std::string> error_pages; // 404 /404.html
+    std::vector<route> routes;                      // /kapouet
+} server;
 
 class Server
 {
   private:
-    int _epoll_fd;
-    static const int MAX_EVENTS = 10;
+    size_t _current_word;
+    size_t _current_line;
 
-    std::string _path;
-    std::vector<std::vector<std::string> > _file_config_content;
+    std::vector<server> _servers;
+    std::map<size_t, std::vector<std::string> > _content_file;
 
-    /* utils */
-    std::vector<std::string> split_line(const std::string &str);
-    int read_files();
+    // Index management
+    void increment_index();
+    void decrement_index();
+    void reset_index();
+    const std::string next_word();
+    const std::string previous_word();
 
-    /* parsing */
-    int parsing_routes(const std::vector<std::string> &token_args, routes_data &new_routes,
-                       const std::string &current_word, size_t line);
-    int parsing_server(const std::vector<std::string> &token_args, server_data &new_server,
-                       const std::string &current_word, size_t line);
-    int parsing_config();
+    const std::vector<std::string> get_value(const std::string &token);
 
-    /* syntax */
-    int syntax_brackets();
-    
-    int handle_new_connection(int server_fd);
+    // Socket management
+    int create_socket(int domain, int type, int protocol);
+    void setup_server_socket(server &server);
 
   public:
-    std::vector<server_data> _servers;
-
-    Server(const std::string &path);
+    Server();
+    Server(const char *config_file);
+    Server(const Server &other);
     ~Server();
+    Server &operator=(const Server &other);
 
-    int run();
+    // Getters
+    std::vector<route> get_route(const size_t i) const;
+    std::vector<server> get_servers() const;
 
-    void syntax_config() const;
-    void parse_config();
+    // Setters
+    void set_servers(std::vector<server> servers);
 
-    const std::vector<server_data> get_servers() const;
-    const std::vector<std::vector<std::string> > get_file_config_content() const;
-    const std::string &get_path() const;
+    // Displays
+    void display() const;
 
-    void display_servers() const;
-    void display_file_config_content() const;
-    void display_path() const;
+    // Others
+    std::string to_string(size_t i) const;
+
+    /// Syntax
+    void syntax_brackets();
+
+    /// Parsing
+    const server parse_server();
+    const route parse_route();
+    void parsing_config();
+
+    void run();
 };
+
+#endif // SERVER_HPP
