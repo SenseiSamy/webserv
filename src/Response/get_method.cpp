@@ -1,10 +1,38 @@
+#include "Cgi.hpp"
 #include "Response.hpp"
+#include <cstddef>
 #include <limits.h>
+#include <string>
 #include <unistd.h>
 #include <fstream>
 #include <cstdlib>
 #include <sys/stat.h>
 #include <dirent.h>
+
+bool Response::is_cgi_request() {
+	if (_route == NULL || _route->cgi.empty())
+		return (false);
+	std::size_t extension_pos = _url.find(".");
+	if (extension_pos == std::string::npos)
+		return (false);
+	std::string extension = _url.substr(extension_pos, std::string::npos);
+	std::map<std::string, std::string>::iterator it;
+	it = _route->cgi.find(extension);
+	if (it == _route->cgi.end())
+		return (false);
+
+	std::string rep;
+	if (Cgi::handle_cgi(_request, rep, _path_to_root, it->second) != 0) {
+		generateHTTPError(500);
+		return (true);
+	}
+	_is_cgi = true;
+	setStatusCode(200);
+	setStatusMessage(_hec.get_description(200));
+	_body += rep;
+	set_content_lenght();
+	return (true);
+}
 
 void Response::directory_listing() {
 	struct dirent* entry;
@@ -18,13 +46,19 @@ void Response::directory_listing() {
 	setStatusMessage(_hec.get_description(200));
 	set_headers("Content-Type", "text/html");
 
+	_body += "<ul>\n";
+	_body += "<li><a href=..>..</a></li?>";
 	while ((entry = readdir(directory)) != NULL) {
-		_body += "<a href=\"";
-		_body += _request.get_url() + "/" + entry->d_name;
+		if (std::string(entry->d_name) == ".." || std::string(entry->d_name)
+			== ".")
+			continue;
+		_body += "<li><a href=\"";
+		_body += _url + "/" + entry->d_name;
 		_body += "\">";
 		_body += entry->d_name;
-		_body += "</a>\n";
+		_body += "</a></li>\n";
 	}
+	_body += "</ul>\n";
 
 	set_content_lenght();
 }
@@ -95,6 +129,8 @@ void Response::get_handler()
 	find_type();
 	int err = check_and_rewrite_url();
 	if (err == 0) {
+		if (is_cgi_request())
+			return;
 		std::ifstream file((_path_to_root + _url).c_str());
 		if (!file.is_open()) {
 			generateHTTPError(500);

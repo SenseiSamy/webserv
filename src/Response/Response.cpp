@@ -7,11 +7,9 @@
 #include <fstream>
 #include <sstream>
 
-Response::Response(Request req, server_data& serv) : _request(req), _server(serv)
+Response::Response(Request req, server_data& serv) : _request(req), _server(serv), _is_cgi(false)
 {
-	char tmp[PATH_MAX];
-	_path_to_root = realpath("www", tmp);
-
+	set_root();
 	select_route();
 	generate_response();
 }
@@ -42,7 +40,8 @@ const std::string Response::to_string() const
 	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
 		response += it->first + ": " + it->second + "\r\n";
 
-	response += "\r\n";
+	if (!_is_cgi)
+		response += "\r\n";
 	response += _body;
 	return response;
 }
@@ -134,6 +133,11 @@ void Response::select_route()
 		}
 	}
 	_route = NULL;
+}
+
+void Response::set_root() {
+	char tmp[PATH_MAX];
+	_path_to_root = realpath("www", tmp);
 }
 
 void Response::generate_response()

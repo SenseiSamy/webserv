@@ -1,4 +1,5 @@
 #include "Cgi.hpp"
+#include "Request.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -25,85 +26,95 @@ char** Cgi::map_to_env(std::map<std::string, std::string>& meta_var)
     return (env);
 }
 
-static void headerToVar(char& c)
-{
-    if (c == '-')
-        c = '_';
-    else
-        c = std::toupper(c);
-}
+// static void headerToVar(char& c)
+// {
+//     if (c == '-')
+//         c = '_';
+//     else
+//         c = std::toupper(c);
+// }
 
-static void tmpParseReqLine(std::string line, std::map<std::string, std::string>& meta_var)
-{
-    std::string method;
-    std::string path;
-    std::string protocol;
-    std::size_t pos;
+// static void tmpParseReqLine(std::string line, std::map<std::string, std::string>& meta_var)
+// {
+//     std::string method;
+//     std::string path;
+//     std::string protocol;
+//     std::size_t pos;
 
-    pos = line.find(' ');
-    method = line.substr(0, pos);
-    line.erase(0, pos + 1);
-    pos = line.find(' ');
-    path = line.substr(0, pos);
-    line.erase(0, pos + 1);
-    protocol = line.substr(0, line.size() - 2);
+//     pos = line.find(' ');
+//     method = line.substr(0, pos);
+//     line.erase(0, pos + 1);
+//     pos = line.find(' ');
+//     path = line.substr(0, pos);
+//     line.erase(0, pos + 1);
+//     protocol = line.substr(0, line.size() - 2);
 
-    meta_var["REQUEST_METHOD"] = method;
-    meta_var["SCRIPT_NAME"] = path.substr(0, path.find('?'));
-    meta_var["QUERY_STRING"] = (path.find('?') == std::string::npos ? "" : path.substr(path.find('?') + 1));
-}
+//     meta_var["REQUEST_METHOD"] = method;
+//     meta_var["SCRIPT_NAME"] = path.substr(0, path.find('?'));
+//     meta_var["QUERY_STRING"] = (path.find('?') == std::string::npos ? "" : path.substr(path.find('?') + 1));
+// }
 
-static void tmpParseReq(std::string request, std::map<std::string, std::string>& meta_var)
-{
-    std::string line;
-    std::string tmp;
-    std::size_t pos;
+// static void tmpParseReq(std::string request, std::map<std::string, std::string>& meta_var)
+// {
+//     std::string line;
+//     std::string tmp;
+//     std::size_t pos;
 
-    pos = request.find("\r\n");
-    if (pos == std::string::npos)
-        return;
-    line = request.substr(0, pos);
-    tmpParseReqLine(line, meta_var);
-    request.erase(0, pos + 2);
-    while ((pos = request.find("\r\n")) != std::string::npos && request != "\r\n")
-    {
-        line = request.substr(0, pos);
-        tmp = line.substr(0, line.find(": "));
-        std::for_each(tmp.begin(), tmp.end(), &headerToVar);
-        meta_var["HTTP_" + tmp] = line.substr(line.find(": ") + 2, std::string::npos);
-        request.erase(0, pos + 2);
-    }
-}
+//     pos = request.find("\r\n");
+//     if (pos == std::string::npos)
+//         return;
+//     line = request.substr(0, pos);
+//     tmpParseReqLine(line, meta_var);
+//     request.erase(0, pos + 2);
+//     while ((pos = request.find("\r\n")) != std::string::npos && request != "\r\n")
+//     {
+//         line = request.substr(0, pos);
+//         tmp = line.substr(0, line.find(": "));
+//         std::for_each(tmp.begin(), tmp.end(), &headerToVar);
+//         meta_var["HTTP_" + tmp] = line.substr(line.find(": ") + 2, std::string::npos);
+//         request.erase(0, pos + 2);
+//     }
+// }
 
-void parseContentTypeAndLength(const std::string& originalRequest, std::map<std::string, std::string>& meta_var)
-{
-    std::string request = originalRequest;
-    std::string::size_type pos = 0;
-    std::string line, key, value;
+// void parseContentTypeAndLength(const std::string& originalRequest, std::map<std::string, std::string>& meta_var)
+// {
+//     std::string request = originalRequest;
+//     std::string::size_type pos = 0;
+//     std::string line, key, value;
 
-    while ((pos = request.find("\r\n")) != std::string::npos)
-    {
-        line = request.substr(0, pos);
-        size_t colonPos = line.find(": ");
-        if (colonPos != std::string::npos)
-        {
-            key = line.substr(0, colonPos);
-            value = line.substr(colonPos + 2);
-            std::for_each(key.begin(), key.end(), headerToVar);
-            if (key == "CONTENT_LENGTH" || key == "CONTENT_TYPE")
-            {
-                meta_var[key] = value;
-            }
-        }
-        request.erase(0, pos + 2);
-    }
-}
+//     while ((pos = request.find("\r\n")) != std::string::npos)
+//     {
+//         line = request.substr(0, pos);
+//         size_t colonPos = line.find(": ");
+//         if (colonPos != std::string::npos)
+//         {
+//             key = line.substr(0, colonPos);
+//             value = line.substr(colonPos + 2);
+//             std::for_each(key.begin(), key.end(), headerToVar);
+//             if (key == "CONTENT_LENGTH" || key == "CONTENT_TYPE")
+//             {
+//                 meta_var[key] = value;
+//             }
+//         }
+//         request.erase(0, pos + 2);
+//     }
+// }
 
-std::map<std::string, std::string> Cgi::generate_meta_variables(std::string const& request)
+std::map<std::string, std::string> Cgi::generate_meta_variables(const Request& request)
 {
     std::map<std::string, std::string> meta_var;
 
-    tmpParseReq(request, meta_var);
+	meta_var["REQUEST_METHOD"] = request.get_method();
+	meta_var["REQUEST_URI"] = request.get_url();
+	meta_var["SCRIPT_NAME"] = request.get_url().substr(0, request.get_url()
+		.find('?'));
+	meta_var["QUERY_STRING"] = (request.get_url().find('?') == std::string::npos
+		? "" : request.get_url().substr(request.get_url().find('?') + 1));
+
+	for (std::map<std::string, std::string>::const_iterator it = request.
+		get_headers().begin(); it != request.get_headers().end(); ++it) {
+		meta_var["HTTP_" + it->first] = it->second;
+	}
 
     meta_var["AUTH_TYPE"] = "";      // Implement based on specific auth handling
     meta_var["CONTENT_LENGTH"] = ""; // Set in helper function
@@ -118,8 +129,6 @@ std::map<std::string, std::string> Cgi::generate_meta_variables(std::string cons
     meta_var["SERVER_PORT"] = "";     // Retrieved from server configuration
     meta_var["SERVER_PROTOCOL"] = "HTTP/1.1";
     meta_var["SERVER_SOFTWARE"] = "webserv-42/1.0";
-
-    parseContentTypeAndLength(request, meta_var);
 
     return meta_var;
 }
