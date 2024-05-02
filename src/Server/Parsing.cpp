@@ -115,34 +115,24 @@ const route Server::parse_route()
     {
         std::vector<std::string> value = get_value(word);
 
-        if (word != "http_methods" && value.size() != 1)
+        if (word != "http_methods" && word != "cgi" && value.size() != 1)
             throw std::runtime_error("Syntax error: Expected only one value after " + word + " at line " +
                                      to_string(_current_line));
 
         if (word == "path")
             result.path = value[0];
         else if (word == "http_methods")
-        {
-            for (std::vector<std::string>::const_iterator it = value.begin(); it != value.end(); ++it)
-                if (*it != "GET" && *it != "POST" && *it != "DELETE")
-                    throw std::runtime_error("Syntax error: Invalid HTTP method at line " + to_string(_current_line));
-
             result.accepted_methods = value;
-        }
         else if (word == "root")
             result.root = value[0];
         else if (word == "file_path")
             result.file_path = value[0];
-        else if (word == "autoindex")
-            result.autoindex = value[0] == "true";
+        else if (word == "directory_listing")
+            result.directory_listing = value[0] == "true";
         else if (word == "default_file")
             result.default_file = value[0];
-        else if (word == "cgi_extension")
-            result.cgi_extension = value[0];
-        else if (word == "cgi_handler")
-            result.cgi_handler = value[0];
-        else if (word == "cgi_upload_path")
-            result.cgi_upload_path = value[0];
+        else if (word == "cgi")
+            result.cgi[value[0]] = value[1];
         else if (word == "cgi_upload_enable")
             result.cgi_upload_enable = value[0] == "true";
         else

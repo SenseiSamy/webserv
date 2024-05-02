@@ -4,6 +4,7 @@
 // types
 #include <cstddef>
 #include <map>
+#include <string>
 #include <sys/types.h>
 #include <vector>
 
@@ -27,14 +28,13 @@ typedef struct route
     std::vector<std::string> accepted_methods; // GET
     std::string root;                          // /tmp/www
     std::string file_path;                     // /var/www/html
-    bool autoindex;                            // true
+    bool directory_listing;                    // true
     std::string default_file;                  // index.html
 
     /// cgi
-    std::string cgi_extension;   // .php
-    std::string cgi_handler;     // /usr/bin/php-cgi
-    std::string cgi_upload_path; // /tmp/upload
-    bool cgi_upload_enable;      // true
+    std::map<std::string, std::string> cgi; // .php /usr/bin/php-cgi
+    std::string cgi_upload_path;            // /tmp/upload
+    bool cgi_upload_enable;                 // true
 } route;
 
 typedef struct server
@@ -43,8 +43,8 @@ typedef struct server
     int listen_fd;
 
     // required
-    std::string host;    // 127.0.0.1
-    ssize_t port; // 8080
+    std::string host; // 127.0.0.1
+    ssize_t port;     // 8080
 
     // optional
     std::string root;                               // /var/www/html
@@ -59,7 +59,7 @@ class Server
 {
   private:
     std::string _config_file;
-    std::map<size_t, std::vector<std::string> > _content_file;
+    std::map<size_t, std::vector<std::string>> _content_file;
     size_t _current_word;
     size_t _current_line;
 
@@ -80,7 +80,6 @@ class Server
     void read_config();
     const server parse_server();
     const route parse_route();
-
 
   public:
     Server();
