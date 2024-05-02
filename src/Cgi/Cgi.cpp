@@ -81,8 +81,11 @@ int Cgi::handle_cgi(const Request& request, std::string &rep, std::string url,
 	int fd[2];
 	int pid = 0;
 
-	if (access((path_to_root + url).c_str(), F_OK | X_OK) == -1)
-		return (EXIT_FAILURE);
+	if (access((path_to_root + url).c_str(), F_OK) == -1)
+		return (404);
+	if (path_to_exec_prog.empty() && access((path_to_root + url).c_str(), X_OK)
+	== -1)
+		return (403);
 
 	if (fork_and_exec(meta_var, fd, pid, path_to_root, path_to_exec_prog, url)
 		== EXIT_FAILURE)

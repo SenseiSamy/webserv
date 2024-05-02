@@ -15,7 +15,6 @@ struct routes_data
     std::string index;
     std::map<std::string, std::string> cgi;
     std::map<std::string, std::string> routes_pages;
-	std::string rewrite;
 };
 
 struct server_data

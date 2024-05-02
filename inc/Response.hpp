@@ -3,10 +3,8 @@
 #include "ErrorCodes.hpp"
 #include "Request.hpp"
 #include "Server.hpp"
-
 #include <map>
 #include <string>
-#include <vector>
 
 #define GET 1
 #define POST 2
