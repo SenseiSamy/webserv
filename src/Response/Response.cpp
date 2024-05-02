@@ -4,15 +4,16 @@
 #include <sstream>
 
 Response::Response()
-    : _status_code(0), _type(0), _status_message(""), _body(""), _header(), _request(), _error_map(), _uri(""),
+    : _status_code(0), _status_message(""), _body(""), _header(), _request(), _error_map(), _uri(""),
       _path_root(""), _server()
 {
 }
 
 Response::Response(const Request &request, const server &server)
-    : _status_code(0), _type(0), _status_message(""), _body(""), _header(), _request(request), _error_map(), _uri(""),
+    : _status_code(0), _status_message(""), _body(""), _header(), _request(request), _error_map(), _uri(""),
       _path_root(""), _server(server)
 {
+    
 }
 
 Response::Response(const Response &response)
@@ -20,7 +21,6 @@ Response::Response(const Response &response)
     if (this != &response)
     {
         _status_code = response._status_code;
-        _type = response._type;
         _status_message = response._status_message;
         _body = response._body;
         _header = response._header;
@@ -37,7 +37,6 @@ Response &Response::operator=(const Response &response)
     if (this != &response)
     {
         _status_code = response._status_code;
-        _type = response._type;
         _status_message = response._status_message;
         _body = response._body;
         _header = response._header;
@@ -52,25 +51,6 @@ Response &Response::operator=(const Response &response)
 
 Response::~Response()
 {
-}
-
-int Response::_get()
-{
-    _status_code = 200;
-    _status_message = "OK";
-    _header["Content-Type"] = "text/plain";
-    _body = "Hello World!";
-    return 0;
-}
-
-int Response::_post()
-{
-    return 0;
-}
-
-int Response::_delete()
-{
-    return 0;
 }
 
 std::string Response::to_string(size_t i) const

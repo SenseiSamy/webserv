@@ -1,6 +1,9 @@
 #include "Request.hpp"
 
+#include <cstddef>
 #include <sstream>
+#include <string>
+#include <unistd.h>
 
 Request::Request() : _client_fd(0), _request(""), _method(""), _uri(""), _header(), _content_length(0), _body("")
 {
@@ -64,31 +67,45 @@ void Request::parse_request_line()
 
 void Request::parse()
 {
-    // clear the request
-    clear();
-    display_request();
-
-    // parse the request
     std::istringstream iss(_request);
     std::string line;
 
-    // parse the request line
-    std::getline(iss, line);
-    std::istringstream iss_line(line);
-    iss_line >> _method >> _uri >> _http_version;
+    if (!std::getline(iss, line))
+        return;
 
-    // parse the headers
-    while (std::getline(iss, line) && line != "\r")
+    std::istringstream iss_line(line);
+    if (!std::getline(iss_line, _method, ' '))
+        return;
+
+    while (std::getline(iss, line))
     {
         std::string key, value;
-        std::istringstream iss_line(line);
-        iss_line >> key >> value;
-        _header[key] = value;
+        std::string::size_type pos = line.find_first_of(':');
+        if (pos == std::string::npos || line.empty())
+            break;
+        else
+        {
+            key = line.substr(0, pos);
+            value = line.substr(pos + 1);
+            value.pop_back();
+            _header[key] = value;
+        }
     }
+    if (_method != "POST")
+    {
+        std::stringstream ss;
+        ss << _header["Content-Length"];
+        ss >> _content_length;
 
-    // parse the body
-    std::getline(iss, _body);
-
-    // set the content length
-    _content_length = _body.size();
+        size_t count = 0;
+        char buffer[1024];
+        while (count < _content_length)
+        {
+            ssize_t read_size = read(_client_fd, buffer, sizeof(buffer));
+            if (read_size < 0)
+                break;
+            _body.append(buffer, read_size);
+            count += read_size;
+        }
+    }
 }

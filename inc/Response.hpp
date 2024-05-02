@@ -11,7 +11,6 @@ class Response
 {
   private:
     int _status_code;
-    int _type;
     std::string _status_message;
     std::string _body;
     std::map<std::string, std::string> _header;
@@ -23,6 +22,7 @@ class Response
 
     server _server;
 
+    void _mime_type();
     int _get();
     int _post();
     int _delete();
@@ -61,7 +61,8 @@ class Response
     // Displays
     void display() const;
 
-    // Others
+    // Others    
+
     std::string to_string(size_t i) const;
     int send_response();
 };

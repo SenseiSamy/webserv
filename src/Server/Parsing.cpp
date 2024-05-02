@@ -44,7 +44,6 @@ static const std::vector<std::string> split_line(const std::string &str)
 
 void Server::read_config()
 {
-    // std::cout << "Reading config file: " << _config_file << std::endl;
     std::ifstream file(_config_file.c_str());
     if (!file.is_open())
         throw std::runtime_error("Failed to open file : " + std::string(strerror(errno)));
@@ -106,6 +105,8 @@ const std::vector<std::string> Server::get_value(const std::string &token)
     return result;
 }
 
+#include <iostream>
+
 const route Server::parse_route()
 {
     route result;
@@ -114,8 +115,14 @@ const route Server::parse_route()
     while (word != "" && word != "}")
     {
         std::vector<std::string> value = get_value(word);
+        std::cout << "word: " << word << std::endl;
+        for (std::vector<std::string>::iterator it = value.begin(); it != value.end(); ++it)
+            std::cout << "value: " << *it << std::endl;
 
-        if (word != "http_methods" && word != "cgi" && value.size() != 1)
+        if (word == "cgi" && value.size() != 2)
+            throw std::runtime_error("Syntax error: Expected two values after " + word + " at line " +
+                                     to_string(_current_line));
+        else if (word != "cgi" && value.size() != 1)
             throw std::runtime_error("Syntax error: Expected only one value after " + word + " at line " +
                                      to_string(_current_line));
 
@@ -133,6 +140,8 @@ const route Server::parse_route()
             result.default_file = value[0];
         else if (word == "cgi")
             result.cgi[value[0]] = value[1];
+        else if (word == "cgi_upload_path")
+            result.cgi_upload_path = value[0];
         else if (word == "cgi_upload_enable")
             result.cgi_upload_enable = value[0] == "true";
         else
