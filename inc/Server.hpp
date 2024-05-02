@@ -2,9 +2,6 @@
 #define SERVER_HPP
 
 #include "Request.hpp"
-
-#include <cerrno>
-#include <iostream>
 #include <map>
 #include <string>
 #include <vector>

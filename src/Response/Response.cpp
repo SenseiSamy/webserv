@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <iostream>
 
 Response::Response(Request req, server_data& serv) : _request(req), _server(serv), _is_cgi(false)
 {
@@ -48,7 +49,7 @@ const std::string Response::to_string() const
 
 void Response::find_type()
 {
-	std::string filename = get_request().get_url();
+	std::string filename = _url;
 	if (filename == "/")
 		this->_type = HTML;
 	else if (filename.find(".html") != std::string::npos)
@@ -77,6 +78,15 @@ void Response::add_content_type()
 
 void Response::generateHTTPError(int num)
 {
+	for (std::map<std::string, std::string>::iterator it = _server.error_pages.\
+	begin(); it != _server.error_pages.end(); ++it) {
+		if (std::atoi(it->first.c_str()) == num) {
+			_url = "/" + it->second;
+			get_handler();
+			return;
+		}
+	}
+
 	std::ifstream file("www/ErrorPage");
 	std::string line;
 	setStatusCode(num);

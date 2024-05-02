@@ -1,7 +1,6 @@
 #include "Cgi.hpp"
 #include "Response.hpp"
 #include <cstddef>
-#include <limits.h>
 #include <string>
 #include <unistd.h>
 #include <fstream>
@@ -22,7 +21,7 @@ bool Response::is_cgi_request() {
 		return (false);
 
 	std::string rep;
-	if (Cgi::handle_cgi(_request, rep, _path_to_root, it->second) != 0) {
+	if (Cgi::handle_cgi(_request, rep, _url, _path_to_root, it->second) != 0) {
 		generateHTTPError(500);
 		return (true);
 	}
@@ -110,7 +109,7 @@ void Response::get_handler()
 
 	if (get_request().get_url() == "/")
 		_url = "/index.html";
-	else
+	else if (_url.empty())
 		_url = _request.get_url();
 
 	if (_route != NULL && is_a_directory()) {

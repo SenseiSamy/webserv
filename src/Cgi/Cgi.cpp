@@ -27,7 +27,8 @@ Cgi::~Cgi()
 }
 
 int Cgi::fork_and_exec(std::map<std::string, std::string>& meta_var, int* fd,
-	int& pid, std::string path_to_root, std::string path_to_exec_prog)
+	int& pid, std::string path_to_root, std::string path_to_exec_prog,
+	std::string url)
 {
 	if (pipe(fd) == -1)
 		return (EXIT_FAILURE);
@@ -35,9 +36,9 @@ int Cgi::fork_and_exec(std::map<std::string, std::string>& meta_var, int* fd,
 	if (pid == 0)
 	{
 		dup2(fd[1], STDOUT_FILENO);
-		std::string scriptPath = path_to_root + meta_var["SCRIPT_NAME"];
+		std::string scriptPath = path_to_root + url;
 		if (path_to_exec_prog.empty()) {
-			char* args[] = {strdup(meta_var["SCRIPT_NAME"].c_str()), NULL};
+			char* args[] = {strdup(scriptPath.c_str()), NULL};
 			execve(scriptPath.c_str(), args, map_to_env(meta_var));
 		}
 		else {
@@ -73,17 +74,17 @@ std::string Cgi::get_cgi_output(int* fd)
 	return (rep);
 }
 
-int Cgi::handle_cgi(const Request& request, std::string &rep,
+int Cgi::handle_cgi(const Request& request, std::string &rep, std::string url,
 	std::string path_to_root, std::string path_to_exec_prog)
 {
 	std::map<std::string, std::string> meta_var = generate_meta_variables(request);
 	int fd[2];
 	int pid = 0;
 
-	if (access(("www" + meta_var["SCRIPT_NAME"]).c_str(), F_OK | X_OK) == -1)
+	if (access((path_to_root + url).c_str(), F_OK | X_OK) == -1)
 		return (EXIT_FAILURE);
 
-	if (fork_and_exec(meta_var, fd, pid, path_to_root, path_to_exec_prog)
+	if (fork_and_exec(meta_var, fd, pid, path_to_root, path_to_exec_prog, url)
 		== EXIT_FAILURE)
 		return (EXIT_FAILURE);
 

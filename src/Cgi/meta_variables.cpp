@@ -1,8 +1,5 @@
 #include "Cgi.hpp"
 #include "Request.hpp"
-
-#include <algorithm>
-#include <cctype>
 #include <cstddef>
 #include <cstring>
 #include <map>
