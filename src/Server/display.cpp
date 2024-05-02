@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include <iostream>
 
 void Server::display_servers() const
 {

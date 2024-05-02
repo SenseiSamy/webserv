@@ -1,13 +1,13 @@
 #include "Server.hpp"
-
 #include "Response.hpp"
-
+#include <iostream>
 #include <cstring>
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <sstream>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <cerrno>
 
 /* --------------- Server --------------- */
 Server::Server(const std::string& path) : _path(path)

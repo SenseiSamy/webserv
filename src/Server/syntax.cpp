@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include <iostream>
 
 int Server::syntax_brackets()
 {

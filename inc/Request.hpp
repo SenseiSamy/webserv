@@ -12,6 +12,7 @@ class Request
     std::map<std::string, std::string> _headers;
     size_t _content_lenght;
     std::string _body;
+	std::string _query_string;
 
     void parseRequest();
 

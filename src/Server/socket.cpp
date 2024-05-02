@@ -1,5 +1,6 @@
 #include "Server.hpp"
-
+#include <iostream>
+#include <cerrno>
 #include <arpa/inet.h>
 #include <cstring>
 #include <netinet/in.h>

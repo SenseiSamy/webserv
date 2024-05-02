@@ -31,13 +31,24 @@ class Response
     std::string _body;
     std::map<std::string, std::string> _headers;
     Request _request;
+	std::string _url;
+	std::string _path_to_root;
     server_data _server;
+	routes_data* _route;
+	bool _is_cgi;
 
     void find_type();
     void add_content_type();
     void generateHTTPError(int num);
     void add_content_length();
     void get_handler();
+	void select_route();
+	void set_root();
+	int check_and_rewrite_url();
+	bool is_a_directory();
+	void redirect();
+	void directory_listing();
+	bool is_cgi_request();
 
   public:
     Response(Request req, server_data &serv);
