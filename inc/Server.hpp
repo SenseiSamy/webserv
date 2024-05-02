@@ -58,15 +58,14 @@ typedef struct server
 class Server
 {
   private:
+    std::string _config_file;
+    std::map<size_t, std::vector<std::string> > _content_file;
     size_t _current_word;
     size_t _current_line;
 
     std::vector<server> _servers;
-    std::map<size_t, std::vector<std::string> > _content_file;
 
     // Index management
-    void increment_index();
-    void decrement_index();
     void reset_index();
     const std::string next_word();
     const std::string previous_word();
@@ -76,6 +75,12 @@ class Server
     // Socket management
     int create_socket(int domain, int type, int protocol);
     void setup_server_socket(server &server);
+
+    // Parsing
+    void read_config();
+    const server parse_server();
+    const route parse_route();
+
 
   public:
     Server();
@@ -101,8 +106,7 @@ class Server
     void syntax_brackets();
 
     /// Parsing
-    const server parse_server();
-    const route parse_route();
+
     void parsing_config();
 
     void run();

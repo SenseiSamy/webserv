@@ -9,6 +9,7 @@ Request::Request() : _client_fd(0), _request(""), _method(""), _uri(""), _header
 Request::Request(int listen_fd, const std::string &request)
     : _client_fd(listen_fd), _request(request), _method(""), _uri(""), _header(), _content_length(0), _body("")
 {
+    parse();
 }
 
 Request::Request(const Request &request)
@@ -37,6 +38,7 @@ Request &Request::operator=(const Request &request)
         _request = request._request;
         _method = request._method;
         _uri = request._uri;
+        _http_version = request._http_version;
         _header = request._header;
         _content_length = request._content_length;
         _body = request._body;
@@ -50,6 +52,7 @@ void Request::clear()
     _request.clear();
     _method.clear();
     _uri.clear();
+    _http_version.clear();
     _header.clear();
     _content_length = 0;
     _body.clear();
@@ -63,27 +66,29 @@ void Request::parse()
 {
     // clear the request
     clear();
+    display_request();
 
-    // create a string stream from the request
-    std::stringstream ss(_request);
-
-    // get the method and uri
-    ss >> _method >> _uri;
-
-    // get the header
+    // parse the request
+    std::istringstream iss(_request);
     std::string line;
-    while (std::getline(ss, line) && line != "\r")
+
+    // parse the request line
+    std::getline(iss, line);
+    std::istringstream iss_line(line);
+    iss_line >> _method >> _uri >> _http_version;
+
+    // parse the headers
+    while (std::getline(iss, line) && line != "\r")
     {
-        size_t pos = line.find(':');
-        if (pos != std::string::npos)
-            _header[line.substr(0, pos)] = line.substr(pos + 2);
+        std::string key, value;
+        std::istringstream iss_line(line);
+        iss_line >> key >> value;
+        _header[key] = value;
     }
 
-    // get the content-length
-    std::string content_length = get_header_key("Content-Length");
-    std::stringstream content_length_ss(content_length);
-    content_length_ss >> _content_length;
+    // parse the body
+    std::getline(iss, _body);
 
-    // get the body
-    _body = ss.str();
+    // set the content length
+    _content_length = _body.size();
 }

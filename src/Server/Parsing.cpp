@@ -1,7 +1,69 @@
 #include "Server.hpp"
 
 #include <cstddef>
+#include <fstream>
 #include <sstream>
+
+static const std::vector<std::string> split_line(const std::string &str)
+{
+    std::vector<std::string> words;
+    std::string word;
+    bool in_quote = false;
+
+    for (std::string::size_type i = 0; i < str.size(); ++i)
+    {
+        if (str[i] == '"' || str[i] == '\'')
+            in_quote = !in_quote;
+
+        if (!in_quote && str[i] == '#')
+            break;
+
+        if (in_quote)
+        {
+            word += str[i];
+            continue;
+        }
+
+        if (std::isspace(str[i]) || str[i] == '=' || str[i] == ';' || str[i] == '{' || str[i] == '}')
+        {
+            if (!word.empty())
+            {
+                words.push_back(word);
+                word.clear();
+            }
+            if (!std::isspace(str[i]))
+                words.push_back(std::string(1, str[i]));
+        }
+        else
+            word += str[i];
+    }
+    if (!word.empty())
+        words.push_back(word);
+    return words;
+}
+
+void Server::read_config()
+{
+    // std::cout << "Reading config file: " << _config_file << std::endl;
+    std::ifstream file(_config_file.c_str());
+    if (!file.is_open())
+        throw std::runtime_error("Failed to open file : " + std::string(strerror(errno)));
+
+    size_t line_number = 0;
+    std::string line;
+    while (std::getline(file, line))
+    {
+        ++line_number;
+        std::vector<std::string> words = split_line(line);
+        if (words.empty())
+            _content_file[line_number] = std::vector<std::string>();
+        else
+            for (std::vector<std::string>::const_iterator it = words.begin(); it != words.end(); ++it)
+                _content_file[line_number].push_back(*it);
+    }
+
+    file.close();
+}
 
 static ssize_t to_size_t(std::string value)
 {
@@ -20,18 +82,24 @@ const std::vector<std::string> Server::get_value(const std::string &token)
 
     // get the value
     std::string word = next_word();
-    while (word != "" && word == ";")
+    while (word != "" && word != ";")
     {
         if ((word[0] == '"' && word[word.size() - 1] == '"') || (word[0] == '\'' && word[word.size() - 1] == '\''))
             result.push_back(word.substr(1, word.size() - 2));
         else
-            throw std::runtime_error("Syntax error: Expected '\"' or '\'' at line " + to_string(_current_line));
+        {
+            if (word != ";")
+                throw std::runtime_error("Syntax error: Expected ';' after value at line " + to_string(_current_line));
+            else
+                throw std::runtime_error("Syntax error: Missing \" or ' at line " + to_string(_current_line));
+        }
         word = next_word();
     }
 
     if (result.empty())
         throw std::runtime_error("Syntax error: Expected value after " + token + " at line " +
                                  to_string(_current_line));
+
     if (word != ";")
         throw std::runtime_error("Syntax error: Expected ';' after value at line " + to_string(_current_line));
 
@@ -42,7 +110,6 @@ const route Server::parse_route()
 {
     route result;
 
-    increment_index();
     std::string word = next_word();
     while (word != "" && word != "}")
     {
@@ -80,6 +147,8 @@ const route Server::parse_route()
             result.cgi_upload_enable = value[0] == "true";
         else
             throw std::runtime_error("Syntax error: Invalid keyword " + word + " at line " + to_string(_current_line));
+
+        word = next_word();
     }
 
     if (word != "}")
@@ -95,57 +164,62 @@ const server Server::parse_server()
 {
     server result;
 
-    result.host = "127.0.0.1";
-    result.port = 8080;
-    result.root = "www/";
+    result.host = "";
+    result.port = 0;
+    result.root = "";
     result.server_names = "";
     result.default_server = false;
-    result.max_body_size = 1000000;
+    result.max_body_size = 0;
+    result.error_pages = std::map<std::string, std::string>();
+    result.routes = std::vector<route>();
 
-    increment_index();
     std::string word = next_word();
     while (word != "" && word != "}")
     {
-        std::vector<std::string> value = get_value(word);
-
-        if (word != "error_pages" && value.size() != 1)
-            throw std::runtime_error("Syntax error: Expected only one value after " + word + " at line " +
-                                     to_string(_current_line));
-        else if (word == "error_pages" && value.size() != 2)
-            throw std::runtime_error("Syntax error: Expected two values after " + word + " at line " +
-                                     to_string(_current_line));
-
-        if (word == "host")
-            result.host = value[0];
-        else if (word == "port")
-            result.port = to_size_t(value[0]);
-        else if (word == "root")
-            result.root = value[0];
-        else if (word == "server_names")
-            result.server_names = value[0];
-        else if (word == "default_server")
+        if (word == "route")
         {
-            if (value[0] == "true")
-                result.default_server = true;
-            else if (value[0] == "false")
-                result.default_server = false;
-            else
-                throw std::runtime_error("Syntax error: Invalid value for default_server at line " +
-                                         to_string(_current_line));
-        }
-        else if (word == "max_body_size")
-            result.max_body_size = to_size_t(value[0]);
-        else if (word == "error_pages")
-            result.error_pages[value[0]] = value[1];
-        else if (word == "routes")
-        {
-            if (next_word() != "{")
-                throw std::runtime_error("Syntax error: Expected '{' after routes at line " + to_string(_current_line));
-            while (next_word() != "}")
-                result.routes.push_back(parse_route());
+            std::string next = next_word();
+            if (next != "{")
+                throw std::runtime_error("Syntax error: Expected '{' after route at line " + to_string(_current_line));
+            result.routes.push_back(parse_route());
         }
         else
-            throw std::runtime_error("Syntax error: Invalid keyword " + word + " at line " + to_string(_current_line));
+        {
+            std::vector<std::string> value = get_value(word);
+
+            if (word != "error_pages" && value.size() != 1)
+                throw std::runtime_error("Syntax error: Expected only one value after " + word + " at line " +
+                                         to_string(_current_line));
+            else if (word == "error_pages" && value.size() != 2)
+                throw std::runtime_error("Syntax error: Expected two values after " + word + " at line " +
+                                         to_string(_current_line));
+
+            if (word == "host")
+                result.host = value[0];
+            else if (word == "port")
+                result.port = to_size_t(value[0]);
+            else if (word == "root")
+                result.root = value[0];
+            else if (word == "server_names")
+                result.server_names = value[0];
+            else if (word == "default_server")
+            {
+                if (value[0] == "true")
+                    result.default_server = true;
+                else if (value[0] == "false")
+                    result.default_server = false;
+                else
+                    throw std::runtime_error("Syntax error: Invalid value for default_server at line " +
+                                             to_string(_current_line));
+            }
+            else if (word == "max_body_size")
+                result.max_body_size = to_size_t(value[0]);
+            else if (word == "error_pages")
+                result.error_pages[value[0]] = value[1];
+            else
+                throw std::runtime_error("Syntax error: Invalid keyword " + word + " at line " +
+                                         to_string(_current_line));
+        }
         word = next_word();
     }
 
@@ -192,17 +266,19 @@ void Server::parsing_config()
 {
     std::string word = next_word();
 
-    while (word != "")
+    while (true)
     {
         if (word == "server")
         {
-            if (next_word() != "{")
+            std::string next = next_word();
+            if (next != "{")
                 throw std::runtime_error("Syntax error: Expected '{' after server at line " + to_string(_current_line));
-            if (next_word() != "}")
-                _servers.push_back(parse_server());
+            _servers.push_back(parse_server());
         }
         else
             throw std::runtime_error("Syntax error: Invalid keyword " + word + " at line " + to_string(_current_line));
         word = next_word();
+        if (word == "")
+            break;
     }
 }

@@ -2,15 +2,20 @@
 
 #include <iostream>
 
-std::ostream &Request::operator<<(std::ostream &os) const
+void Request::display_request() const
 {
-    os << "Request: " << _request << std::endl;
-    os << "Method: " << _method << std::endl;
-    os << "URI: " << _uri << std::endl;
-    os << "Header: " << std::endl;
-    for (std::map<std::string, std::string>::const_iterator it = _header.begin(); it != _header.end(); ++it)
-        os << "  " << it->first << ": " << it->second << std::endl;
-    os << "Content-Length: " << _content_length << std::endl;
-    os << "Body: " << _body << std::endl;
-    return os;
+    for (std::map<std::string, std::string>::const_iterator it = _header.begin(); it != _header.end(); it++)
+        std::cout << it->first << " " << it->second << " ";
+}
+
+void Request::display() const
+{
+    std::cout << "Request:" << std::endl;
+    std::cout << "  method: " << _method << std::endl;
+    std::cout << "  uri: " << _uri << std::endl;
+    std::cout << "  http_version: " << _http_version << std::endl;
+    std::cout << "  headers: ";
+    for (std::map<std::string, std::string>::const_iterator it = _header.begin(); it != _header.end(); it++)
+        std::cout << it->first << " " << it->second << " ";
+    std::cout << std::endl;
 }

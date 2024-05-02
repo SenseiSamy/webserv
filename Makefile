@@ -1,7 +1,7 @@
-CXX := g++
-CXXFLAGS := -std=c++98 -Wall -Wextra -Werror -pedantic -g
-
 NAME := webserv
+
+CXX := g++
+CXXFLAGS := -std=c++98 -Wall -Wextra -Werror -pedantic -ggdb3
 
 SRC_DIR := src
 INC_DIR := inc
@@ -32,4 +32,7 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+scan-build: clean
+	scan-build make
+
+.PHONY: all clean fclean re scan-build

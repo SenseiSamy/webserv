@@ -35,11 +35,31 @@ class Response
     ~Response();
 
     // Getters
+    int get_status_code() const;
+    int get_type() const;
+    std::string get_status_message() const;
+    std::string get_body() const;
+    std::map<std::string, std::string> get_header() const;
+    Request get_request() const;
+    std::map<unsigned short, std::string> get_error_map() const;
+    std::string get_uri() const;
+    std::string get_path_root() const;
+    server get_server() const;
 
     // Setters
+    void set_status_code(const int status_code);
+    void set_type(const int type);
+    void set_status_message(const std::string &status_message);
+    void set_body(const std::string &body);
+    void set_header(const std::map<std::string, std::string> &header);
+    void set_request(const Request &request);
+    void set_error_map(const std::map<unsigned short, std::string> &error_map);
+    void set_uri(const std::string &uri);
+    void set_path_root(const std::string &path_root);
+    void set_server(const server &server);
 
     // Displays
-    std::ostream &operator<<(std::ostream &os) const;
+    void display() const;
 
     // Others
     std::string to_string(size_t i) const;

@@ -3,7 +3,6 @@
 #include "Response.hpp"
 
 #include <cstddef>
-#include <fstream>
 #include <sstream>
 
 #include <iostream>
@@ -13,70 +12,10 @@ Server::Server() : _current_word(0), _current_line(0)
 {
 }
 
-static const std::vector<std::string> split_line(const std::string &str)
+Server::Server(const char *config_file) : _config_file(config_file), _current_word(0), _current_line(0)
 {
-    std::vector<std::string> words;
-    std::string word;
-    bool in_quote = false;
-
-    for (std::string::size_type i = 0; i < str.size(); ++i)
-    {
-        if (str[i] == '"' || str[i] == '\'')
-            in_quote = !in_quote;
-
-        if (in_quote)
-        {
-            word += str[i];
-            continue;
-        }
-
-        if (std::isspace(str[i]) || str[i] == '=' || str[i] == ';' || str[i] == '{' || str[i] == '}')
-        {
-            if (!word.empty())
-            {
-                words.push_back(word);
-                word.clear();
-            }
-            if (!std::isspace(str[i]))
-                words.push_back(std::string(1, str[i]));
-        }
-        else
-            word += str[i];
-    }
-    if (!word.empty())
-        words.push_back(word);
-    return words;
-}
-
-Server::Server(const char config_file[]) : _current_word(0), _current_line(0)
-{
-    std::ifstream file(config_file);
-    // if (!file.is_open())
-    //     throw std::runtime_error("Failed to open file : " + std::string(strerror(errno)));
-
-    size_t line_number = 0;
-    std::string line;
-    while (std::getline(file, line))
-    {
-        ++line_number;
-        // Remove comments
-        std::string::size_type end = line.find('#');
-        if (end != std::string::npos)
-            line = line.substr(0, end);
-
-        if (line.empty())
-            continue;
-
-        std::vector<std::string> parsed_line = split_line(line);
-        if (parsed_line.empty())
-            continue;
-
-        _content_file[line_number] = parsed_line;
-    }
-
-    file.close();
-    reset_index();
-
+    read_config();
+    // reset_index();
     parsing_config();
 }
 
@@ -84,10 +23,11 @@ Server::Server(const Server &other)
 {
     if (this != &other)
     {
+        _config_file = other._config_file;
+        _content_file = other._content_file;
         _current_word = other._current_word;
         _current_line = other._current_line;
         _servers = other._servers;
-        _content_file = other._content_file;
     }
 }
 
@@ -95,10 +35,11 @@ Server &Server::operator=(const Server &other)
 {
     if (this != &other)
     {
+        _config_file = other._config_file;
+        _content_file = other._content_file;
         _current_word = other._current_word;
         _current_line = other._current_line;
         _servers = other._servers;
-        _content_file = other._content_file;
     }
     return *this;
 }
@@ -174,6 +115,7 @@ void Server::run()
                         throw std::runtime_error("read() failed " + std::string(strerror(errno)));
 
                     Request request(events[i].data.fd, std::string(buffer, bytes_read));
+                    request.display();
                     Response response(request, _servers[j]);
                     response.send_response();
                 }

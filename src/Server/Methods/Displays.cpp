@@ -4,6 +4,7 @@
 
 void Server::display() const
 {
+    std::cout << "----------------------------------------" << std::endl;
     std::cout << "Servers:" << std::endl;
     for (size_t i = 0; i < _servers.size(); i++)
     {
@@ -40,4 +41,5 @@ void Server::display() const
             std::cout << "        cgi_upload_enable: " << _servers[i].routes[j].cgi_upload_enable << std::endl;
         }
     }
+    std::cout << "----------------------------------------" << std::endl;
 }

@@ -12,6 +12,7 @@ class Request
 
     std::string _method;
     std::string _uri;
+    std::string _http_version;
     std::map<std::string, std::string> _header;
     size_t _content_length;
     std::string _body;
@@ -43,7 +44,8 @@ class Request
     void set_body(const std::string &body);
 
     // Displays
-    std::ostream &operator<<(std::ostream &os) const;
+    void display_request() const;
+    void display() const;
 
     // Others    
     void clear();
