@@ -1,15 +1,5 @@
 #include "Request.hpp"
 
-int Request::get_client_fd() const
-{
-    return _client_fd;
-}
-
-std::string Request::get_request() const
-{
-    return _request;
-}
-
 std::string Request::get_method() const
 {
     return _method;
@@ -20,14 +10,14 @@ std::string Request::get_uri() const
     return _uri;
 }
 
+std::string Request::get_header(const std::string &key)
+{
+    return _header[key];
+}
+
 std::map<std::string, std::string> Request::get_header() const
 {
     return _header;
-}
-
-std::string Request::get_header_key(const std::string &key) const
-{
-    return _header.at(key);
 }
 
 size_t Request::get_content_length() const
@@ -39,3 +29,14 @@ std::string Request::get_body() const
 {
     return _body;
 }
+
+std::string Request::get_http_version() const
+{
+    return _http_version;
+}
+
+std::string Request::get_query_string() const
+{
+    return _query_string;
+}
+

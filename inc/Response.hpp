@@ -11,6 +11,7 @@ class Response
 {
   private:
     int _status_code;
+    int _type;
     std::string _status_message;
     std::string _body;
     std::map<std::string, std::string> _header;
@@ -19,9 +20,25 @@ class Response
     std::map<unsigned short, std::string> _error_map;
     std::string _uri;
     std::string _path_root;
+    std::map<std::string, std::string> _meta_var;
 
     server _server;
+    route *_route;
+    bool _is_cgi;
 
+    // Cgi
+    char **_map_to_env();
+    void _generate_meta_variables();
+    int _fork_and_exec(int *fd, int &pid, std::string path_to_root, std::string path_to_exec_prog, std::string url);
+    std::string _get_cgi_output(int *fd);
+    int _cgi(std::string &rep, std::string url, std::string path_to_root, std::string path_to_exec_prog);
+    bool _is_cgi_request();
+
+    int _check_file_uri();
+    void _redirect();
+    void _set_content_length();
+    void _directory_listing();
+    void _http_error(unsigned short status_code);
     void _mime_type();
     int _get();
     int _post();
@@ -61,10 +78,10 @@ class Response
     // Displays
     void display() const;
 
-    // Others    
+    // Others
 
     std::string to_string(size_t i) const;
-    int send_response();
+    void send_response();
 };
 
 #endif // RESPONSE_HPP

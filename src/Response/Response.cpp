@@ -60,25 +60,17 @@ std::string Response::to_string(size_t i) const
     return oss.str();
 }
 
-int Response::send_response()
+void Response::send_response()
 {
-    if (_request.get_method() == "GET")
+    const std::string method = _request.get_method(); 
+
+    if (method == "GET")
         _get();
-    else if (_request.get_method() == "POST")
+    else if (method == "POST")
         _post();
-    else if (_request.get_method() == "DELETE")
+    else if (method == "DELETE")
         _delete();
-
-    // send response
-    std::string response = "HTTP/1.1 " + to_string(_status_code) + " " + _status_message + "\r\n";
-    for (std::map<std::string, std::string>::const_iterator it = _header.begin(); it != _header.end(); ++it)
-        response += it->first + ": " + it->second + "\r\n";
-    response += "\r\n" + _body;
-
-    std::cout << response << std::endl;
-
-    // send response to client
-    send(_request.get_client_fd(), response.c_str(), response.size(), 0);
-
-    return 0;
+    else
+        _status_code = 405;
 }
+

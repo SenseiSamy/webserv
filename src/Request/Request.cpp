@@ -77,35 +77,40 @@ void Request::parse()
     if (!std::getline(iss_line, _method, ' '))
         return;
 
+    size_t i = _uri.find("?");
+    if (i != std::string::npos)
+    {
+        _query_string = _uri.substr(i);
+        _uri.resize(i);
+    }
+
     while (std::getline(iss, line))
     {
-        std::string key, value;
-        std::string::size_type pos = line.find_first_of(':');
-        if (pos == std::string::npos || line.empty())
+        if (line.empty())
             break;
-        else
-        {
-            key = line.substr(0, pos);
-            value = line.substr(pos + 1);
-            value.pop_back();
-            _header[key] = value;
-        }
+
+        std::string key, value;
+        size_t i = line.find(":");
+
+        if (i == std::string::npos)
+            break;
+
+        key = line.substr(0, i);
+        value = line.substr(i + 1);
+        value.pop_back();
+
+        while (key.find('\t') != std::string::npos)
+            key = key.substr(key.find('\t') + 1);
+
+        _header[key] = value;
     }
     if (_method != "POST")
     {
-        std::stringstream ss;
-        ss << _header["Content-Length"];
+        std::stringstream ss(_header["Content-Length"]);
         ss >> _content_length;
 
-        size_t count = 0;
-        char buffer[1024];
-        while (count < _content_length)
-        {
-            ssize_t read_size = read(_client_fd, buffer, sizeof(buffer));
-            if (read_size < 0)
-                break;
-            _body.append(buffer, read_size);
-            count += read_size;
-        }
+        char buff;
+        for (size_t i = 0; i < _content_length && ss.get(buff); i++)
+            _body.push_back(buff);
     }
 }

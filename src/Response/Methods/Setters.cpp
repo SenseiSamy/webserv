@@ -1,5 +1,7 @@
 #include "Response.hpp"
 
+#include <sstream>
+
 void Response::set_status_code(int status_code)
 {
     _status_code = status_code;
@@ -48,4 +50,11 @@ void Response::set_path_root(const std::string &path_root)
 void Response::set_server(const server &server)
 {
     _server = server;
+}
+
+void Response::_set_content_length()
+{
+    std::ostringstream oss;
+    oss << _body.size();
+    _header["Content-Length"] = oss.str();
 }

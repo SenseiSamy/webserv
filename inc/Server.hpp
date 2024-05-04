@@ -37,6 +37,9 @@ typedef struct route
     bool cgi_upload_enable;                 // true
 } route;
 
+
+// TODO:
+// - add default_file
 typedef struct server
 {
     struct sockaddr_in addr;
