@@ -43,10 +43,12 @@ class Response
 	void select_route();
 	void set_root();
 	int check_and_rewrite_url();
-	bool is_a_directory();
+	static bool is_a_directory(std::string url);
+	static bool is_a_file(std::string url);
 	void redirect();
 	void directory_listing();
 	bool is_cgi_request();
+	bool handle_cgi_request();
 
   public:
     Response(Request req, server_data &serv);

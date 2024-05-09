@@ -8,7 +8,7 @@ class Cgi
 {
   private:
     static std::map<std::string, std::string> generate_meta_variables(const
-		Request& request);
+		Request& request, std::string url);
     static char** map_to_env(std::map<std::string, std::string>& meta_var);
     static int fork_and_exec(std::map<std::string, std::string>& meta_var,
 		int* fd, int& pid, std::string path_to_root, std::string

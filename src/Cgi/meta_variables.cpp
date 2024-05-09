@@ -1,5 +1,6 @@
 #include "Cgi.hpp"
 #include "Request.hpp"
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
 #include <map>
@@ -23,13 +24,13 @@ char** Cgi::map_to_env(std::map<std::string, std::string>& meta_var)
     return (env);
 }
 
-// static void headerToVar(char& c)
-// {
-//     if (c == '-')
-//         c = '_';
-//     else
-//         c = std::toupper(c);
-// }
+static void headerToVar(char& c)
+{
+    if (c == '-')
+        c = '_';
+    else
+        c = std::toupper(c);
+}
 
 // static void tmpParseReqLine(std::string line, std::map<std::string, std::string>& meta_var)
 // {
@@ -97,27 +98,31 @@ char** Cgi::map_to_env(std::map<std::string, std::string>& meta_var)
 //     }
 // }
 
-std::map<std::string, std::string> Cgi::generate_meta_variables(const Request& request)
+std::map<std::string, std::string> Cgi::generate_meta_variables(const Request&
+	request, std::string url)
 {
     std::map<std::string, std::string> meta_var;
 
-	meta_var["REQUEST_METHOD"] = request.get_method();
-	meta_var["REQUEST_URI"] = request.get_url();
-	meta_var["SCRIPT_NAME"] = request.get_url().substr(0, request.get_url()
-		.find('?'));
-	meta_var["QUERY_STRING"] = (request.get_url().find('?') == std::string::npos
-		? "" : request.get_url().substr(request.get_url().find('?') + 1));
-
 	for (std::map<std::string, std::string>::const_iterator it = request.
 		get_headers().begin(); it != request.get_headers().end(); ++it) {
-		meta_var["HTTP_" + it->first] = it->second;
+		std::string tmp = it->first;
+		std::for_each(tmp.begin(), tmp.end(), &headerToVar);
+		meta_var["HTTP_" + tmp] = "[" + it->second + "]";
 	}
-
+	meta_var["REQUEST_METHOD"] = request.get_method();
+	meta_var["REQUEST_URI"] = request.get_url();
+	meta_var["SCRIPT_NAME"] = url;
+	meta_var["QUERY_STRING"] = (request.get_url().find('?') == std::string::npos
+		? "" : request.get_url().substr(request.get_url().find('?') + 1));
     meta_var["AUTH_TYPE"] = "";      // Implement based on specific auth handling
-    meta_var["CONTENT_LENGTH"] = ""; // Set in helper function
-    meta_var["CONTENT_TYPE"] = "";   // Set in helper function
+    meta_var["CONTENT_LENGTH"] = request.get_headers_key("Content-Length");
+    meta_var["CONTENT_TYPE"] = request.get_headers_key("Content-Type");
     meta_var["GATEWAY_INTERFACE"] = "CGI/1.1";
-    meta_var["PATH_INFO"] = "";       // Specific handling based on URL parsing
+	if (url.size() < request.get_url().size())
+		meta_var["PATH_INFO"] = request.get_url().substr(url.size(),
+		std::string::npos);
+	else
+	 	meta_var["PATH_INFO"] = "";
     meta_var["PATH_TRANSLATED"] = ""; // Translate PATH_INFO to filesystem path
     meta_var["REMOTE_ADDR"] = "";     // To be retrieved from socket information
     meta_var["REMOTE_HOST"] = "";     // Optional: resolve REMOTE_ADDR to hostname

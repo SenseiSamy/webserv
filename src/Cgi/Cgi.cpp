@@ -26,6 +26,12 @@ Cgi::~Cgi()
 {
 }
 
+static char* strdup(std::string str) {
+	char* new_str = new char[str.size()];
+	strcpy(new_str, str.c_str());
+	return (new_str);
+}
+
 int Cgi::fork_and_exec(std::map<std::string, std::string>& meta_var, int* fd,
 	int& pid, std::string path_to_root, std::string path_to_exec_prog,
 	std::string url)
@@ -38,13 +44,26 @@ int Cgi::fork_and_exec(std::map<std::string, std::string>& meta_var, int* fd,
 		dup2(fd[1], STDOUT_FILENO);
 		std::string scriptPath = path_to_root + url;
 		if (path_to_exec_prog.empty()) {
-			char* args[] = {strdup(scriptPath.c_str()), NULL};
-			execve(scriptPath.c_str(), args, map_to_env(meta_var));
+			char* args[] = {strdup(scriptPath), NULL};
+			char** envp = map_to_env(meta_var);
+			execve(scriptPath.c_str(), args, envp);
+			for (int i = 0; envp[i]; ++i) {
+				delete envp[i];
+			}
+			delete envp;
+			delete args[0];
 		}
 		else {
-			char* args[] = {strdup(path_to_exec_prog.c_str()),
-				strdup(scriptPath.c_str()), NULL};
-			execve(path_to_exec_prog.c_str(), args, map_to_env(meta_var));
+			char* args[] = {strdup(path_to_exec_prog),
+				strdup(scriptPath), NULL};
+			char** envp = map_to_env(meta_var);
+			execve(path_to_exec_prog.c_str(), args, envp);
+			for (int i = 0; envp[i]; ++i) {
+				delete envp[i];
+			}
+			delete envp;
+			delete args[0];
+			delete args[1];
 		}
 		exit(EXIT_FAILURE);
 	}
@@ -77,7 +96,8 @@ std::string Cgi::get_cgi_output(int* fd)
 int Cgi::handle_cgi(const Request& request, std::string &rep, std::string url,
 	std::string path_to_root, std::string path_to_exec_prog)
 {
-	std::map<std::string, std::string> meta_var = generate_meta_variables(request);
+	std::map<std::string, std::string> meta_var = generate_meta_variables(
+		request, url);
 	int fd[2];
 	int pid = 0;
 

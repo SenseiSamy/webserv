@@ -65,7 +65,7 @@ void Request::parseRequest()
 		else
 		{
 			headername = line.substr(0, colonPos);
-			headervalue = line.substr(colonPos + 1);
+			headervalue = line.substr(colonPos + 2);
 			headervalue.erase(headervalue.size() - 1);
 			while (headername.find('\t') != std::string::npos)
 				headername = headername.substr(headername.find('\t'));

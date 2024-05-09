@@ -1,4 +1,5 @@
 #include "Request.hpp"
+#include <exception>
 
 const std::string& Request::get_request() const
 {
@@ -20,9 +21,14 @@ const std::map<std::string, std::string>& Request::get_headers() const
     return _headers;
 }
 
-const std::string& Request::get_headers_key(const std::string& key) const
+const std::string Request::get_headers_key(const std::string& key) const
 {
-    return _headers.at(key);
+    try {
+		return _headers.at(key);
+	}
+	catch (std::exception &e) {
+		return (std::string(""));
+	}
 }
 
 size_t Request::get_content_lenght() const
