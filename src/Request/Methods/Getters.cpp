@@ -1,23 +1,28 @@
 #include "Request.hpp"
 
+std::string Request::get_request() const
+{
+    return _request;
+}
+
 std::string Request::get_method() const
 {
     return _method;
 }
 
-std::string Request::get_uri() const
+std::string Request::get_url() const
 {
-    return _uri;
+    return _url;
 }
 
-std::string Request::get_header(const std::string &key)
+std::string Request::get_headers_key(const std::string &key)
 {
-    return _header[key];
+    return _headers[key];
 }
 
-std::map<std::string, std::string> Request::get_header() const
+std::map<std::string, std::string> Request::get_headers() const
 {
-    return _header;
+    return _headers;
 }
 
 size_t Request::get_content_length() const
@@ -30,13 +35,7 @@ std::string Request::get_body() const
     return _body;
 }
 
-std::string Request::get_http_version() const
-{
-    return _http_version;
-}
-
 std::string Request::get_query_string() const
 {
     return _query_string;
 }
-

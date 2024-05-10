@@ -51,24 +51,30 @@ Respectez les règles suivantes pour assurer une interprétation correcte par le
 
 ##### Serveur
 
-| Clé            | Description                                         |
-|----------------|-----------------------------------------------------|
-| `port`         | Le port sur lequel le serveur doit écouter.         |
-| `host`         | L'adresse IP ou le nom d'hôte.                      |
-| `server_names` | Les noms de domaine que le serveur accepte.         |
-| `error_pages`  | Associe des codes d'erreur HTTP à des fichiers HTML.|
-| `body_size`    | Taille maximale du corps des requêtes en octets.    |
+| Clé               | Description                                                  |
+|-------------------|--------------------------------------------------------------|
+| `host`            | L'adresse IP sur laquelle le serveur doit écouter.           |
+| `port`            | Le port sur lequel le serveur doit écouter.                  |
+| `root`            | Le répertoire racine du serveur pour servir les fichiers.    |
+| `server_names`    | Le nom de domaine du serveur.                                |
+| `default_server`  | Indique si c'est le serveur par défaut.                      |
+| `max_body_size`   | La taille maximale du corps de la requête en octets.         |
+| `error_pages`     | Les pages d'erreur personnalisées pour différents codes HTTP.|
 
 ##### Routes
 
-| Clé             | Description                                        |
-|-----------------|----------------------------------------------------|
-| `methods`       | Méthodes HTTP autorisées pour les route.          |
-| `redirect`      | URL de redirection pour cette route.               |
-| `root`          | Répertoire racine pour les fichiers de cette route.|
-| `autoindex`     | Active ou désactive l'indexation automatique.      |
-| `default_index` | Page par défaut pour cette route.                  |
-| `cgi`           | Extensions et gestionnaire CGI pour les scripts.   |
+| Clé                   | Description                                                  |
+|-----------------------|--------------------------------------------------------------|
+| `path`                | Le chemin d'accès pour la route spécifique.                  |
+| `accepted_methods`    | Les méthodes HTTP acceptées pour cette route.                |
+| `root`                | Le répertoire racine pour cette route.                       |
+| `file_path`           | Le chemin du fichier à servir.                               |
+| `directory_listing`   | Indique si le listage des répertoires est activé ou non.     |
+| `default_file`        | Le fichier par défaut à servir si aucun fichier n'est spécifié.|
+| `cgi`                 | La configuration CGI pour les scripts exécutables.           |
+| `cgi_upload_path`     | Le chemin d'accès pour les téléchargements CGI.              |
+| `cgi_upload_enable`   | Indique si les téléchargements CGI sont activés.             |
+
 
 **Commentaires**
 - Les commentaires peuvent être ajoutés en utilisant le caractère dièse `#` et ils ne sont pas interprétés par le serveur.

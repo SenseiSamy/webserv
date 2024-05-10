@@ -4,29 +4,29 @@
 #include <sstream>
 #include <string>
 #include <unistd.h>
+#include <iostream>
 
-Request::Request() : _client_fd(0), _request(""), _method(""), _uri(""), _header(), _content_length(0), _body("")
+Request::Request(): _request("")
 {
 }
 
-Request::Request(int listen_fd, const std::string &request)
-    : _client_fd(listen_fd), _request(request), _method(""), _uri(""), _header(), _content_length(0), _body("")
+Request::Request(const std::string &request, const std::string &host, const std::string &port): _request(request)
 {
-    parse();
+	std::cout << host << " - - " << "\"" << request.substr(0, request.find("\n")) << "\"";
+	parse();
 }
 
 Request::Request(const Request &request)
 {
-    if (this != &request)
-    {
-        _client_fd = request._client_fd;
-        _request = request._request;
-        _method = request._method;
-        _uri = request._uri;
-        _header = request._header;
-        _content_length = request._content_length;
-        _body = request._body;
-    }
+	if (this != &request)
+	{
+		_request = request._request;
+		_method = request._method;
+		_url = request._url;
+		_headers = request._headers;
+		_content_length = request._content_length;
+		_body = request._body;
+	}
 }
 
 Request::~Request()
@@ -35,82 +35,77 @@ Request::~Request()
 
 Request &Request::operator=(const Request &request)
 {
-    if (this != &request)
-    {
-        _client_fd = request._client_fd;
-        _request = request._request;
-        _method = request._method;
-        _uri = request._uri;
-        _http_version = request._http_version;
-        _header = request._header;
-        _content_length = request._content_length;
-        _body = request._body;
-    }
-    return *this;
+	if (this != &request)
+	{
+		_request = request._request;
+		_method = request._method;
+		_url = request._url;
+		_headers = request._headers;
+		_content_length = request._content_length;
+		_body = request._body;
+	}
+	return *this;
 }
 
 void Request::clear()
 {
-    _client_fd = 0;
-    _request.clear();
-    _method.clear();
-    _uri.clear();
-    _http_version.clear();
-    _header.clear();
-    _content_length = 0;
-    _body.clear();
+	_request.clear();
+	_method.clear();
+	_url.clear();
+	_headers.clear();
+	_content_length = 0;
+	_body.clear();
 }
 
-void Request::parse_request_line()
+static const std::string trim(const std::string &str)
 {
+	std::string::size_type first = str.find_first_not_of(' ');
+	if (std::string::npos == first)
+		return str;
+	std::string::size_type last = str.find_last_not_of(' ');
+	return str.substr(first, (last - first + 1));
 }
 
 void Request::parse()
 {
-    std::istringstream iss(_request);
-    std::string line;
+	std::istringstream iss(_request);
+	std::string request_line;
 
-    if (!std::getline(iss, line))
-        return;
+	if (!std::getline(iss, request_line))
+		return;
 
-    std::istringstream iss_line(line);
-    if (!std::getline(iss_line, _method, ' '))
-        return;
+	// Extract request line
+	std::istringstream request_iss(request_line);
+	if (!(request_iss >> _method >> _url))
+		return;
 
-    size_t i = _uri.find("?");
-    if (i != std::string::npos)
-    {
-        _query_string = _uri.substr(i);
-        _uri.resize(i);
-    }
+	// Extract query string
+	std::string::size_type i = _url.find("?");
+	if (i != std::string::npos)
+	{
+		_query_string = _url.substr(i + 1);
+		_url = _url.substr(0, i);
+	}
 
-    while (std::getline(iss, line))
-    {
-        if (line.empty())
-            break;
+	// Extract headers lines
+	std::string line;
+	while (std::getline(iss, line) && !line.empty())
+	{
+		std::istringstream header_iss(line);
+		std::string header_name;
+		std::string header_value;
 
-        std::string key, value;
-        size_t i = line.find(":");
+		if (std::getline(header_iss, header_name, ':') && std::getline(header_iss, header_value)) 
+		{
+			header_name = trim(header_name);
+			header_value = trim(header_value);
+			_headers[header_name] = header_value;
+		}
 
-        if (i == std::string::npos)
-            break;
-
-        key = line.substr(0, i);
-        value = line.substr(i + 1);
-        value.pop_back();
-
-        while (key.find('\t') != std::string::npos)
-            key = key.substr(key.find('\t') + 1);
-
-        _header[key] = value;
-    }
-    if (_method != "POST")
-    {
-        std::stringstream ss(_header["Content-Length"]);
-        ss >> _content_length;
-
-        char buff;
-        for (size_t i = 0; i < _content_length && ss.get(buff); i++)
-            _body.push_back(buff);
-    }
+		if (_method == "POST" && _headers.find("Content-Length") != _headers.end())
+		{
+			std::istringstream(_headers["Content-Length"]) >> _content_length;
+			_body.assign(std::istreambuf_iterator<char>(iss), std::istreambuf_iterator<char>()); // Read the rest of the stream
+		}
+	}
 }

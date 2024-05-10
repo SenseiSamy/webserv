@@ -166,7 +166,7 @@ const server Server::parse_server()
     result.host = "";
     result.port = 0;
     result.root = "";
-    result.server_names = "";
+    result.server_names = std::vector<std::string>();
     result.default_server = false;
     result.max_body_size = 0;
     result.error_pages = std::map<std::string, std::string>();
@@ -200,7 +200,7 @@ const server Server::parse_server()
             else if (word == "root")
                 result.root = value[0];
             else if (word == "server_names")
-                result.server_names = value[0];
+                result.server_names = value;
             else if (word == "default_server")
             {
                 if (value[0] == "true")

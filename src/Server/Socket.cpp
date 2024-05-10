@@ -1,39 +1,30 @@
 #include "Server.hpp"
 
-#include <fcntl.h>
 #include <iostream>
-
-int Server::create_socket(int domain, int type, int protocol)
-{
-    int sock = socket(domain, type, protocol);
-    if (sock == -1)
-        throw std::runtime_error("socket() failed " + std::string(strerror(errno)));
-
-    int flags = fcntl(sock, F_GETFL, 0);
-    if (flags == -1)
-        throw std::runtime_error("fcntl() failed " + std::string(strerror(errno)));
-
-    return sock;
-}
+#include <arpa/inet.h>
 
 void Server::setup_server_socket(server &server)
 {
-    server.listen_fd = create_socket(AF_INET, SOCK_STREAM, 0);
-    server.addr.sin_family = AF_INET;
-    server.addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    server.addr.sin_port = htons(server.port);
+	server.listen_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+	if (server.listen_fd == -1)
+		throw std::runtime_error("socket() failed " + std::string(strerror(errno)));
 
-    if (bind(server.listen_fd, (struct sockaddr *)&server.addr, sizeof(server.addr)) != 0)
-    {
-        close(server.listen_fd);
-        throw std::runtime_error("bind() failed " + std::string(strerror(errno)));
-    }
+	server.addr.sin_family = AF_INET;
+	server.addr.sin_addr.s_addr = inet_addr(server.host.c_str()); 
+	server.addr.sin_port = htons(server.port);
+	bzero(&(server.addr.sin_zero), sizeof(server.addr.sin_zero));
 
-    if (listen(server.listen_fd, SOMAXCONN) != 0)
-    {
-        close(server.listen_fd);
-        throw std::runtime_error("listen() failed " + std::string(strerror(errno)));
-    }
+	if (bind(server.listen_fd, (struct sockaddr *)&server.addr, sizeof(server.addr)) != 0)
+	{
+		close(server.listen_fd);
+		throw std::runtime_error("bind() failed " + std::string(strerror(errno)));
+	}
 
-    std::cout << "Server listening on " << server.host << ":" << server.port << std::endl;
+	if (listen(server.listen_fd, SOMAXCONN) != 0)
+	{
+		close(server.listen_fd);
+		throw std::runtime_error("listen() failed " + std::string(strerror(errno)));
+	}
+
+	std::cout << "\033[1;32m" << "Server listening on " << server.host << ":" << server.port << "\033[0m" << std::endl;
 }
