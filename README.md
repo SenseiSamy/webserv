@@ -68,7 +68,7 @@ Respectez les règles suivantes pour assurer une interprétation correcte par le
 | `path`                | Le chemin d'accès pour la route spécifique.                  |
 | `accepted_methods`    | Les méthodes HTTP acceptées pour cette route.                |
 | `root`                | Le répertoire racine pour cette route.                       |
-| `file_path`           | Le chemin du fichier à servir.                               |
+| `redirect`           | Le chemin du fichier à servir.                               |
 | `_directory_listing`   | Indique si le listage des répertoires est activé ou non.     |
 | `default_file`        | Le fichier par défaut à servir si aucun fichier n'est spécifié.|
 | `cgi`                 | La configuration CGI pour les scripts exécutables.           |

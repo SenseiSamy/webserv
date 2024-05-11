@@ -132,8 +132,8 @@ const route Server::parse_route()
             result.accepted_methods = value;
         else if (word == "root")
             result.root = value[0];
-        else if (word == "file_path")
-            result.file_path = value[0];
+        else if (word == "redirect")
+            result.redirect = value[0];
         else if (word == "_directory_listing")
             result._directory_listing = value[0] == "true";
         else if (word == "default_file")

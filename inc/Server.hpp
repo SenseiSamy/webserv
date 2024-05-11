@@ -32,7 +32,7 @@ typedef struct route
 	// optional
 	std::vector<std::string> accepted_methods; // GET
 	std::string root;                          // /tmp/www
-	std::string file_path;                     // /var/www/html
+	std::string redirect;                     // /var/www/html
 	bool _directory_listing;                    // true
 	std::string default_file;                  // index.html
 

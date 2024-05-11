@@ -33,7 +33,7 @@ void Server::display() const
                 std::cout << _servers[i].routes[j].accepted_methods[k] << " ";
             std::cout << std::endl;
             std::cout << "        root: " << _servers[i].routes[j].root << std::endl;
-            std::cout << "        file_path: " << _servers[i].routes[j].file_path << std::endl;
+            std::cout << "        redirect: " << _servers[i].routes[j].redirect << std::endl;
             std::cout << "        _directory_listing: " << _servers[i].routes[j]._directory_listing << std::endl;
             std::cout << "        default_file: " << _servers[i].routes[j].default_file << std::endl;
             std::cout << "        cgi: ";

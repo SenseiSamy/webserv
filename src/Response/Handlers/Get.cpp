@@ -4,7 +4,7 @@
 
 void Response::_get()
 {
-	if (_route != NULL && !_route->path.empty())
+	if (_route != NULL && !_route->redirect.empty())
 	{
 		_redirect();
 		return;
@@ -34,8 +34,6 @@ void Response::_get()
 	_find_type();
 	int err = _check_and_rewrite_url();
 	if (err == 0) {
-		if (_is_cgi_request())
-			return;
 		std::ifstream file((_path_to_root + _url).c_str());
 		if (!file.is_open())
 		{

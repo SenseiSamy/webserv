@@ -9,9 +9,8 @@ Request::Request(): _request("")
 {
 }
 
-Request::Request(const std::string &request, const std::string &host): _request(request)
+Request::Request(const std::string &request): _request(request)
 {
-	std::cout << host << " - - " << "\"" << request.substr(0, request.find("\n")) << "\"";
 	parse();
 }
 

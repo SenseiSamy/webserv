@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <ostream>
 #include <sstream>
 
 #include <iostream>
@@ -105,10 +106,9 @@ void Server::run()
 		throw std::runtime_error("epoll_create1() failed " + std::string(strerror(errno)));
 
 	struct epoll_event ev, events[MAX_EVENTS];
-	for (size_t i = 0; i < _servers.size(); ++i)
-	{
+	for (size_t i = 0; i < _servers.size(); ++i) {
 		setup_server_socket(_servers[i]);
-
+	
 		ev.events = EPOLLIN | EPOLLET;
 		ev.data.fd = _servers[i].listen_fd;
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, _servers[i].listen_fd, &ev) == -1)
@@ -128,7 +128,7 @@ void Server::run()
 		{
 			const int fd = events[i].data.fd;
 
-			server *server;
+			server *server = NULL;
 
 			for (size_t j = 0; j < _servers.size(); ++j)
 			{
@@ -182,9 +182,11 @@ void Server::run()
 					throw std::runtime_error("read() failed " + std::string(strerror(errno)));
 				}
 
-				Request request(request_str, server->host);
+				Request request(request_str);
 				struct server server = find_server(request);
+				std::cout << server.host << " - - " << "\"" << request_str.substr(0, request_str.find("\n")) << "\"";
 				Response response(request, server);
+				std::cout << " " << response.get_status_code() << std::endl;
 				send(fd, response.to_string().c_str(), response.to_string().size(), 0);
 				close(fd);
 			}

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <stdlib.h>
+#include <unistd.h>
 
 bool Response::_is_a_directory(std::string url)
 {
@@ -29,6 +30,8 @@ int Response::_check_and_rewrite_url()
 	if (access((_path_to_root + _url).c_str(), F_OK) == -1)
 		return (404);
 	if (access((_path_to_root + _url).c_str(), R_OK) == -1)
+		return (403);
+	if (_is_a_directory((_path_to_root + _url).c_str()))
 		return (403);
 
 	char path[PATH_MAX];
@@ -69,6 +72,7 @@ void Response::_directory_listing()
 	setStatusMessage(_error_codes[200]);
 	set_headers("Content-Type", "text/html");
 
+	_body += "<h1>Index of " + _url + "</h1>\n"; 
 	_body += "<ul>\n";
 	_body += "<li><a href=..>..</a></li?>";
 	while ((entry = readdir(directory)) != NULL)
@@ -170,6 +174,8 @@ void Response::_generate_error(int num)
 		if (std::atoi(it->first.c_str()) == num)
 		{
 			_url = "/" + it->second;
+			if (access(_url.c_str(), F_OK) == -1)
+				break;
 			_get();
 			return;
 		}
