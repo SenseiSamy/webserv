@@ -1,6 +1,5 @@
 #include "Request.hpp"
 
-#include <cstddef>
 #include <sstream>
 #include <string>
 #include <unistd.h>
@@ -10,7 +9,7 @@ Request::Request(): _request("")
 {
 }
 
-Request::Request(const std::string &request, const std::string &host, const std::string &port): _request(request)
+Request::Request(const std::string &request, const std::string &host): _request(request)
 {
 	std::cout << host << " - - " << "\"" << request.substr(0, request.find("\n")) << "\"";
 	parse();

@@ -33,7 +33,7 @@ typedef struct route
 	std::vector<std::string> accepted_methods; // GET
 	std::string root;                          // /tmp/www
 	std::string file_path;                     // /var/www/html
-	bool directory_listing;                    // true
+	bool _directory_listing;                    // true
 	std::string default_file;                  // index.html
 
 	/// cgi
@@ -49,7 +49,7 @@ typedef struct server
 
 	// required
 	std::string host; // 127.0.0.1
-	ssize_t port;     // 8080
+	unsigned short port;     // 8080
 
 	// optional
 	std::string root;                               // /var/www/html

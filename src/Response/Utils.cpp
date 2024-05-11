@@ -1,140 +1,218 @@
 #include "Response.hpp"
 
+#include <dirent.h>
 #include <iostream>
+#include <linux/limits.h>
 #include <sys/stat.h>
 #include <fstream>
 #include <sstream>
+#include <stdlib.h>
 
-std::string Response::_to_string(size_t i) const
-{
-	std::ostringstream oss;
-	oss << i;
-	return oss.str();
-}
-
-std::string Response::_concatenate_paths(const std::string &base, const std::string &relative)
-{
-	std::vector<std::string> base_tokens;
-	std::vector<std::string> relative_tokens;
-	std::vector<std::string> result_tokens;
-
-	std::istringstream base_stream(base);
-	std::string token;
-	while (std::getline(base_stream, token, '/'))
-	{
-		if (!token.empty())
-			base_tokens.push_back(token);
-	}
-
-	std::istringstream relative_stream(relative);
-	while (std::getline(relative_stream, token, '/'))
-	{
-		if (!token.empty())
-			relative_tokens.push_back(token);
-	}
-
-	for (std::vector<std::string>::const_iterator it = base_tokens.begin(); it != base_tokens.end(); ++it)
-	{
-		if (*it == "..")
-		{
-			if (!result_tokens.empty())
-				result_tokens.pop_back();
-		}
-		else
-			result_tokens.push_back(*it);
-	}
-
-	for (std::vector<std::string>::const_iterator it = relative_tokens.begin(); it != relative_tokens.end(); ++it)
-	{
-		if (*it == "..")
-		{
-			if (!result_tokens.empty())
-				result_tokens.pop_back();
-		}
-		else
-			result_tokens.push_back(*it);
-	}
-
-	std::string result;
-	for (std::vector<std::string>::const_iterator it = result_tokens.begin(); it != result_tokens.end(); ++it)
-		result += *it + '/';
-
-	return result;
-}
-
-std::string Response::_sanitize_url(const std::string &url)
-{
-	if (_server.root.empty())
-		_generate_response_body(500);
-	
-	if (url.empty())
-		return _server.default_file.empty() ? "index.html" : _server.default_file;
-
-	std::string path = _concatenate_paths(_server.root, url);
-	if (path.find(_server.root) != 0) // Si le chemin ne commence pas par le chemin racine du serveur
-		return _server.default_file.empty() ? "index.html" : _server.default_file;
-
-	return path;
-}
-
-
-const std::string Response::_mime_type(const std::string &file) const
-{
-	const std::string extension = file.substr(file.find_last_of(".") + 1);
-
-	if (extension == "html")
-		return "text/html";
-	else if (extension == "css")
-		return "text/css";
-	else if (extension == "jpg" || extension == "jpeg")
-		return "image/jpeg";
-	else if (extension == "ico")
-		return "image/x-icon";
-	else if (extension == "png")
-		return "image/png";
-	else
-		return "application/octet-stream";
-}
-
-void Response::_generate_response(const std::string &path)
-{
-	std::ifstream file(path.c_str(), std::ios::in | std::ios::binary);
-
-	if (file)
-	{
-		std::ostringstream contents;
-		contents << file.rdbuf();
-		file.close();
-
-		_body = contents.str();
-		_status_code = 200;
-		_status_message = _error_map[_status_code];
-		_headers["Content-Length"] = _to_string(_body.size());
-		_headers["Content-Type"] = _mime_type(path);
-	}
-	else
-		_generate_response_body(404);
-}
-
-void Response::_generate_response_body(unsigned short error_code)
-{
-	_status_code = error_code;
-	_status_message = _error_map[_status_code];
-	_body = "<html><head><title>" + _status_message + "</title></head><body><center><h1>" + _status_message + "</h1></center></body></html>";
-	_headers["Content-Length"] = _to_string(_body.size());
-	_headers["Content-Type"] = "text/html";
-}
-
-int Response::_is_directory_or_file(const std::string &path) const
+bool Response::_is_a_directory(std::string url)
 {
 	struct stat statbuf;
-	if (stat(path.c_str(), &statbuf) != 0)
-		return -1;	// Erreur lors de la récupération des informations
+	if (stat(url.c_str(), &statbuf) != 0)
+		return (false);
+	return (S_ISDIR(statbuf.st_mode));
+}
 
-	if (S_ISDIR(statbuf.st_mode))
-		return 1;		// C'est un dossier
-	else if (S_ISREG(statbuf.st_mode))
-		return 0;		// C'est un fichier
+bool Response::_is_a_file(std::string url)
+{
+	struct stat statbuf;
+	if (stat(url.c_str(), &statbuf) != 0)
+		return (false);
+	return (S_ISREG(statbuf.st_mode));
+}
+
+int Response::_check_and_rewrite_url()
+{
+	if (access((_path_to_root + _url).c_str(), F_OK) == -1)
+		return (404);
+	if (access((_path_to_root + _url).c_str(), R_OK) == -1)
+		return (403);
+
+	char path[PATH_MAX];
+	if (realpath((_path_to_root + _url).c_str(), path) == NULL)
+		return (500);
+	_url = path;
+	if (getcwd(path, PATH_MAX) == NULL)
+		return (500);
+	if (_url.find(_path_to_root) != 0)
+		return (403);
+	_url.erase(0, std::string(_path_to_root).size());
+	return (0);
+}
+
+
+void Response::_redirect()
+{
+	if (_route == NULL || _route->path.empty()) {
+		_generate_error(500);
+		return;
+	}
+	setStatusCode(307);
+	setStatusMessage(_error_codes[307]);
+	set_headers("Location", _route->path);
+}
+
+void Response::_directory_listing()
+{
+	struct dirent* entry;
+	DIR* directory = opendir((_path_to_root +_url).c_str());
+	if (directory == NULL)
+	{
+		_generate_error(500);
+		return;
+	}
+
+	setStatusCode(200);
+	setStatusMessage(_error_codes[200]);
+	set_headers("Content-Type", "text/html");
+
+	_body += "<ul>\n";
+	_body += "<li><a href=..>..</a></li?>";
+	while ((entry = readdir(directory)) != NULL)
+	{
+		if (std::string(entry->d_name) == ".." || std::string(entry->d_name)
+			== ".")
+			continue;
+		_body += "<li><a href=\"";
+		_body += _url + "/" + entry->d_name;
+		_body += "\">";
+		_body += entry->d_name;
+		_body += "</a></li>\n";
+	}
+	_body += "</ul>\n";
+
+	set_content_lenght();
+}
+
+void Response::_select_route()
+{
+	const std::string request = _request.get_url();
+
+	for (size_t i = 0; i < _server.routes.size(); ++i)
+	{
+		if (request.find(_server.routes[i].root) == 0)
+		{
+			for (size_t j = 0; j < _server.routes[i].accepted_methods.size(); ++j)
+			{
+				if (_request.get_method() == _server.routes[i].accepted_methods[j])
+				{
+					_route = &_server.routes[i];
+					return;
+				}
+			}
+		}
+	}
+	_route = NULL;
+}
+
+const std::string Response::to_string() const
+{
+	std::stringstream ss;
+	ss << _status_code;
+	std::stringstream dd;
+	dd << _body.length();
+	std::string response = "HTTP/1.1 ";
+	response += ss.str() + " " + _status_message + "\r\n";
+
+	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
+		response += it->first + ": " + it->second + "\r\n";
+
+	if (!_is_cgi)
+		response += "\r\n";
+	response += _body;
+	return response;
+}
+
+void Response::_find_type()
+{
+	std::string filename = _url;
+	if (filename == "/")
+		this->_type = HTML;
+	else if (filename.find(".html") != std::string::npos)
+		this->_type = HTML;
+	else if (filename.find(".css") != std::string::npos)
+		this->_type = CSS;
+	else if (filename.find(".jpg") != std::string::npos)
+		this->_type = JPG;
+	else if (filename.find(".ico") != std::string::npos)
+		this->_type = ICO;
 	else
-		return -2;	// Le chemin n'est ni un fichier ni un dossier
+		this->_type = UNKNOW;
+}
+
+void Response::_add_content_type()
+{
+	if (_type == HTML)
+		set_headers("Content-Type", "text/html");
+	else if (_type == CSS)
+		set_headers("Content-Type", "text/css");
+	else if (_type == JPG)
+		set_headers("Content-Type", "image/jpeg");
+	else if (_type == ICO)
+		set_headers("Content-Type", "image/vnd.microsoft.icon");
+	else
+		set_headers("Content-Type", "text/plain");
+}
+
+void Response::_set_root()
+{
+	char tmp[PATH_MAX];
+	_path_to_root = realpath("www", tmp);
+}
+
+void Response::_generate_error(int num)
+{
+	for (std::map<std::string, std::string>::iterator it = _server.error_pages.begin(); it != _server.error_pages.end(); ++it)
+	{
+		if (std::atoi(it->first.c_str()) == num)
+		{
+			_url = "/" + it->second;
+			_get();
+			return;
+		}
+	}
+
+	std::ifstream file("www/ErrorPage");
+	std::string line;
+	setStatusCode(num);
+	setStatusMessage(_error_codes[num]);
+	while (std::getline(file, line))
+		_body += line + "\n";
+	file.close();
+	std::srand(time(0));
+	std::stringstream ss;
+	ss << num;
+	int randnum = std::rand();
+	if (randnum % 4 == 0)
+	{
+		_body += "<img src=\"https://http.cat/";
+		_body += ss.str() + "\" alt=\"Centered Image\"\n";
+		_body += "width=\"800\"\nheight=\"600\"\n/>";
+		_body += "</div>\n</body>\n</html>\n\r";
+	}
+	else if (randnum % 4 == 1)
+	{
+		_body += "<img src=\"https://http.dog/";
+		_body += ss.str() + ".jpg\" alt=\"Centered Image\"\n";
+		_body += "width=\"800\"\nheight=\"600\"\n/>";
+		_body += "</div>\n</body>\n</html>\n\r";
+	}
+
+	else if (randnum % 4 == 2)
+	{
+		_body += "<img src=\"https://http.pizza/";
+		_body += ss.str() + ".jpg\" alt=\"Centered Image\"\n";
+		_body += "width=\"800\"\nheight=\"600\"\n/>";
+		_body += "</div>\n</body>\n</html>\n\r";
+	}
+	else
+	{
+		_body += "<img src=\"https://httpgoats.com/";
+		_body += ss.str() + ".jpg\" alt=\"Centered Image\"\n";
+		_body += "width=\"800\"\nheight=\"600\"\n/>";
+		_body += "</div>\n</body>\n</html>\n\r";
+	}
 }

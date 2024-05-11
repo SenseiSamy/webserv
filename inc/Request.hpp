@@ -18,7 +18,7 @@ class Request
 
   public:
     Request();
-    Request(const std::string &request, const std::string &host, const std::string &port);
+    Request(const std::string &request, const std::string &host);
     Request(const Request &request);
     ~Request();
     Request &operator=(const Request &request);

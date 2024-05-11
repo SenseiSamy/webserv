@@ -2,59 +2,29 @@
 
 #include <sstream>
 
-void Response::set_status_code(int status_code)
+void Response::setStatusCode(int code)
 {
-    _status_code = status_code;
+    _status_code = code;
 }
 
-void Response::set_type(int type)
+void Response::setStatusMessage(const std::string& message)
 {
-    _type = type;
+    _status_message = message;
 }
 
-void Response::set_status_message(const std::string &status_message)
+void Response::setBody(const std::string& responseBody)
 {
-    _status_message = status_message;
+    _body = responseBody;
 }
 
-void Response::set_body(const std::string &body)
+void Response::set_headers(const std::string& key, const std::string& value)
 {
-    _body = body;
+    _headers[key] = value;
 }
 
-void Response::set_header(const std::map<std::string, std::string> &header)
+void Response::set_content_lenght()
 {
-    _header = header;
-}
-
-void Response::set_request(const Request &request)
-{
-    _request = request;
-}
-
-void Response::set_error_map(const std::map<unsigned short, std::string> &error_map)
-{
-    _error_map = error_map;
-}
-
-void Response::set_uri(const std::string &uri)
-{
-    _uri = uri;
-}
-
-void Response::set_path_root(const std::string &path_root)
-{
-    _path_root = path_root;
-}
-
-void Response::set_server(const server &server)
-{
-    _server = server;
-}
-
-void Response::_set_content_length()
-{
-    std::ostringstream oss;
-    oss << _body.size();
-    _header["Content-Length"] = oss.str();
+    std::stringstream ss;
+    ss << _body.length();
+    set_headers("Content-Lenght", ss.str());
 }

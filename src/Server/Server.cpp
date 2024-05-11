@@ -65,7 +65,7 @@ std::string Server::to_string(size_t i) const
 
 const server &Server::find_server(Request &request)
 {
-  const std::string &host = request.get_header_key("Host");
+  const std::string &host = request.get_headers_key("Host");
   if (host.empty())
     return _servers[0];
 
@@ -145,7 +145,10 @@ void Server::run()
 				socklen_t client_addr_len = sizeof(client_addr);
 				int client_fd = accept(server->listen_fd, (struct sockaddr *)&client_addr, &client_addr_len);
 				if (client_fd == -1)
-					throw std::runtime_error("accept() failed " + std::string(strerror(errno)));
+				{
+					std::cerr << "accept() failed " << std::string(strerror(errno));
+					continue;
+				}
 
 				fcntl(client_fd, F_SETFL, O_NONBLOCK);
 
@@ -179,7 +182,7 @@ void Server::run()
 					throw std::runtime_error("read() failed " + std::string(strerror(errno)));
 				}
 
-				Request request(request_str, server->host, server->port);
+				Request request(request_str, server->host);
 				struct server server = find_server(request);
 				Response response(request, server);
 				send(fd, response.to_string().c_str(), response.to_string().size(), 0);

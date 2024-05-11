@@ -79,7 +79,7 @@ const std::vector<std::string> Server::get_value(const std::string &token)
     if (next_word() != "=")
         throw std::runtime_error("Syntax error: Expected '=' after " + token + " at line " + to_string(_current_line));
 
-    // get the value
+    // _get the value
     std::string word = next_word();
     while (word != "" && word != ";")
     {
@@ -134,8 +134,8 @@ const route Server::parse_route()
             result.root = value[0];
         else if (word == "file_path")
             result.file_path = value[0];
-        else if (word == "directory_listing")
-            result.directory_listing = value[0] == "true";
+        else if (word == "_directory_listing")
+            result._directory_listing = value[0] == "true";
         else if (word == "default_file")
             result.default_file = value[0];
         else if (word == "cgi")

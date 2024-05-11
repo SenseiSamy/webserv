@@ -34,7 +34,7 @@ void Server::display() const
             std::cout << std::endl;
             std::cout << "        root: " << _servers[i].routes[j].root << std::endl;
             std::cout << "        file_path: " << _servers[i].routes[j].file_path << std::endl;
-            std::cout << "        directory_listing: " << _servers[i].routes[j].directory_listing << std::endl;
+            std::cout << "        _directory_listing: " << _servers[i].routes[j]._directory_listing << std::endl;
             std::cout << "        default_file: " << _servers[i].routes[j].default_file << std::endl;
             std::cout << "        cgi: ";
             for (std::map<std::string, std::string>::const_iterator it = _servers[i].routes[j].cgi.begin();

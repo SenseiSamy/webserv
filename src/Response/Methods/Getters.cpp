@@ -1,51 +1,46 @@
 #include "Response.hpp"
 
-int Response::get_status_code() const
+const int& Response::get_status_code() const
 {
     return _status_code;
 }
 
-int Response::get_type() const
+const int& Response::get_type() const
 {
     return _type;
 }
 
-std::string Response::get_status_message() const
+const std::map<int, std::string> &Response::get_error_codes() const
+{
+    return _error_codes;
+}
+
+const std::string& Response::get_status_message() const
 {
     return _status_message;
 }
 
-std::string Response::get_body() const
+const std::string& Response::get_body() const
 {
     return _body;
 }
 
-std::map<std::string, std::string> Response::get_header() const
+const std::string& Response::get_headers_key(const std::string& key) const
 {
-    return _header;
+    return _headers.at(key);
 }
 
-Request Response::get_request() const
+const std::map<std::string, std::string>& Response::get_headers() const
+{
+    return _headers;
+}
+
+const Request& Response::get_request() const
 {
     return _request;
 }
 
-std::map<unsigned short, std::string> Response::get_error_map() const
-{
-    return _error_map;
-}
-
-std::string Response::get_uri() const
-{
-    return _uri;
-}
-
-std::string Response::get_path_root() const
-{
-    return _path_root;
-}
-
-server Response::get_server() const
+const server& Response::get_server() const
 {
     return _server;
 }
