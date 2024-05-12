@@ -21,7 +21,7 @@ void Response::_get()
 			_url = "/" + _route->default_file;
 		else
 		{
-			if (_route->_directory_listing)
+			if (_route->directory_listing)
 				_directory_listing();
 			else
 				_generate_error(404);

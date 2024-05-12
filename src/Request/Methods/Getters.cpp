@@ -39,3 +39,11 @@ std::string Request::get_query_string() const
 {
     return _query_string;
 }
+
+std::string Request::get_first_line() const
+{
+    std::string::size_type pos = _request.find("\r\n");
+    if (pos == std::string::npos)
+        return "";
+    return _request.substr(0, pos);
+}

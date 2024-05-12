@@ -9,9 +9,9 @@ void Server::setup_server_socket(server &server)
 	if (server.listen_fd == -1)
 		throw std::runtime_error("socket() failed " + std::string(strerror(errno)));
 
-	int optval = 1;
-	if (setsockopt(server.listen_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
-		throw std::runtime_error("setsockopt() failed " + std::string(strerror(errno)));
+	// int optval = 1;
+	// if (setsockopt(server.listen_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
+	// 	throw std::runtime_error("setsockopt() failed " + std::string(strerror(errno)));
 
 	server.addr.sin_family = AF_INET;
 	server.addr.sin_addr.s_addr = inet_addr(server.host.c_str()); 

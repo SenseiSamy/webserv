@@ -10,7 +10,7 @@ const int& Response::get_type() const
     return _type;
 }
 
-const std::map<int, std::string> &Response::get_error_codes() const
+const std::map<unsigned int, std::string> &Response::get_error_codes() const
 {
     return _error_codes;
 }

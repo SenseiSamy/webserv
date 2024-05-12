@@ -14,16 +14,91 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
+#include <csignal>
 
-Server::Server() : _current_word(0), _current_line(0)
+volatile sig_atomic_t g_signal_status = 0;
+
+static const std::map<unsigned int, std::string> initerror_codes()
+{
+	std::map<unsigned int, std::string> error_codes;
+
+	error_codes[100] = "Continue";
+	error_codes[101] = "Switching Protocols";
+	error_codes[102] = "Processing";
+	error_codes[200] = "OK";
+	error_codes[201] = "Created";
+	error_codes[202] = "Accepted";
+	error_codes[203] = "Non-Authoritative Information";
+	error_codes[204] = "No Content";
+	error_codes[205] = "Reset Content";
+	error_codes[206] = "Partial Content";
+	error_codes[207] = "Multi-Status";
+	error_codes[208] = "Already Reported";
+	error_codes[226] = "IM Used";
+	error_codes[300] = "Multiple Choices";
+	error_codes[301] = "Moved Permanently";
+	error_codes[302] = "Found";
+	error_codes[303] = "See Other";
+	error_codes[304] = "Not Modified";
+	error_codes[305] = "Use Proxy";
+	error_codes[306] = "(Unused)";
+	error_codes[307] = "Temporary _redirect";
+	error_codes[308] = "Permanent _redirect";
+	error_codes[400] = "Bad Request";
+	error_codes[401] = "Unauthorized";
+	error_codes[402] = "Payment Required";
+	error_codes[403] = "Forbidden";
+	error_codes[404] = "Not Found";
+	error_codes[405] = "Method Not Allowed";
+	error_codes[406] = "Not Acceptable";
+	error_codes[407] = "Proxy Authentication Required";
+	error_codes[408] = "Request Timeout";
+	error_codes[409] = "Conflict";
+	error_codes[410] = "Gone";
+	error_codes[411] = "Length Required";
+	error_codes[412] = "Precondition Failed";
+	error_codes[413] = "Payload Too Large";
+	error_codes[414] = "URI Too Long";
+	error_codes[415] = "Unsupported Media Type";
+	error_codes[416] = "Range Not Satisfiable";
+	error_codes[417] = "Expectation Failed";
+	error_codes[418] = "I'm a teapot";
+	error_codes[421] = "Misdirected Request";
+	error_codes[422] = "Unprocessable Entity";
+	error_codes[423] = "Locked";
+	error_codes[424] = "Failed Dependency";
+	error_codes[425] = "Too Early";
+	error_codes[426] = "Upgrade Required";
+	error_codes[428] = "Precondition Required";
+	error_codes[429] = "Too Many Requests";
+	error_codes[431] = "Request Header Fields Too Large";
+	error_codes[451] = "Unavailable For Legal Reasons";
+	error_codes[500] = "Internal Server Error";
+	error_codes[501] = "Not Implemented";
+	error_codes[502] = "Bad Gateway";
+	error_codes[503] = "Service Unavailable";
+	error_codes[504] = "Gateway Timeout";
+	error_codes[505] = "HTTP Version Not Supported";
+	error_codes[506] = "Variant Also Negotiates";
+	error_codes[507] = "Insufficient Storage";
+	error_codes[508] = "Loop Detected";
+	error_codes[510] = "Not Extended";
+	error_codes[511] = "Network Authentication Required";
+
+	return error_codes;
+}
+
+bool Server::_stop_server = false;
+
+Server::Server() : _current_word(0), _current_line(0), _error_codes(initerror_codes())
 {
 }
 
-Server::Server(const char *config_file) : _config_file(config_file), _current_word(0), _current_line(0)
+Server::Server(const char *config_file) : _config_file(config_file), _current_word(0), _current_line(0), _error_codes(initerror_codes())
 {
 	read_config();
-	// reset_index();
 	parsing_config();
+	signal(SIGINT, Server::signal_handler);
 }
 
 Server::Server(const Server &other)
@@ -99,6 +174,12 @@ const server &Server::find_server(Request &request)
   return _servers[0];
 }
 
+void Server::signal_handler(int signum)
+{
+	std::cout << "Caught signal " << signum << std::endl;
+	_stop_server = true;
+}
+
 void Server::run()
 {
 	int epoll_fd = epoll_create(1);
@@ -118,11 +199,16 @@ void Server::run()
 		}
 	}
 
-	while (true)
+	while (!_stop_server)
 	{
 		int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
 		if (nfds < 0)
-			throw std::runtime_error("epoll_wait() failed " + std::string(strerror(errno)));
+		{
+			if (errno == EINTR)
+				continue;
+			else
+				throw std::runtime_error("epoll_wait() failed " + std::string(strerror(errno)));
+		}
 
 		for (int i = 0; i < nfds; ++i)
 		{
@@ -183,10 +269,14 @@ void Server::run()
 				}
 
 				Request request(request_str);
-				struct server server = find_server(request);
-				std::cout << server.host << " - - " << "\"" << request_str.substr(0, request_str.find("\n")) << "\"";
-				Response response(request, server);
-				std::cout << " " << response.get_status_code() << std::endl;
+				const struct server server = find_server(request);
+				Response response(request, server, _error_codes);
+				std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
+				if (response.get_status_code() == 200)
+					std::cout << "\033[1;32m" << response.get_status_code();
+				else
+					std::cout << "\033[1;31m" << response.get_status_code() << " " << response.get_status_message();
+				std::cout << "\033[0m -" << std::endl;
 				send(fd, response.to_string().c_str(), response.to_string().size(), 0);
 				close(fd);
 			}

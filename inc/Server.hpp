@@ -33,7 +33,7 @@ typedef struct route
 	std::vector<std::string> accepted_methods; // GET
 	std::string root;                          // /tmp/www
 	std::string redirect;                     // /var/www/html
-	bool _directory_listing;                    // true
+	bool directory_listing;                    // true
 	std::string default_file;                  // index.html
 
 	/// cgi
@@ -69,6 +69,8 @@ class Server
 		size_t _current_word;
 		size_t _current_line;
 
+		static bool _stop_server;
+		const std::map<unsigned int, std::string> _error_codes;
 		std::vector<server> _servers;
 
 		// Index management
@@ -82,10 +84,15 @@ class Server
 		void setup_server_socket(server &server);
 
 		// Parsing
+		void route_value(route &result, const std::string &word);
+		void server_value(server &server, const std::string &word);
+		void syntax_brackets();
 		void read_config();
 		const server parse_server();
 		const route parse_route();
+		void parsing_config();
 
+		static void signal_handler(int signum);
 		const server &find_server(Request &request);
 
 	public:
@@ -107,13 +114,6 @@ class Server
 
 		// Others
 		std::string to_string(size_t i) const;
-
-		/// Syntax
-		void syntax_brackets();
-
-		/// Parsing
-
-		void parsing_config();
 
 		void run();
 };

@@ -32,6 +32,7 @@ class Request
     size_t get_content_length() const;
     std::string get_body() const;
     std::string get_query_string() const;
+    std::string get_first_line() const;
     // Setters
 
     // Displays

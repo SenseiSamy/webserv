@@ -32,7 +32,7 @@ class Response
     std::map<std::string, std::string> _headers;
 
     Request _request;
-    std::map<int, std::string> _error_codes;
+    std::map<unsigned int, std::string> _error_codes;
     std::string _url;
     std::string _path_to_root;
     server _server;
@@ -57,7 +57,6 @@ class Response
     void _redirect();
     void _directory_listing();
     bool _is_cgi_request();
-    void _error_codes_init();
 
     bool _handle_cgi_request();
     void _post();
@@ -67,7 +66,7 @@ class Response
 
   public:
     Response();
-    Response(const Request &request, const server &server);
+    Response(const Request &request, const server &server, const std::map<unsigned int, std::string> &error_codes);
     Response(const Response &other);
     Response &operator=(const Response &other);
     ~Response();
@@ -75,7 +74,7 @@ class Response
     // getters
     const int &get_status_code() const;
     const int &get_type() const;
-    const std::map<int, std::string> &get_error_codes() const;
+    const std::map<unsigned int, std::string> &get_error_codes() const;
     const std::string &get_status_message() const;
     const std::string &get_body() const;
     const std::map<std::string, std::string> &get_headers() const;
