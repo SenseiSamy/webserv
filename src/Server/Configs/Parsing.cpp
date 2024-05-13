@@ -100,7 +100,9 @@ const route Server::parse_route()
 	route result;
 
 	result.path = "";
-	result.accepted_methods = std::vector<std::string>();
+	result.accepted_methods.push_back("GET");
+	result.accepted_methods.push_back("POST");
+	result.accepted_methods.push_back("DELETE");
 	result.root = "";
 	result.redirect = "";
 	result.directory_listing = false;
