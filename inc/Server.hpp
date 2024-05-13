@@ -65,6 +65,7 @@ class Server
 {
 	private:
 		bool _verbose;
+		int _epoll_fd;
 		std::string _config_file;
 		std::map<size_t, std::vector<std::string> > _content_file;
 		size_t _current_word;
