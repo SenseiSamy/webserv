@@ -49,13 +49,13 @@ int Response::_check_and_rewrite_url()
 
 void Response::_redirect()
 {
-	if (_route == NULL || _route->path.empty()) {
+	if (_route == NULL || _route->redirect.empty()) {
 		_generate_error(500);
 		return;
 	}
 	set_status_code(307);
 	set_status_message(_error_codes[307]);
-	set_headers("Location", _route->path);
+	set_headers("Location", _route->redirect);
 }
 
 void Response::_directory_listing()
@@ -97,7 +97,7 @@ void Response::_select_route()
 
 	for (size_t i = 0; i < _server.routes.size(); ++i)
 	{
-		if (request.find(_server.routes[i].root) == 0)
+		if (request.find(_server.routes[i].path) == 0)
 		{
 			for (size_t j = 0; j < _server.routes[i].accepted_methods.size(); ++j)
 			{

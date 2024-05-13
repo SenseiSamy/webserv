@@ -42,8 +42,8 @@ static const std::map<unsigned int, std::string> initerror_codes()
 	error_codes[304] = "Not Modified";
 	error_codes[305] = "Use Proxy";
 	error_codes[306] = "(Unused)";
-	error_codes[307] = "Temporary _redirect";
-	error_codes[308] = "Permanent _redirect";
+	error_codes[307] = "Temporary Redirect";
+	error_codes[308] = "Permanent Redirect";
 	error_codes[400] = "Bad Request";
 	error_codes[401] = "Unauthorized";
 	error_codes[402] = "Payment Required";
@@ -148,21 +148,24 @@ const server &Server::find_server(Request &request)
   if (host.empty())
     return _servers[0];
 
+  std::vector<server>::iterator it;
+  std::string hostname;
   std::string::size_type sep = host.find(':');
-  if (sep == std::string::npos)
-    return _servers[0];
+  if (sep != std::string::npos) {
+    std::stringstream ss(host.substr(sep + 1));
+    ss >> sep;
+    hostname = host.substr(0, sep);
 
-  std::stringstream ss(host.substr(sep + 1));
-  ss >> sep;
-  std::string hostname = host.substr(0, sep);
-
-  std::vector<server>::iterator it = _servers.begin();
-  while (it != _servers.end())
-  {
-    if (it->host == hostname && it->port == sep)
-      return *it;
-    ++it;
+    it = _servers.begin();
+    while (it != _servers.end())
+    {
+      if (it->host == hostname && it->port == sep)
+        return *it;
+      ++it;
+    }
   }
+  else
+    hostname = host;
 
   for (it = _servers.begin(); it != _servers.end(); ++it)
   {

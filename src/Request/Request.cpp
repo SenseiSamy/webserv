@@ -97,7 +97,7 @@ void Request::parse()
 		{
 			header_name = trim(header_name);
 			header_value = trim(header_value);
-			_headers[header_name] = header_value;
+			_headers[header_name] = header_value.substr(0, header_value.size() - 1);
 		}
 
 		if (_method == "POST" && _headers.find("Content-Length") != _headers.end())
