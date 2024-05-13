@@ -78,7 +78,7 @@ class Response
 		const std::string &get_status_message() const;
 		const std::string &get_body() const;
 		const std::map<std::string, std::string> &get_headers() const;
-		const std::string &get_headers_key(const std::string &key) const;
+		const std::string get_headers_key(const std::string &key) const;
 		const Request &get_request() const;
 		const server &get_server() const;
 

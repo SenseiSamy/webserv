@@ -104,7 +104,7 @@ const route Server::parse_route()
 	result.root = "";
 	result.redirect = "";
 	result.directory_listing = false;
-	result.default_file = "index.html";
+	result.default_file = "";
 	result.cgi = std::map<std::string, std::string>();
 	result.cgi_upload_path = "/tmp/upload";
 	result.cgi_upload_enable = true;

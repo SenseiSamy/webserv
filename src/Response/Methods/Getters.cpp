@@ -1,5 +1,7 @@
 #include "Response.hpp"
 
+#include <stdexcept>
+
 const int& Response::get_status_code() const
 {
 	return _status_code;
@@ -25,9 +27,13 @@ const std::string& Response::get_body() const
 	return _body;
 }
 
-const std::string& Response::get_headers_key(const std::string& key) const
+const std::string Response::get_headers_key(const std::string& key) const
 {
-	return _headers.at(key);
+	std::map<std::string, std::string>::const_iterator it = _headers.find(key);
+	if (it != _headers.end())
+		return it->second;
+	else
+		return "";
 }
 
 const std::map<std::string, std::string>& Response::get_headers() const
