@@ -1,13 +1,13 @@
 #include "Response.hpp"
 
-Response::Response(): _status_code(0), _status_message(""), _body(""), _headers(), _request(), _error_codes(), _url(""), _path_to_root(""), _server()
+Response::Response(): _status_code(0), _status_message(""), _body(""), _headers(), _request(), _error_codes(), _url(""), _path_to_root(""), _server(), _is_cgi(false)
 {
 	_set_root();
 	_select_route();
 	_generate();
 }
 
-Response::Response(const Request &request, const server &server, const std::map<unsigned int, std::string> &error_codes): _status_code(0), _status_message(""), _body(""), _headers(), _request(request), _error_codes(error_codes), _url(""), _path_to_root(""), _server(server)
+Response::Response(const Request &request, const server &server, const std::map<unsigned int, std::string> &error_codes): _status_code(0), _status_message(""), _body(""), _headers(), _request(request), _error_codes(error_codes), _url(""), _path_to_root(""), _server(server), _is_cgi(false)
 {
 	_set_root();
 	_select_route();
@@ -26,6 +26,7 @@ Response::Response(const Response &other)
 		_error_codes = other._error_codes;
 		_url = other._url;
 		_path_to_root = other._path_to_root;
+		_is_cgi = other._is_cgi;
 		_server = other._server;
 	}
 }
@@ -42,6 +43,7 @@ Response &Response::operator=(const Response &response)
 		_error_codes = response._error_codes;
 		_url = response._url;
 		_path_to_root = response._path_to_root;
+		_is_cgi = response._is_cgi;
 		_server = response._server;
 	}
 	return *this;
