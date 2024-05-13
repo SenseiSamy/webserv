@@ -1,152 +1,298 @@
 #include "Server.hpp"
+<<<<<<< HEAD
 #include "Response.hpp"
 #include <iostream>
 #include <cstring>
+=======
+#include "Request.hpp"
+#include "Response.hpp"
+
+#include <cerrno>
+#include <cstddef>
+>>>>>>> cadence
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <ostream>
 #include <sstream>
+<<<<<<< HEAD
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <cerrno>
+=======
+>>>>>>> cadence
 
-/* --------------- Server --------------- */
-Server::Server(const std::string& path) : _path(path)
+#include <iostream>
+#include <sys/epoll.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <vector>
+#include <csignal>
+
+volatile sig_atomic_t g_signal_status = 0;
+
+static const std::map<unsigned int, std::string> initerror_codes()
 {
-    if (read_files() == -1)
-        throw std::runtime_error("Error: cannot open the file " + path);
-    if (_file_config_content.empty())
-        throw std::runtime_error("Error: config file cannot be empty");
-    if (syntax_brackets() == -1)
-        throw std::runtime_error("Error: syntax error in file " + path);
-    if (parsing_config() == -1)
-        throw std::runtime_error("Error: parsing error in file " + path);
+	std::map<unsigned int, std::string> error_codes;
+
+	error_codes[100] = "Continue";
+	error_codes[101] = "Switching Protocols";
+	error_codes[102] = "Processing";
+	error_codes[200] = "OK";
+	error_codes[201] = "Created";
+	error_codes[202] = "Accepted";
+	error_codes[203] = "Non-Authoritative Information";
+	error_codes[204] = "No Content";
+	error_codes[205] = "Reset Content";
+	error_codes[206] = "Partial Content";
+	error_codes[207] = "Multi-Status";
+	error_codes[208] = "Already Reported";
+	error_codes[226] = "IM Used";
+	error_codes[300] = "Multiple Choices";
+	error_codes[301] = "Moved Permanently";
+	error_codes[302] = "Found";
+	error_codes[303] = "See Other";
+	error_codes[304] = "Not Modified";
+	error_codes[305] = "Use Proxy";
+	error_codes[306] = "(Unused)";
+	error_codes[307] = "Temporary _redirect";
+	error_codes[308] = "Permanent _redirect";
+	error_codes[400] = "Bad Request";
+	error_codes[401] = "Unauthorized";
+	error_codes[402] = "Payment Required";
+	error_codes[403] = "Forbidden";
+	error_codes[404] = "Not Found";
+	error_codes[405] = "Method Not Allowed";
+	error_codes[406] = "Not Acceptable";
+	error_codes[407] = "Proxy Authentication Required";
+	error_codes[408] = "Request Timeout";
+	error_codes[409] = "Conflict";
+	error_codes[410] = "Gone";
+	error_codes[411] = "Length Required";
+	error_codes[412] = "Precondition Failed";
+	error_codes[413] = "Payload Too Large";
+	error_codes[414] = "URI Too Long";
+	error_codes[415] = "Unsupported Media Type";
+	error_codes[416] = "Range Not Satisfiable";
+	error_codes[417] = "Expectation Failed";
+	error_codes[418] = "I'm a teapot";
+	error_codes[421] = "Misdirected Request";
+	error_codes[422] = "Unprocessable Entity";
+	error_codes[423] = "Locked";
+	error_codes[424] = "Failed Dependency";
+	error_codes[425] = "Too Early";
+	error_codes[426] = "Upgrade Required";
+	error_codes[428] = "Precondition Required";
+	error_codes[429] = "Too Many Requests";
+	error_codes[431] = "Request Header Fields Too Large";
+	error_codes[451] = "Unavailable For Legal Reasons";
+	error_codes[500] = "Internal Server Error";
+	error_codes[501] = "Not Implemented";
+	error_codes[502] = "Bad Gateway";
+	error_codes[503] = "Service Unavailable";
+	error_codes[504] = "Gateway Timeout";
+	error_codes[505] = "HTTP Version Not Supported";
+	error_codes[506] = "Variant Also Negotiates";
+	error_codes[507] = "Insufficient Storage";
+	error_codes[508] = "Loop Detected";
+	error_codes[510] = "Not Extended";
+	error_codes[511] = "Network Authentication Required";
+
+	return error_codes;
+}
+
+bool Server::_stop_server = false;
+
+Server::Server() : _current_word(0), _current_line(0), _error_codes(initerror_codes())
+{
+}
+
+Server::Server(const char *config_file) : _config_file(config_file), _current_word(0), _current_line(0), _error_codes(initerror_codes())
+{
+	read_config();
+	parsing_config();
+	signal(SIGINT, Server::signal_handler);
+}
+
+Server::Server(const Server &other)
+{
+	if (this != &other)
+	{
+		_config_file = other._config_file;
+		_content_file = other._content_file;
+		_current_word = other._current_word;
+		_current_line = other._current_line;
+		_servers = other._servers;
+	}
+}
+
+Server &Server::operator=(const Server &other)
+{
+	if (this != &other)
+	{
+		_config_file = other._config_file;
+		_content_file = other._content_file;
+		_current_word = other._current_word;
+		_current_line = other._current_line;
+		_servers = other._servers;
+	}
+	return *this;
 }
 
 Server::~Server()
 {
-    _file_config_content.clear();
+	for (size_t i = 0; i < _servers.size(); ++i)
+		close(_servers[i].listen_fd);
 }
 
-server_data* Server::get_server_to_connect(int sock_fd)
+std::string Server::to_string(size_t i) const
 {
-    for (std::size_t i = 0; i < _servers.size(); ++i)
-    {
-        if (sock_fd == _servers[i]._listen_fd)
-            return (&_servers[i]);
-    }
-    return (NULL);
+	std::ostringstream oss;
+	oss << i;
+	return oss.str();
 }
 
-server_data& Server::get_server_from_request(Request req)
+const server &Server::find_server(Request &request)
 {
-    std::string host = req.get_headers_key("Host");
-    int port;
-    std::size_t sep;
-    std::vector<server_data>::iterator it;
-    if (host.empty())
-        return (_servers[0]);
-    sep = host.find(':');
-    if (sep == std::string::npos)
-        return (_servers[0]);
-    std::stringstream ss(host.substr(sep + 1));
-    ss >> port;
-    host = host.substr(0, sep);
+  const std::string &host = request.get_headers_key("Host");
+  if (host.empty())
+    return _servers[0];
 
-    for (it = _servers.begin(); it != _servers.end(); ++it)
+  std::string::size_type sep = host.find(':');
+  if (sep == std::string::npos)
+    return _servers[0];
+
+  std::stringstream ss(host.substr(sep + 1));
+  ss >> sep;
+  std::string hostname = host.substr(0, sep);
+
+  std::vector<server>::iterator it = _servers.begin();
+  while (it != _servers.end())
+  {
+    if (it->host == hostname && it->port == sep)
+      return *it;
+    ++it;
+  }
+
+  for (it = _servers.begin(); it != _servers.end(); ++it)
+  {
+    std::vector<std::string>::iterator name_it = it->server_names.begin();
+    while (name_it != it->server_names.end())
     {
-        if (host == it->host && port == it->port)
-            return (*it);
+      if (*name_it == hostname)
+        return *it;
+      ++name_it;
     }
-    for (it = _servers.begin(); it != _servers.end(); ++it)
-    {
-        for (std::size_t i = 0; i < it->server_names.size(); ++i)
-            if (host == it->server_names[i])
-                return (*it);
-    }
-    return (_servers[0]);
+  }
+  return _servers[0];
 }
 
-void Server::print_log(Request& req, server_data& server) const
+void Server::signal_handler(int signum)
 {
-    std::stringstream ss(req.get_request());
-    std::string line;
-    const char* box_color = "\e[38;2;255;148;253m";
-
-    std::cout << box_color << "╭─ Request to server " << req.get_headers_key("Host") << " (" << server.host << ":"
-              << server.port << ")\e[0m" << std::endl;
-    while (std::getline(ss, line))
-    {
-        line.erase(line.size() - 1);
-        if (!line.empty())
-            std::cout << box_color << "│ \e[0m" << line << std::endl;
-    }
-    std::cout << box_color << "╰───────────────────\e[0m" << std::endl;
+	std::cout << "Caught signal " << signum << std::endl;
+	_stop_server = true;
 }
 
-int Server::run()
+void Server::run()
 {
-    epoll_event ev, events[MAX_EVENTS];
-    int client_sock;
-    sockaddr_in client_addr;
-    socklen_t client_addr_size = sizeof(client_addr);
+	int epoll_fd = epoll_create(1);
+	if (epoll_fd == -1)
+		throw std::runtime_error("epoll_create1() failed " + std::string(strerror(errno)));
 
-    open_sockets();
+	struct epoll_event ev, events[MAX_EVENTS];
+	for (size_t i = 0; i < _servers.size(); ++i) {
+		setup_server_socket(_servers[i]);
+	
+		ev.events = EPOLLIN | EPOLLET;
+		ev.data.fd = _servers[i].listen_fd;
+		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, _servers[i].listen_fd, &ev) == -1)
+		{
+			close(epoll_fd);
+			throw std::runtime_error("epoll_ctl() failed " + std::string(strerror(errno)));
+		}
+	}
 
-    while (true)
-    {
-        int num_events = epoll_wait(_epoll_fd, events, MAX_EVENTS, -1);
-        if (num_events < 0)
-            return (-1);
+	while (!_stop_server)
+	{
+		int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+		if (nfds < 0)
+		{
+			if (errno == EINTR)
+				continue;
+			else
+				throw std::runtime_error("epoll_wait() failed " + std::string(strerror(errno)));
+		}
 
-        for (int n = 0; n < num_events; ++n)
-        {
-            const int fd = events[n].data.fd;
-            server_data* server = get_server_to_connect(fd);
-            if (server != NULL)
-            {
-                client_sock = accept(server->_listen_fd, (struct sockaddr*)&client_addr, &client_addr_size);
-                if (client_sock < 0)
-                {
-                    std::cerr << "run: accept: " << strerror(errno) << std::endl;
-                    continue;
-                }
-                fcntl(client_sock, F_SETFL, O_NONBLOCK);
-                ev.events = EPOLLIN | EPOLLET;
-                ev.data.fd = client_sock;
-                if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_sock, &ev) == -1)
-                {
-                    std::cerr << "run: epoll_ctl: " << strerror(errno) << std::endl;
-                    return (-1);
-                }
-            }
-            else if ((events[n].events & EPOLLERR) || (events[n].events & EPOLLHUP) || (!(events[n].events & EPOLLIN)))
-                close(fd);
-            else
-            {
-                std::string request("");
-                char buffer[1024];
-                ssize_t count;
-                while ((count = read(fd, buffer, sizeof(buffer) - 1)) > 0)
-                {
-                    buffer[count] = '\0';
-                    request.append(buffer, count);
-                }
-                if (count == -1 && errno != EAGAIN)
-                {
-                    std::cerr << "run: read: " << strerror(errno) << std::endl;
-                    close(fd);
-                }
-                else
-                {
-                    Request req(request);
-                    server_data& server = get_server_from_request(req);
-                    print_log(req, server);
-                    Response response(req, server);
-                    send(fd, response.to_string().c_str(), response.to_string().size(), 0);
-                    close(fd);
-                }
-            }
-        }
-    }
-    return 0;
+		for (int i = 0; i < nfds; ++i)
+		{
+			const int fd = events[i].data.fd;
+
+			server *server = NULL;
+
+			for (size_t j = 0; j < _servers.size(); ++j)
+			{
+				if (_servers[j].listen_fd == fd)
+				{
+					server = &_servers[j];
+					break;
+				}
+			}
+
+			if (server != NULL)
+			{
+				sockaddr_in client_addr;
+				socklen_t client_addr_len = sizeof(client_addr);
+				int client_fd = accept(server->listen_fd, (struct sockaddr *)&client_addr, &client_addr_len);
+				if (client_fd == -1)
+				{
+					std::cerr << "accept() failed " << std::string(strerror(errno));
+					continue;
+				}
+
+				fcntl(client_fd, F_SETFL, O_NONBLOCK);
+
+				ev.events = EPOLLIN | EPOLLET;
+				ev.data.fd = client_fd;
+				if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1)
+				{
+					close(epoll_fd);
+					throw std::runtime_error("epoll_ctl() failed " + std::string(strerror(errno)));
+				}
+			}
+			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN)))
+			{
+				close(fd);
+				continue;
+			}
+			else
+			{
+				std::string request_str;
+
+				char buffer[MAX_BUFFER_SIZE];
+				ssize_t count;
+				while ((count = read(fd, buffer, MAX_BUFFER_SIZE)) > 0)
+				{
+					buffer[count] = '\0';
+					request_str.append(buffer, count);
+				}
+				if (count == -1 && errno != EAGAIN)
+				{
+					close(fd);
+					throw std::runtime_error("read() failed " + std::string(strerror(errno)));
+				}
+
+				Request request(request_str);
+				const struct server server = find_server(request);
+				Response response(request, server, _error_codes);
+				std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
+				if (response.get_status_code() == 200)
+					std::cout << "\033[1;32m" << response.get_status_code();
+				else
+					std::cout << "\033[1;31m" << response.get_status_code() << " " << response.get_status_message();
+				std::cout << "\033[0m -" << std::endl;
+				send(fd, response.to_string().c_str(), response.to_string().size(), 0);
+				close(fd);
+			}
+		}
+	}
+	close(epoll_fd);
 }
