@@ -1,6 +1,5 @@
 #include "Request.hpp"
 
-#include <cstddef>
 #include <sstream>
 #include <string>
 #include <unistd.h>

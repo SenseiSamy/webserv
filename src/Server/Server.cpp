@@ -1,25 +1,13 @@
 #include "Server.hpp"
-<<<<<<< HEAD
-#include "Response.hpp"
-#include <iostream>
-#include <cstring>
-=======
 #include "Request.hpp"
 #include "Response.hpp"
 
 #include <cerrno>
 #include <cstddef>
->>>>>>> cadence
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <ostream>
 #include <sstream>
-<<<<<<< HEAD
-#include <sys/epoll.h>
-#include <unistd.h>
-#include <cerrno>
-=======
->>>>>>> cadence
 
 #include <iostream>
 #include <sys/epoll.h>
