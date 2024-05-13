@@ -15,6 +15,11 @@ std::string Request::get_url() const
 	return _url;
 }
 
+std::string Request::get_version() const
+{
+	return _version;
+}
+
 std::string Request::get_headers_key(const std::string &key)
 {
 	return _headers[key];

@@ -64,6 +64,7 @@ typedef struct server
 class Server
 {
 	private:
+		bool _verbose;
 		std::string _config_file;
 		std::map<size_t, std::vector<std::string> > _content_file;
 		size_t _current_word;
@@ -97,7 +98,7 @@ class Server
 
 	public:
 		Server();
-		Server(const char *config_file);
+		Server(const char *config_file, const bool verbose);
 		Server(const Server &other);
 		~Server();
 		Server &operator=(const Server &other);

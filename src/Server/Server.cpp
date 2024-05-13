@@ -94,7 +94,7 @@ Server::Server() : _current_word(0), _current_line(0), _error_codes(initerror_co
 {
 }
 
-Server::Server(const char *config_file) : _config_file(config_file), _current_word(0), _current_line(0), _error_codes(initerror_codes())
+Server::Server(const char *config_file, const bool verbose) : _verbose(verbose), _config_file(config_file), _current_word(0), _current_line(0), _error_codes(initerror_codes())
 {
 	read_config();
 	parsing_config();
@@ -129,7 +129,10 @@ Server &Server::operator=(const Server &other)
 Server::~Server()
 {
 	for (size_t i = 0; i < _servers.size(); ++i)
+	{
+		std::cout << "Deleting server " << _servers[i].host << ":" << _servers[i].port << std::endl;
 		close(_servers[i].listen_fd);
+	}
 }
 
 std::string Server::to_string(size_t i) const
@@ -182,6 +185,8 @@ void Server::signal_handler(int signum)
 
 void Server::run()
 {
+	if (_verbose)
+		display();
 	int epoll_fd = epoll_create(1);
 	if (epoll_fd == -1)
 		throw std::runtime_error("epoll_create1() failed " + std::string(strerror(errno)));
@@ -198,6 +203,7 @@ void Server::run()
 			throw std::runtime_error("epoll_ctl() failed " + std::string(strerror(errno)));
 		}
 	}
+	std::cout << "----------------------------------------" << std::endl;
 
 	while (!_stop_server)
 	{
@@ -246,7 +252,7 @@ void Server::run()
 					throw std::runtime_error("epoll_ctl() failed " + std::string(strerror(errno)));
 				}
 			}
-			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN)))
+			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN))) // 
 			{
 				close(fd);
 				continue;
@@ -269,14 +275,23 @@ void Server::run()
 				}
 
 				Request request(request_str);
+				if (_verbose)
+				{
+					request.display();
+					std::cout << "----------------------------------------" << std::endl;
+				}
 				const struct server server = find_server(request);
 				Response response(request, server, _error_codes);
+				if (_verbose)
+					response.display();
 				std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
 				if (response.get_status_code() == 200)
 					std::cout << "\033[1;32m" << response.get_status_code();
 				else
 					std::cout << "\033[1;31m" << response.get_status_code() << " " << response.get_status_message();
 				std::cout << "\033[0m -" << std::endl;
+				if (_verbose)
+					std::cout << "----------------------------------------" << std::endl;
 				send(fd, response.to_string().c_str(), response.to_string().size(), 0);
 				close(fd);
 			}

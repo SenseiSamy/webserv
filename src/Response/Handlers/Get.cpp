@@ -40,8 +40,8 @@ void Response::_get()
 			_generate_error(500);
 			return;
 		}
-		setStatusCode(200);
-		setStatusMessage(_error_codes[200]);
+		set_status_code(200);
+		set_status_message(_error_codes[200]);
 		_add_content_type();
 		std::string line;
 		while (std::getline(file, line))

@@ -183,8 +183,8 @@ bool Response::_is_cgi_request()
 				_generate_error(500);
 				return (true);
 			}
-			setStatusCode(200);
-			setStatusMessage(_error_codes[200]);
+			set_status_code(200);
+			set_status_message(_error_codes[200]);
 			_body += rep;
 			set_content_lenght();
 			return (true);

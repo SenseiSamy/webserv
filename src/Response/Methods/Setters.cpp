@@ -2,12 +2,12 @@
 
 #include <sstream>
 
-void Response::setStatusCode(int code)
+void Response::set_status_code(int code)
 {
 	_status_code = code;
 }
 
-void Response::setStatusMessage(const std::string& message)
+void Response::set_status_message(const std::string& message)
 {
 	_status_message = message;
 }

@@ -52,8 +52,8 @@ class Response
 		void _select_route();
 		void _set_root();
 		int _check_and_rewrite_url();
-		static bool _is_a_directory(std::string url);
-		static bool _is_a_file(std::string url);
+		bool _is_a_directory(const std::string &url) const;
+		bool _is_a_file(const std::string &url) const;
 		void _redirect();
 		void _directory_listing();
 		bool _is_cgi_request();
@@ -83,11 +83,14 @@ class Response
 		const server &get_server() const;
 
 		// setters
-		void setStatusCode(int code);
-		void setStatusMessage(const std::string &message);
+		void set_status_code(int code);
+		void set_status_message(const std::string &message);
 		void setBody(const std::string &responseBody);
 		void set_headers(const std::string &key, const std::string &value);
 		void set_content_lenght();
+
+		// displays
+		void display() const;
 
 		const std::string to_string() const;
 };

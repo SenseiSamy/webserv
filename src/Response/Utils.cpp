@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-bool Response::_is_a_directory(std::string url)
+bool Response::_is_a_directory(const std::string &url) const
 {
 	struct stat statbuf;
 	if (stat(url.c_str(), &statbuf) != 0)
@@ -17,7 +17,7 @@ bool Response::_is_a_directory(std::string url)
 	return (S_ISDIR(statbuf.st_mode));
 }
 
-bool Response::_is_a_file(std::string url)
+bool Response::_is_a_file(const std::string &url) const
 {
 	struct stat statbuf;
 	if (stat(url.c_str(), &statbuf) != 0)
@@ -53,8 +53,8 @@ void Response::_redirect()
 		_generate_error(500);
 		return;
 	}
-	setStatusCode(307);
-	setStatusMessage(_error_codes[307]);
+	set_status_code(307);
+	set_status_message(_error_codes[307]);
 	set_headers("Location", _route->path);
 }
 
@@ -68,8 +68,8 @@ void Response::_directory_listing()
 		return;
 	}
 
-	setStatusCode(200);
-	setStatusMessage(_error_codes[200]);
+	set_status_code(200);
+	set_status_message(_error_codes[200]);
 	set_headers("Content-Type", "text/html");
 
 	_body += "<h1>Index of " + _url + "</h1>\n"; 
@@ -183,8 +183,8 @@ void Response::_generate_error(int num)
 
 	std::ifstream file("www/ErrorPage");
 	std::string line;
-	setStatusCode(num);
-	setStatusMessage(_error_codes[num]);
+	set_status_code(num);
+	set_status_message(_error_codes[num]);
 	while (std::getline(file, line))
 		_body += line + "\n";
 	file.close();

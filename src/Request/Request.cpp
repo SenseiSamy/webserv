@@ -74,7 +74,7 @@ void Request::parse()
 
 	// Extract request line
 	std::istringstream request_iss(request_line);
-	if (!(request_iss >> _method >> _url))
+	if (!(request_iss >> _method >> _url >> _version))
 		return;
 
 	// Extract query string

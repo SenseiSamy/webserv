@@ -55,6 +55,7 @@ Response::~Response()
 
 void Response::_generate()
 {
+
 	const std::string method = _request.get_method(); 
 
 	if (method == "GET")
