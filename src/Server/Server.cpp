@@ -187,19 +187,20 @@ void Server::run()
 {
 	if (_verbose)
 		display();
-	int epoll_fd = epoll_create(1);
-	if (epoll_fd == -1)
+	_epoll_fd = epoll_create(1);
+	if (_epoll_fd == -1)
 		throw std::runtime_error("epoll_create1() failed " + std::string(strerror(errno)));
 
 	struct epoll_event ev, events[MAX_EVENTS];
-	for (size_t i = 0; i < _servers.size(); ++i) {
+	for (size_t i = 0; i < _servers.size(); ++i)
+	{
 		setup_server_socket(_servers[i]);
 	
 		ev.events = EPOLLIN | EPOLLET;
 		ev.data.fd = _servers[i].listen_fd;
-		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, _servers[i].listen_fd, &ev) == -1)
+		if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, _servers[i].listen_fd, &ev) == -1)
 		{
-			close(epoll_fd);
+			close(_epoll_fd);
 			throw std::runtime_error("epoll_ctl() failed " + std::string(strerror(errno)));
 		}
 	}
@@ -207,7 +208,7 @@ void Server::run()
 
 	while (!_stop_server)
 	{
-		int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+		int nfds = epoll_wait(_epoll_fd, events, MAX_EVENTS, -1);
 		if (nfds < 0)
 		{
 			if (errno == EINTR)
@@ -246,9 +247,9 @@ void Server::run()
 
 				ev.events = EPOLLIN | EPOLLET;
 				ev.data.fd = client_fd;
-				if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1)
+				if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1)
 				{
-					close(epoll_fd);
+					close(_epoll_fd);
 					throw std::runtime_error("epoll_ctl() failed " + std::string(strerror(errno)));
 				}
 			}
@@ -297,5 +298,5 @@ void Server::run()
 			}
 		}
 	}
-	close(epoll_fd);
+	close(_epoll_fd);
 }

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <arpa/inet.h>
+#include <unistd.h>
 
 void Server::setup_server_socket(server &server)
 {
@@ -21,12 +22,14 @@ void Server::setup_server_socket(server &server)
 	if (bind(server.listen_fd, (struct sockaddr *)&server.addr, sizeof(server.addr)) != 0)
 	{
 		close(server.listen_fd);
+		close(_epoll_fd);
 		throw std::runtime_error("bind() failed " + std::string(strerror(errno)));
 	}
 
 	if (listen(server.listen_fd, SOMAXCONN) != 0)
 	{
 		close(server.listen_fd);
+		close(_epoll_fd);
 		throw std::runtime_error("listen() failed " + std::string(strerror(errno)));
 	}
 
