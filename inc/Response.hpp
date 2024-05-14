@@ -54,6 +54,8 @@ class Response
 		int _check_and_rewrite_url();
 		bool _is_a_directory(const std::string &url) const;
 		bool _is_a_file(const std::string &url) const;
+		bool _exists (const std::string& name) const;
+		bool _write_perm(const std::string& name) const;
 		void _redirect();
 		void _directory_listing();
 		bool _is_cgi_request();
@@ -61,6 +63,7 @@ class Response
 		bool _handle_cgi_request();
 		void _post();
 		void _get();
+		void _delete();
 
 		void _generate();
 

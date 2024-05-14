@@ -8,6 +8,7 @@
 #include <sstream>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/types.h>
 
 bool Response::_is_a_directory(const std::string &url) const
 {
@@ -23,6 +24,22 @@ bool Response::_is_a_file(const std::string &url) const
 	if (stat(url.c_str(), &statbuf) != 0)
 		return (false);
 	return (S_ISREG(statbuf.st_mode));
+}
+
+bool Response::_exists (const std::string& name) const
+{
+	struct stat buffer;
+	if (stat (name.c_str(), &buffer) != 0)
+		return (false);
+	return (true);
+}
+
+bool Response::_write_perm(const std::string& name) const
+{
+	struct stat buffer;
+	if (stat (name.c_str(), &buffer) != 0)
+		return (false);
+	return (S_IWOTH & buffer.st_mode);
 }
 
 int Response::_check_and_rewrite_url()
