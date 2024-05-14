@@ -36,10 +36,7 @@ bool Response::_exists (const std::string& name) const
 
 bool Response::_write_perm(const std::string& name) const
 {
-	struct stat buffer;
-	if (stat (name.c_str(), &buffer) != 0)
-		return (false);
-	return (S_IWOTH & buffer.st_mode);
+	return (access(name.c_str(), W_OK));
 }
 
 int Response::_check_and_rewrite_url()
