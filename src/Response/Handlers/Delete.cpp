@@ -43,16 +43,19 @@ void	Response::_delete()
 		{
 			set_status_code(404);
 			set_status_message(_error_codes[404]);
+			return ;
 		}
 		if (!std::remove(filename.c_str()))
 		{
 			set_status_code(204);
 			set_status_message(_error_codes[204]);
+			return ;
 		}
 		else
 		{
 			set_status_code(401);
 			set_status_message(_error_codes[401]);
+			return ;
 		}
 	}
 }
