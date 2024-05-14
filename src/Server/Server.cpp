@@ -186,6 +186,48 @@ void Server::signal_handler(int signum)
 	_stop_server = true;
 }
 
+bool Server::accept_new_connection(server* server)
+{
+	sockaddr_in client_addr;
+	socklen_t client_addr_len = sizeof(client_addr);
+	struct epoll_event ev;
+	int client_fd = accept(server->listen_fd, (struct sockaddr *)&client_addr, &client_addr_len);
+	if (client_fd == -1)
+	{
+		std::cerr << "accept() failed " << std::string(strerror(errno));
+		return (false);
+	}
+
+	fcntl(client_fd, F_SETFL, O_NONBLOCK);
+
+	ev.events = EPOLLIN | EPOLLET;
+	ev.data.fd = client_fd;
+	if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1)
+	{
+		close(_epoll_fd);
+		throw std::runtime_error("epoll_ctl() failed " + std::string(strerror(errno)));
+	}
+	return (true);
+}
+
+std::string Server::read_request(int fd) {
+	std::string request_str;
+
+	char buffer[MAX_BUFFER_SIZE];
+	ssize_t count;
+	while ((count = read(fd, buffer, MAX_BUFFER_SIZE)) != 0)
+	{
+		buffer[count] = '\0';
+		request_str.append(buffer, count);
+	}
+	if (count == -1 && errno != EAGAIN)
+	{
+		close(fd);
+		throw std::runtime_error("read() failed " + std::string(strerror(errno)));
+	}
+	return (request_str);
+}
+
 void Server::run()
 {
 	if (_verbose)
@@ -220,65 +262,29 @@ void Server::run()
 				throw std::runtime_error("epoll_wait() failed " + std::string(strerror(errno)));
 		}
 
-		for (int i = 0; i < nfds; ++i)
+		for (int i = 0; i < nfds; ++i) // Iterating over all the fds that are available for reading/writing
 		{
 			const int fd = events[i].data.fd;
-
 			server *server = NULL;
 
-			for (size_t j = 0; j < _servers.size(); ++j)
-			{
-				if (_servers[j].listen_fd == fd)
-				{
+			for (size_t j = 0; j < _servers.size(); ++j) {
+				if (_servers[j].listen_fd == fd) {
 					server = &_servers[j];
 					break;
 				}
 			}
 
-			if (server != NULL)
-			{
-				sockaddr_in client_addr;
-				socklen_t client_addr_len = sizeof(client_addr);
-				int client_fd = accept(server->listen_fd, (struct sockaddr *)&client_addr, &client_addr_len);
-				if (client_fd == -1)
-				{
-					std::cerr << "accept() failed " << std::string(strerror(errno));
+			if (server != NULL) { // Accepting a new connection
+				if (!accept_new_connection(server))
 					continue;
-				}
-
-				fcntl(client_fd, F_SETFL, O_NONBLOCK);
-
-				ev.events = EPOLLIN | EPOLLET;
-				ev.data.fd = client_fd;
-				if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1)
-				{
-					close(_epoll_fd);
-					throw std::runtime_error("epoll_ctl() failed " + std::string(strerror(errno)));
-				}
 			}
-			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN))) // 
-			{
+			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN))) { // An error happened
 				close(fd);
 				continue;
 			}
-			else
+			else // Reading client request and sending response
 			{
-				std::string request_str;
-
-				char buffer[MAX_BUFFER_SIZE];
-				ssize_t count;
-				while ((count = read(fd, buffer, MAX_BUFFER_SIZE)) > 0)
-				{
-					buffer[count] = '\0';
-					request_str.append(buffer, count);
-				}
-				if (count == -1 && errno != EAGAIN)
-				{
-					close(fd);
-					throw std::runtime_error("read() failed " + std::string(strerror(errno)));
-				}
-
-				Request request(request_str);
+				Request request(read_request(fd));
 				if (_verbose)
 				{
 					request.display();

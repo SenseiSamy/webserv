@@ -95,7 +95,11 @@ class Server
 		void parsing_config();
 
 		static void signal_handler(int signum);
+
+		// Execution
 		const server &find_server(Request &request);
+		bool accept_new_connection(server* server);
+		std::string read_request(int fd);
 
 	public:
 		Server();
