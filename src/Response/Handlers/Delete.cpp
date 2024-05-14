@@ -9,10 +9,11 @@
 
 void	Response::_delete()
 {
-	std::string filename = _path_to_root + _url;
+	_url = _request.get_url();
+	std::string filename(_path_to_root + _url);
 	if (_is_a_directory(filename))
 	{
-		if (filename.back() != '/')
+		if (filename.at(filename.size() - 1) != '/')
 		{
 			set_status_code(409);
 			set_status_message(_error_codes[409]);

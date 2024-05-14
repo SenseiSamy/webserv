@@ -62,8 +62,8 @@ void Response::_generate()
 		_get();
 	else if (method == "POST")
 		_post();
-	// else if (method == "DELETE")
-	// 	_delete();
+	else if (method == "DELETE")
+		_delete();
 	else
 		_generate_error(405);
 }
