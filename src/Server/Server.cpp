@@ -186,7 +186,7 @@ void Server::signal_handler(int signum)
 	_stop_server = true;
 }
 
-bool Server::accept_new_connection(server* server)
+bool Server::_accept_new_connection(server* server)
 {
 	sockaddr_in client_addr;
 	socklen_t client_addr_len = sizeof(client_addr);
@@ -210,7 +210,7 @@ bool Server::accept_new_connection(server* server)
 	return (true);
 }
 
-bool Server::read_request(int fd)
+bool Server::_read_request(int fd)
 {
 	std::string request_str;
 
@@ -275,7 +275,7 @@ void Server::run()
 			}
 
 			if (server != NULL) { // Accepting a new connection
-				if (!accept_new_connection(server))
+				if (!_accept_new_connection(server))
 					continue;
 			}
 			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN))) { // An error happened
@@ -284,7 +284,7 @@ void Server::run()
 			}
 			else // Reading client request and sending response
 			{
-				if (!read_request(fd))
+				if (!_read_request(fd))
 					continue;
 				Request request(requests[fd]);
 				requests.erase(fd);
@@ -305,7 +305,10 @@ void Server::run()
 				std::cout << "\033[0m -" << std::endl;
 				if (_verbose)
 					std::cout << "----------------------------------------" << std::endl;
-				send(fd, response.to_string().c_str(), response.to_string().size(), 0);
+
+				std::string response_str = response.convert();
+
+				send(fd, response_str.c_str(), response_str.size(), 0);
 				close(fd);
 			}
 		}
