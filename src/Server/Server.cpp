@@ -210,22 +210,22 @@ bool Server::accept_new_connection(server* server)
 	return (true);
 }
 
-std::string Server::read_request(int fd) {
+bool Server::read_request(int fd)
+{
 	std::string request_str;
 
 	char buffer[MAX_BUFFER_SIZE];
-	ssize_t count;
-	while ((count = read(fd, buffer, MAX_BUFFER_SIZE)) != 0)
-	{
+	ssize_t count = read(fd, buffer, MAX_BUFFER_SIZE);
+	while (count > 0)
+	{ 
 		buffer[count] = '\0';
 		request_str.append(buffer, count);
+		count = read(fd, buffer, MAX_BUFFER_SIZE);
 	}
-	if (count == -1 && errno != EAGAIN)
-	{
-		close(fd);
-		throw std::runtime_error("read() failed " + std::string(strerror(errno)));
-	}
-	return (request_str);
+	requests[fd] += request_str;
+	if (count == 0 || request_str == "\r\n")
+		return (true);
+	return (false);
 }
 
 void Server::run()
@@ -284,7 +284,10 @@ void Server::run()
 			}
 			else // Reading client request and sending response
 			{
-				Request request(read_request(fd));
+				if (!read_request(fd))
+					continue;
+				Request request(requests[fd]);
+				requests.erase(fd);
 				if (_verbose)
 				{
 					request.display();
