@@ -1,5 +1,3 @@
-#include "Server.hpp"
-#include "Request.hpp"
 #include "Response.hpp"
 
 #include <cerrno>
@@ -223,7 +221,7 @@ bool Server::_read_request(int fd)
 		count = read(fd, buffer, MAX_BUFFER_SIZE);
 	}
 	requests[fd] += request_str;
-	if (count == 0 || request_str == "\r\n")
+	if (count == 0 || request_str == "\r\n" || request_str.find("\r\n\r\n") != std::string::npos)
 		return (true);
 	return (false);
 }
