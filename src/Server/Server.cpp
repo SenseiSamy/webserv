@@ -186,6 +186,68 @@ void Server::signal_handler(int signum)
 	_stop_server = true;
 }
 
+void Server::_read_request(const int &fd)
+{
+	std::string request_str;
+
+	char buffer[MAX_BUFFER_SIZE];
+	ssize_t count;
+	while ((count = read(fd, buffer, MAX_BUFFER_SIZE)) > 0)
+	{
+		buffer[count] = '\0';
+		request_str.append(buffer, count);
+	}
+	if (count == -1 && errno != EAGAIN)
+	{
+		close(fd);
+		throw std::runtime_error("read() failed " + std::string(strerror(errno)));
+	}
+
+	Request request(request_str);
+	if (_verbose)
+	{
+		request.display();
+		std::cout << "----------------------------------------" << std::endl;
+	}
+	const struct server server = find_server(request);
+	Response response(request, server, _error_codes);
+	if (_verbose)
+		response.display();
+	std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
+	if (response.get_status_code() == 200)
+		std::cout << "\033[1;32m" << response.get_status_code();
+	else
+		std::cout << "\033[1;31m" << response.get_status_code() << " " << response.get_status_message();
+	std::cout << "\033[0m -" << std::endl;
+	if (_verbose)
+		std::cout << "----------------------------------------" << std::endl;
+	send(fd, response.convert().c_str(), response.convert().size(), 0);
+	close(fd);
+}
+
+int Server::_new_connection(server *serve, struct epoll_event &ev)
+{
+	sockaddr_in client_addr;
+	socklen_t client_addr_len = sizeof(client_addr);
+	int client_fd = accept(serve->listen_fd, (struct sockaddr *)&client_addr, &client_addr_len);
+	if (client_fd == -1)
+	{
+		std::cerr << "accept() failed " << std::string(strerror(errno));
+		return -1;
+	}
+
+	fcntl(client_fd, F_SETFL, O_NONBLOCK);
+
+	ev.events = EPOLLIN | EPOLLET;
+	ev.data.fd = client_fd;
+	if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1)
+	{
+		close(_epoll_fd);
+		throw std::runtime_error("epoll_ctl() failed " + std::string(strerror(errno)));
+	}
+	return 0;
+}
+
 void Server::run()
 {
 	if (_verbose)
@@ -235,70 +297,18 @@ void Server::run()
 				}
 			}
 
-			if (server != NULL)
+			if (server != NULL) // new connection
 			{
-				sockaddr_in client_addr;
-				socklen_t client_addr_len = sizeof(client_addr);
-				int client_fd = accept(server->listen_fd, (struct sockaddr *)&client_addr, &client_addr_len);
-				if (client_fd == -1)
-				{
-					std::cerr << "accept() failed " << std::string(strerror(errno));
+				if (_new_connection(server, ev) == -1)
 					continue;
-				}
-
-				fcntl(client_fd, F_SETFL, O_NONBLOCK);
-
-				ev.events = EPOLLIN | EPOLLET;
-				ev.data.fd = client_fd;
-				if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1)
-				{
-					close(_epoll_fd);
-					throw std::runtime_error("epoll_ctl() failed " + std::string(strerror(errno)));
-				}
 			}
-			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN))) // 
+			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN))) // error
 			{
 				close(fd);
 				continue;
 			}
-			else
-			{
-				std::string request_str;
-
-				char buffer[MAX_BUFFER_SIZE];
-				ssize_t count;
-				while ((count = read(fd, buffer, MAX_BUFFER_SIZE)) > 0)
-				{
-					buffer[count] = '\0';
-					request_str.append(buffer, count);
-				}
-				if (count == -1 && errno != EAGAIN)
-				{
-					close(fd);
-					throw std::runtime_error("read() failed " + std::string(strerror(errno)));
-				}
-
-				Request request(request_str);
-				if (_verbose)
-				{
-					request.display();
-					std::cout << "----------------------------------------" << std::endl;
-				}
-				const struct server server = find_server(request);
-				Response response(request, server, _error_codes);
-				if (_verbose)
-					response.display();
-				std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
-				if (response.get_status_code() == 200)
-					std::cout << "\033[1;32m" << response.get_status_code();
-				else
-					std::cout << "\033[1;31m" << response.get_status_code() << " " << response.get_status_message();
-				std::cout << "\033[0m -" << std::endl;
-				if (_verbose)
-					std::cout << "----------------------------------------" << std::endl;
-				send(fd, response.convert().c_str(), response.convert().size(), 0);
-				close(fd);
-			}
+			else // read request
+				_read_request(fd);
 		}
 	}
 	close(_epoll_fd);

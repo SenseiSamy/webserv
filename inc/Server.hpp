@@ -94,6 +94,9 @@ class Server
 		const route parse_route();
 		void parsing_config();
 
+		// Server management
+		void _read_request(const int &fd);
+		int _new_connection(server *server, struct epoll_event &ev);
 		static void signal_handler(int signum);
 		const server &find_server(Request &request);
 
