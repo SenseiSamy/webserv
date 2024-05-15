@@ -54,14 +54,10 @@ Response::~Response()
 }
 
 
-#include <iostream>
-
 void Response::_generate()
 {
 	if (_request.get_version() != "HTTP/1.1")
 	{
-		std::cout << "HTTP/1.1" << std::endl;
-		std::cout << _request.get_version() << std::endl;
 		_generate_error(505);
 		return;
 	}
