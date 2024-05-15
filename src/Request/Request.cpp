@@ -21,6 +21,7 @@ Request::Request(const Request &request)
 		_request = request._request;
 		_method = request._method;
 		_uri = request._uri;
+		_version = request._version;
 		_headers = request._headers;
 		_content_length = request._content_length;
 		_body = request._body;
@@ -76,9 +77,6 @@ void Request::parse()
 	std::istringstream request_iss(request_line);
 	if (!(request_iss >> _method >> _uri >> _version))
 		return;
-
-	std::cout << "`" << _method << "` `" << _uri << "` `" << _version << "`" << std::endl;
-
 
 	// Extract query string
 	std::string::size_type i = _uri.find("?");
