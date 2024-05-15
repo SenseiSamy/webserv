@@ -25,12 +25,17 @@ enum type
 class Response
 {
 	private:
+		// Response
 		int _status_code;
 		int _type;
 		std::string _status_message;
 		std::string _body;
 		std::map<std::string, std::string> _headers;
 
+		// Cgi
+		std::map<std::string, std::string> _meta_var;
+
+		// Utils
 		Request _request;
 		std::map<unsigned int, std::string> _error_codes;
 		std::string _uri;
@@ -40,11 +45,11 @@ class Response
 		bool _is_cgi;
 
 		// cgi
-		std::map<std::string, std::string> _generate_meta_variables(const Request& request, std::string uri);
-		char** _map_to_env(std::map<std::string, std::string>& meta_var);
-		int _fork_and_exec(std::map<std::string, std::string>& meta_var, int* fd, int& pid, std::string path_to_root, std::string path_to_exec_prog, std::string uri);
+		void _init_meta_var();
+		char** _map_to_env();
+		int _fork_and_exec(int* fd, int& pid, std::string path_to_exec_prog);
 		std::string _get_cgi_output(int* fd);
-		int _handle_cgi(const Request& request, std::string &rep, std::string uri, std::string path_to_root, std::string path_to_exec_prog);
+		int _cgi_request(std::string &rep, std::string path_to_exec_prog);
 
 		void _find_type();
 		void _add_content_type();
@@ -58,9 +63,8 @@ class Response
 		bool _write_perm(const std::string& name) const;
 		void _redirect();
 		void _directory_listing();
-		bool _is_cgi_request();
 
-		bool _handle_cgi_request();
+		int _cgi();
 		void _post();
 		void _get();
 		void _delete();

@@ -146,19 +146,19 @@ const std::string Response::convert() const
 
 void Response::_find_type()
 {
-	std::string filename = _uri;
+	const std::string filename = _uri;
 	if (filename == "/")
-		this->_type = HTML;
+		_type = HTML;
 	else if (filename.find(".html") != std::string::npos)
-		this->_type = HTML;
+		_type = HTML;
 	else if (filename.find(".css") != std::string::npos)
-		this->_type = CSS;
+		_type = CSS;
 	else if (filename.find(".jpg") != std::string::npos)
-		this->_type = JPG;
+		_type = JPG;
 	else if (filename.find(".ico") != std::string::npos)
-		this->_type = ICO;
+		_type = ICO;
 	else
-		this->_type = UNKNOW;
+		_type = UNKNOW;
 }
 
 void Response::_add_content_type()

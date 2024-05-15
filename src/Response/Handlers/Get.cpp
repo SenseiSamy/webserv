@@ -29,7 +29,7 @@ void Response::_get()
 		}
 	}
 
-	if (_is_cgi_request())	
+	if (_cgi())	
 		return;
 	_find_type();
 	int err = _check_and_rewrite_uri();

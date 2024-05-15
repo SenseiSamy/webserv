@@ -3,14 +3,14 @@
 #include <algorithm>
 #include <sys/wait.h>
 
-static char* strdup(std::string str)
+static char* strdup(const std::string &str)
 {
 	char *new_str = new char[str.size()];
 	std::strcpy(new_str, str.c_str());
 	return (new_str);
 }
 
-int Response::_fork_and_exec(std::map<std::string, std::string>& meta_var, int* fd, int& pid, std::string path_to_root, std::string path_to_exec_prog, std::string uri)
+int Response::_fork_and_exec(int* fd, int& pid, std::string path_to_exec_prog)
 {
 	if (pipe(fd) == -1)
 		return (EXIT_FAILURE);
@@ -18,11 +18,11 @@ int Response::_fork_and_exec(std::map<std::string, std::string>& meta_var, int* 
 	if (pid == 0)
 	{
 		dup2(fd[1], STDOUT_FILENO);
-		std::string scriptPath = path_to_root + uri;
+		std::string scriptPath = _path_to_root + _uri;
 		if (path_to_exec_prog.empty())
 		{
 			char* args[] = {strdup(scriptPath), NULL};
-			char** envp = _map_to_env(meta_var);
+			char** envp = _map_to_env();
 			execve(scriptPath.c_str(), args, envp);
 			for (int i = 0; envp[i]; ++i)
 				delete envp[i];
@@ -33,7 +33,7 @@ int Response::_fork_and_exec(std::map<std::string, std::string>& meta_var, int* 
 		else
 		{
 			char *args[] = {strdup(path_to_exec_prog), strdup(scriptPath), NULL};
-			char **envp = _map_to_env(meta_var);
+			char **envp = _map_to_env();
 			execve(path_to_exec_prog.c_str(), args, envp);
 			for (int i = 0; envp[i]; ++i)
 				delete envp[i];
@@ -69,21 +69,18 @@ std::string Response::_get_cgi_output(int* fd)
 	return (rep);
 }
 
-int Response::_handle_cgi(const Request& request, std::string &rep, std::string uri,
-	std::string path_to_root, std::string path_to_exec_prog)
+int Response::_cgi_request(std::string &rep, std::string path_to_exec_prog)
 {
-	std::map<std::string, std::string> meta_var = _generate_meta_variables(request, uri);
+	_init_meta_var();
 	int fd[2];
 	int pid = 0;
 
-	if (access((path_to_root + uri).c_str(), F_OK) == -1)
+	if (access((_path_to_root + _uri).c_str(), F_OK) == -1)
 		return (404);
-	if (path_to_exec_prog.empty() && access((path_to_root + uri).c_str(), X_OK)
-	== -1)
+	if (path_to_exec_prog.empty() && access((_path_to_root + _uri).c_str(), X_OK) == -1)
 		return (403);
 
-	if (_fork_and_exec(meta_var, fd, pid, path_to_root, path_to_exec_prog, uri)
-		== EXIT_FAILURE)
+	if (_fork_and_exec(fd, pid, path_to_exec_prog) == 1)
 		return (EXIT_FAILURE);
 
 	waitpid(pid, NULL, 0);
@@ -94,13 +91,13 @@ int Response::_handle_cgi(const Request& request, std::string &rep, std::string 
 }
 
 
-char** Response::_map_to_env(std::map<std::string, std::string>& meta_var)
+char** Response::_map_to_env()
 {
-	char** env = new char*[meta_var.size() + 1];
+	char** env = new char*[_meta_var.size() + 1];
 	std::map<std::string, std::string>::iterator it;
 	std::size_t i;
 
-	for (it = meta_var.begin(), i = 0; it != meta_var.end(); ++i, ++it)
+	for (it = _meta_var.begin(), i = 0; it != _meta_var.end(); ++i, ++it)
 	{
 		std::string tmp = it->first + "=" + it->second;
 		env[i] = new char[tmp.size() + 1];
@@ -112,7 +109,7 @@ char** Response::_map_to_env(std::map<std::string, std::string>& meta_var)
 	return (env);
 }
 
-static void headerToVar(char& c)
+static void header_to_var(char& c)
 {
 	if (c == '-')
 		c = '_';
@@ -121,44 +118,39 @@ static void headerToVar(char& c)
 }
 
 
-std::map<std::string, std::string> Response::_generate_meta_variables(const Request &request, std::string uri)
+void Response::_init_meta_var()
 {
-  std::map<std::string, std::string> meta_var;
-
 	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
 	{
 		std::string tmp = it->first;
-		std::for_each(tmp.begin(), tmp.end(), &headerToVar);
-		meta_var["HTTP_" + tmp] = "[" + it->second + "]";
+		std::for_each(tmp.begin(), tmp.end(), &header_to_var);
+		_meta_var["HTTP_" + tmp] = "[" + it->second + "]";
 	}
 
-	meta_var["REQUEST_METHOD"] = request.get_method();
-	meta_var["REQUEST_URI"] = request.get_uri();
-	meta_var["SCRIPT_NAME"] = uri;
-	meta_var["QUERY_STRING"] = (request.get_uri().find('?') == std::string::npos ? "" : request.get_uri().substr(request.get_uri().find('?') + 1));
-	meta_var["AUTH_TYPE"] = "";      // Implement based on specific auth handling
-	meta_var["CONTENT_LENGTH"] = get_headers_key("Content-Length");
-	meta_var["CONTENT_TYPE"] = get_headers_key("Content-Type");
-	meta_var["GATEWAY_INTERFACE"] = "CGI/1.1";
-	if (uri.size() < request.get_uri().size())
-		meta_var["PATH_INFO"] = request.get_uri().substr(uri.size(),
-		std::string::npos);
+	_meta_var["REQUEST_METHOD"] = _request.get_method();
+	_meta_var["REQUEST_URI"] = _request.get_uri();
+	_meta_var["SCRIPT_NAME"] = _uri;
+	_meta_var["QUERY_STRING"] = (_request.get_uri().find('?') == std::string::npos ? "" : _request.get_uri().substr(_request.get_uri().find('?') + 1));
+	_meta_var["AUTH_TYPE"] = "";      // Implement based on specific auth handling
+	_meta_var["CONTENT_LENGTH"] = get_headers_key("Content-Length");
+	_meta_var["CONTENT_TYPE"] = get_headers_key("Content-Type");
+	_meta_var["GATEWAY_INTERFACE"] = "CGI/1.1";
+	if (_uri.size() < _request.get_uri().size())
+		_meta_var["PATH_INFO"] = _request.get_uri().substr(_uri.size(), std::string::npos);
 	else
-	 	meta_var["PATH_INFO"] = "";
+	 	_meta_var["PATH_INFO"] = "";
 
-	meta_var["PATH_TRANSLATED"] = ""; // Translate PATH_INFO to filesystem path
-	meta_var["REMOTE_ADDR"] = "";     // To be retrieved from socket information
-	meta_var["REMOTE_HOST"] = "";     // Optional: resolve REMOTE_ADDR to hostname
-	meta_var["REMOTE_USER"] = "";     // User from authenticated session
-	meta_var["SERVER_NAME"] = "";     // Retrieved from server configuration or host header
-	meta_var["SERVER_PORT"] = "";     // Retrieved from server configuration
-	meta_var["SERVER_PROTOCOL"] = "HTTP/1.1";
-	meta_var["SERVER_SOFTWARE"] = "webserv-42/1.0";
-
-  return meta_var;
+	_meta_var["PATH_TRANSLATED"] = ""; // Translate PATH_INFO to filesystem path
+	_meta_var["REMOTE_ADDR"] = "";     // To be retrieved from socket information
+	_meta_var["REMOTE_HOST"] = "";     // Optional: resolve REMOTE_ADDR to hostname
+	_meta_var["REMOTE_USER"] = "";     // User from authenticated session
+	_meta_var["SERVER_NAME"] = "";     // Retrieved from server configuration or host header
+	_meta_var["SERVER_PORT"] = "";     // Retrieved from server configuration
+	_meta_var["SERVER_PROTOCOL"] = "HTTP/1.1";
+	_meta_var["SERVER_SOFTWARE"] = "webserv-42/1.0";
 }
 
-bool Response::_is_cgi_request()
+int Response::_cgi()
 {
 	if (_route == NULL || _route->cgi.empty())
 		return (false);
@@ -178,7 +170,7 @@ bool Response::_is_cgi_request()
 			std::string path_info = _uri.substr(i + it->first.size(),
 				std::string::npos);
 			_is_cgi = true;
-			if (_handle_cgi(_request, rep, uri, _path_to_root, it->second) != 0)
+			if (_cgi_request(rep, it->second) != 0)
 			{
 				_generate_error(500);
 				return (true);

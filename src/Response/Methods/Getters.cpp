@@ -1,7 +1,5 @@
 #include "Response.hpp"
 
-#include <stdexcept>
-
 const int& Response::get_status_code() const
 {
 	return _status_code;
