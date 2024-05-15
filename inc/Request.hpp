@@ -10,7 +10,7 @@ class Request
 		std::string _request;
 
 		std::string _method;
-		std::string _url;
+		std::string _uri;
 		std::string _version;
 		std::map<std::string, std::string> _headers;
 		size_t _content_length;
@@ -27,7 +27,7 @@ class Request
 		// Getters
 		std::string get_request() const;
 		std::string get_method() const;
-		std::string get_url() const;
+		std::string get_uri() const;
 		std::string get_version() const;
 		std::string get_headers_key(const std::string &key);
 		std::map<std::string, std::string> get_headers() const;

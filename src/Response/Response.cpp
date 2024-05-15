@@ -1,13 +1,13 @@
 #include "Response.hpp"
 
-Response::Response(): _status_code(0), _status_message(""), _body(""), _headers(), _request(), _error_codes(), _url(""), _path_to_root(""), _server(), _is_cgi(false)
+Response::Response(): _status_code(0), _status_message(""), _body(""), _headers(), _request(), _error_codes(), _uri(""), _path_to_root(""), _server(), _is_cgi(false)
 {
 	_set_root();
 	_select_route();
 	_generate();
 }
 
-Response::Response(const Request &request, const server &server, const std::map<unsigned int, std::string> &error_codes): _status_code(0), _status_message(""), _body(""), _headers(), _request(request), _error_codes(error_codes), _url(""), _path_to_root(""), _server(server), _is_cgi(false)
+Response::Response(const Request &request, const server &server, const std::map<unsigned int, std::string> &error_codes): _status_code(0), _status_message(""), _body(""), _headers(), _request(request), _error_codes(error_codes), _uri(""), _path_to_root(""), _server(server), _is_cgi(false)
 {
 	_set_root();
 	_select_route();
@@ -24,7 +24,7 @@ Response::Response(const Response &other)
 		_headers = other._headers;
 		_request = other._request;
 		_error_codes = other._error_codes;
-		_url = other._url;
+		_uri = other._uri;
 		_path_to_root = other._path_to_root;
 		_is_cgi = other._is_cgi;
 		_server = other._server;
@@ -41,7 +41,7 @@ Response &Response::operator=(const Response &response)
 		_headers = response._headers;
 		_request = response._request;
 		_error_codes = response._error_codes;
-		_url = response._url;
+		_uri = response._uri;
 		_path_to_root = response._path_to_root;
 		_is_cgi = response._is_cgi;
 		_server = response._server;
@@ -53,8 +53,18 @@ Response::~Response()
 {
 }
 
+
+#include <iostream>
+
 void Response::_generate()
 {
+	if (_request.get_version() != "HTTP/1.1")
+	{
+		std::cout << "HTTP/1.1" << std::endl;
+		std::cout << _request.get_version() << std::endl;
+		_generate_error(505);
+		return;
+	}
 
 	const std::string method = _request.get_method(); 
 

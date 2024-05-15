@@ -10,9 +10,9 @@ std::string Request::get_method() const
 	return _method;
 }
 
-std::string Request::get_url() const
+std::string Request::get_uri() const
 {
-	return _url;
+	return _uri;
 }
 
 std::string Request::get_version() const

@@ -10,15 +10,15 @@ void Response::_get()
 		return;
 	}
 
-	if (get_request().get_url() == "/")
-		_url = "/index.html";
-	else if (_url.empty())
-		_url = _request.get_url();
+	if (get_request().get_uri() == "/")
+		_uri = "/index.html";
+	else if (_uri.empty())
+		_uri = _request.get_uri();
 
-	if (_route != NULL && _is_a_directory(_path_to_root + _url))
+	if (_route != NULL && _is_a_directory(_path_to_root + _uri))
 	{
 		if (!_route->default_file.empty())
-			_url = "/" + _route->default_file;
+			_uri = "/" + _route->default_file;
 		else
 		{
 			if (_route->directory_listing)
@@ -32,9 +32,9 @@ void Response::_get()
 	if (_is_cgi_request())	
 		return;
 	_find_type();
-	int err = _check_and_rewrite_url();
+	int err = _check_and_rewrite_uri();
 	if (err == 0) {
-		std::ifstream file((_path_to_root + _url).c_str());
+		std::ifstream file((_path_to_root + _uri).c_str());
 		if (!file.is_open())
 		{
 			_generate_error(500);

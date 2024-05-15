@@ -10,18 +10,18 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-bool Response::_is_a_directory(const std::string &url) const
+bool Response::_is_a_directory(const std::string &uri) const
 {
 	struct stat statbuf;
-	if (stat(url.c_str(), &statbuf) != 0)
+	if (stat(uri.c_str(), &statbuf) != 0)
 		return (false);
 	return (S_ISDIR(statbuf.st_mode));
 }
 
-bool Response::_is_a_file(const std::string &url) const
+bool Response::_is_a_file(const std::string &uri) const
 {
 	struct stat statbuf;
-	if (stat(url.c_str(), &statbuf) != 0)
+	if (stat(uri.c_str(), &statbuf) != 0)
 		return (false);
 	return (S_ISREG(statbuf.st_mode));
 }
@@ -39,24 +39,24 @@ bool Response::_write_perm(const std::string& name) const
 	return (access(name.c_str(), W_OK));
 }
 
-int Response::_check_and_rewrite_url()
+int Response::_check_and_rewrite_uri()
 {
-	if (access((_path_to_root + _url).c_str(), F_OK) == -1)
+	if (access((_path_to_root + _uri).c_str(), F_OK) == -1)
 		return (404);
-	if (access((_path_to_root + _url).c_str(), R_OK) == -1)
+	if (access((_path_to_root + _uri).c_str(), R_OK) == -1)
 		return (403);
-	if (_is_a_directory((_path_to_root + _url).c_str()))
+	if (_is_a_directory((_path_to_root + _uri).c_str()))
 		return (403);
 
 	char path[PATH_MAX];
-	if (realpath((_path_to_root + _url).c_str(), path) == NULL)
+	if (realpath((_path_to_root + _uri).c_str(), path) == NULL)
 		return (500);
-	_url = path;
+	_uri = path;
 	if (getcwd(path, PATH_MAX) == NULL)
 		return (500);
-	if (_url.find(_path_to_root) != 0)
+	if (_uri.find(_path_to_root) != 0)
 		return (403);
-	_url.erase(0, std::string(_path_to_root).size());
+	_uri.erase(0, std::string(_path_to_root).size());
 	return (0);
 }
 
@@ -75,7 +75,7 @@ void Response::_redirect()
 void Response::_directory_listing()
 {
 	struct dirent* entry;
-	DIR* directory = opendir((_path_to_root +_url).c_str());
+	DIR* directory = opendir((_path_to_root +_uri).c_str());
 	if (directory == NULL)
 	{
 		_generate_error(500);
@@ -86,7 +86,7 @@ void Response::_directory_listing()
 	set_status_message(_error_codes[200]);
 	set_headers("Content-Type", "text/html");
 
-	_body += "<h1>Index of " + _url + "</h1>\n"; 
+	_body += "<h1>Index of " + _uri + "</h1>\n"; 
 	_body += "<ul>\n";
 	_body += "<li><a href=..>..</a></li?>";
 	while ((entry = readdir(directory)) != NULL)
@@ -95,7 +95,7 @@ void Response::_directory_listing()
 			== ".")
 			continue;
 		_body += "<li><a href=\"";
-		_body += _url + "/" + entry->d_name;
+		_body += _uri + "/" + entry->d_name;
 		_body += "\">";
 		_body += entry->d_name;
 		_body += "</a></li>\n";
@@ -107,7 +107,7 @@ void Response::_directory_listing()
 
 void Response::_select_route()
 {
-	const std::string request = _request.get_url();
+	const std::string request = _request.get_uri();
 
 	for (size_t i = 0; i < _server.routes.size(); ++i)
 	{
@@ -126,7 +126,7 @@ void Response::_select_route()
 	_route = NULL;
 }
 
-const std::string Response::to_string() const
+const std::string Response::convert() const
 {
 	std::stringstream ss;
 	ss << _status_code;
@@ -146,7 +146,7 @@ const std::string Response::to_string() const
 
 void Response::_find_type()
 {
-	std::string filename = _url;
+	std::string filename = _uri;
 	if (filename == "/")
 		this->_type = HTML;
 	else if (filename.find(".html") != std::string::npos)
@@ -181,58 +181,30 @@ void Response::_set_root()
 	_path_to_root = realpath("www", tmp);
 }
 
+static inline std::string to_string(int num)
+{
+	std::stringstream ss;
+	ss << num;
+	return ss.str();
+}
+
 void Response::_generate_error(int num)
 {
 	for (std::map<std::string, std::string>::iterator it = _server.error_pages.begin(); it != _server.error_pages.end(); ++it)
 	{
 		if (std::atoi(it->first.c_str()) == num)
 		{
-			_url = "/" + it->second;
-			if (access(_url.c_str(), F_OK) == -1)
+			_uri = "/" + it->second;
+			if (access(_uri.c_str(), F_OK) == -1)
 				break;
 			_get();
 			return;
 		}
 	}
 
-	std::ifstream file("www/ErrorPage");
-	std::string line;
 	set_status_code(num);
 	set_status_message(_error_codes[num]);
-	while (std::getline(file, line))
-		_body += line + "\n";
-	file.close();
-	std::srand(time(0));
-	std::stringstream ss;
-	ss << num;
-	int randnum = std::rand();
-	if (randnum % 4 == 0)
-	{
-		_body += "<img src=\"https://http.cat/";
-		_body += ss.str() + "\" alt=\"Centered Image\"\n";
-		_body += "width=\"800\"\nheight=\"600\"\n/>";
-		_body += "</div>\n</body>\n</html>\n\r";
-	}
-	else if (randnum % 4 == 1)
-	{
-		_body += "<img src=\"https://http.dog/";
-		_body += ss.str() + ".jpg\" alt=\"Centered Image\"\n";
-		_body += "width=\"800\"\nheight=\"600\"\n/>";
-		_body += "</div>\n</body>\n</html>\n\r";
-	}
-
-	else if (randnum % 4 == 2)
-	{
-		_body += "<img src=\"https://http.pizza/";
-		_body += ss.str() + ".jpg\" alt=\"Centered Image\"\n";
-		_body += "width=\"800\"\nheight=\"600\"\n/>";
-		_body += "</div>\n</body>\n</html>\n\r";
-	}
-	else
-	{
-		_body += "<img src=\"https://httpgoats.com/";
-		_body += ss.str() + ".jpg\" alt=\"Centered Image\"\n";
-		_body += "width=\"800\"\nheight=\"600\"\n/>";
-		_body += "</div>\n</body>\n</html>\n\r";
-	}
+	set_headers("Content-Type", "text/html");
+	_body = "<h1>" + to_string(num) + "\n" + _error_codes[num] + "</h1>\n";
+	set_content_lenght();
 }

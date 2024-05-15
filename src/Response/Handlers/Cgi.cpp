@@ -10,7 +10,7 @@ static char* strdup(std::string str)
 	return (new_str);
 }
 
-int Response::_fork_and_exec(std::map<std::string, std::string>& meta_var, int* fd, int& pid, std::string path_to_root, std::string path_to_exec_prog, std::string url)
+int Response::_fork_and_exec(std::map<std::string, std::string>& meta_var, int* fd, int& pid, std::string path_to_root, std::string path_to_exec_prog, std::string uri)
 {
 	if (pipe(fd) == -1)
 		return (EXIT_FAILURE);
@@ -18,7 +18,7 @@ int Response::_fork_and_exec(std::map<std::string, std::string>& meta_var, int* 
 	if (pid == 0)
 	{
 		dup2(fd[1], STDOUT_FILENO);
-		std::string scriptPath = path_to_root + url;
+		std::string scriptPath = path_to_root + uri;
 		if (path_to_exec_prog.empty())
 		{
 			char* args[] = {strdup(scriptPath), NULL};
@@ -69,20 +69,20 @@ std::string Response::_get_cgi_output(int* fd)
 	return (rep);
 }
 
-int Response::_handle_cgi(const Request& request, std::string &rep, std::string url,
+int Response::_handle_cgi(const Request& request, std::string &rep, std::string uri,
 	std::string path_to_root, std::string path_to_exec_prog)
 {
-	std::map<std::string, std::string> meta_var = _generate_meta_variables(request, url);
+	std::map<std::string, std::string> meta_var = _generate_meta_variables(request, uri);
 	int fd[2];
 	int pid = 0;
 
-	if (access((path_to_root + url).c_str(), F_OK) == -1)
+	if (access((path_to_root + uri).c_str(), F_OK) == -1)
 		return (404);
-	if (path_to_exec_prog.empty() && access((path_to_root + url).c_str(), X_OK)
+	if (path_to_exec_prog.empty() && access((path_to_root + uri).c_str(), X_OK)
 	== -1)
 		return (403);
 
-	if (_fork_and_exec(meta_var, fd, pid, path_to_root, path_to_exec_prog, url)
+	if (_fork_and_exec(meta_var, fd, pid, path_to_root, path_to_exec_prog, uri)
 		== EXIT_FAILURE)
 		return (EXIT_FAILURE);
 
@@ -121,7 +121,7 @@ static void headerToVar(char& c)
 }
 
 
-std::map<std::string, std::string> Response::_generate_meta_variables(const Request &request, std::string url)
+std::map<std::string, std::string> Response::_generate_meta_variables(const Request &request, std::string uri)
 {
   std::map<std::string, std::string> meta_var;
 
@@ -133,15 +133,15 @@ std::map<std::string, std::string> Response::_generate_meta_variables(const Requ
 	}
 
 	meta_var["REQUEST_METHOD"] = request.get_method();
-	meta_var["REQUEST_URI"] = request.get_url();
-	meta_var["SCRIPT_NAME"] = url;
-	meta_var["QUERY_STRING"] = (request.get_url().find('?') == std::string::npos ? "" : request.get_url().substr(request.get_url().find('?') + 1));
+	meta_var["REQUEST_URI"] = request.get_uri();
+	meta_var["SCRIPT_NAME"] = uri;
+	meta_var["QUERY_STRING"] = (request.get_uri().find('?') == std::string::npos ? "" : request.get_uri().substr(request.get_uri().find('?') + 1));
 	meta_var["AUTH_TYPE"] = "";      // Implement based on specific auth handling
 	meta_var["CONTENT_LENGTH"] = get_headers_key("Content-Length");
 	meta_var["CONTENT_TYPE"] = get_headers_key("Content-Type");
 	meta_var["GATEWAY_INTERFACE"] = "CGI/1.1";
-	if (url.size() < request.get_url().size())
-		meta_var["PATH_INFO"] = request.get_url().substr(url.size(),
+	if (uri.size() < request.get_uri().size())
+		meta_var["PATH_INFO"] = request.get_uri().substr(uri.size(),
 		std::string::npos);
 	else
 	 	meta_var["PATH_INFO"] = "";
@@ -164,21 +164,21 @@ bool Response::_is_cgi_request()
 		return (false);
 	for (std::map<std::string, std::string>::const_iterator it = _route->cgi.begin(); it != _route->cgi.end(); ++it)
 	{
-		std::size_t i = _url.find(it->first);
+		std::size_t i = _uri.find(it->first);
 		while (i != std::string::npos)
 		{
-			if (_is_a_file(_path_to_root + _url.substr(0, i + it->first.size())))
+			if (_is_a_file(_path_to_root + _uri.substr(0, i + it->first.size())))
 				break;
-			i = _url.find(it->first, i + it->first.size());
+			i = _uri.find(it->first, i + it->first.size());
 		}
 		if (i != std::string::npos)
 		{
 			std::string rep;
-			std::string url = _url.substr(0, i + it->first.size());
-			std::string path_info = _url.substr(i + it->first.size(),
+			std::string uri = _uri.substr(0, i + it->first.size());
+			std::string path_info = _uri.substr(i + it->first.size(),
 				std::string::npos);
 			_is_cgi = true;
-			if (_handle_cgi(_request, rep, url, _path_to_root, it->second) != 0)
+			if (_handle_cgi(_request, rep, uri, _path_to_root, it->second) != 0)
 			{
 				_generate_error(500);
 				return (true);

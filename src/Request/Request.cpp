@@ -20,7 +20,7 @@ Request::Request(const Request &request)
 	{
 		_request = request._request;
 		_method = request._method;
-		_url = request._url;
+		_uri = request._uri;
 		_headers = request._headers;
 		_content_length = request._content_length;
 		_body = request._body;
@@ -37,7 +37,7 @@ Request &Request::operator=(const Request &request)
 	{
 		_request = request._request;
 		_method = request._method;
-		_url = request._url;
+		_uri = request._uri;
 		_headers = request._headers;
 		_content_length = request._content_length;
 		_body = request._body;
@@ -49,7 +49,7 @@ void Request::clear()
 {
 	_request.clear();
 	_method.clear();
-	_url.clear();
+	_uri.clear();
 	_headers.clear();
 	_content_length = 0;
 	_body.clear();
@@ -74,15 +74,18 @@ void Request::parse()
 
 	// Extract request line
 	std::istringstream request_iss(request_line);
-	if (!(request_iss >> _method >> _url >> _version))
+	if (!(request_iss >> _method >> _uri >> _version))
 		return;
 
+	std::cout << "`" << _method << "` `" << _uri << "` `" << _version << "`" << std::endl;
+
+
 	// Extract query string
-	std::string::size_type i = _url.find("?");
+	std::string::size_type i = _uri.find("?");
 	if (i != std::string::npos)
 	{
-		_query_string = _url.substr(i + 1);
-		_url = _url.substr(0, i);
+		_query_string = _uri.substr(i + 1);
+		_uri = _uri.substr(0, i);
 	}
 
 	// Extract headers lines

@@ -296,7 +296,7 @@ void Server::run()
 				std::cout << "\033[0m -" << std::endl;
 				if (_verbose)
 					std::cout << "----------------------------------------" << std::endl;
-				send(fd, response.to_string().c_str(), response.to_string().size(), 0);
+				send(fd, response.convert().c_str(), response.convert().size(), 0);
 				close(fd);
 			}
 		}

@@ -33,27 +33,27 @@ class Response
 
 		Request _request;
 		std::map<unsigned int, std::string> _error_codes;
-		std::string _url;
+		std::string _uri;
 		std::string _path_to_root;
 		server _server;
 		route* _route;
 		bool _is_cgi;
 
 		// cgi
-		std::map<std::string, std::string> _generate_meta_variables(const Request& request, std::string url);
+		std::map<std::string, std::string> _generate_meta_variables(const Request& request, std::string uri);
 		char** _map_to_env(std::map<std::string, std::string>& meta_var);
-		int _fork_and_exec(std::map<std::string, std::string>& meta_var, int* fd, int& pid, std::string path_to_root, std::string path_to_exec_prog, std::string url);
+		int _fork_and_exec(std::map<std::string, std::string>& meta_var, int* fd, int& pid, std::string path_to_root, std::string path_to_exec_prog, std::string uri);
 		std::string _get_cgi_output(int* fd);
-		int _handle_cgi(const Request& request, std::string &rep, std::string url, std::string path_to_root, std::string path_to_exec_prog);
+		int _handle_cgi(const Request& request, std::string &rep, std::string uri, std::string path_to_root, std::string path_to_exec_prog);
 
 		void _find_type();
 		void _add_content_type();
 		void _generate_error(int num);
 		void _select_route();
 		void _set_root();
-		int _check_and_rewrite_url();
-		bool _is_a_directory(const std::string &url) const;
-		bool _is_a_file(const std::string &url) const;
+		int _check_and_rewrite_uri();
+		bool _is_a_directory(const std::string &uri) const;
+		bool _is_a_file(const std::string &uri) const;
 		bool _exists (const std::string& name) const;
 		bool _write_perm(const std::string& name) const;
 		void _redirect();
@@ -95,7 +95,7 @@ class Response
 		// displays
 		void display() const;
 
-		const std::string to_string() const;
+		const std::string convert() const;
 };
 
 #endif // RESPONSE_HPP

@@ -9,8 +9,8 @@
 
 void	Response::_delete()
 {
-	_url = _request.get_url();
-	std::string filename(_path_to_root + _url);
+	_uri = _request.get_uri();
+	std::string filename(_path_to_root + _uri);
 	if (_is_a_directory(filename))
 	{
 		if (filename.at(filename.size() - 1) != '/')
