@@ -74,6 +74,7 @@ class Server
 		static bool _stop_server;
 		const std::map<unsigned int, std::string> _error_codes;
 		std::vector<server> _servers;
+		std::map<int, std::string> requests;
 
 		// Index management
 		void reset_index();
@@ -98,7 +99,11 @@ class Server
 		void _read_request(const int &fd);
 		int _new_connection(server *server, struct epoll_event &ev);
 		static void signal_handler(int signum);
+
+		// Execution
 		const server &find_server(Request &request);
+		bool accept_new_connection(server* server);
+		bool read_request(int fd);
 
 	public:
 		Server();
