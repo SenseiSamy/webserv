@@ -6,13 +6,21 @@ void Server::reset_index()
 	_current_line = 0;
 }
 
+size_t Server::next_non_empty_line()
+{
+	size_t i = _current_line + 1;
+	while (i < _content_file.size() && _content_file[i].empty())
+		++i;
+	return i;
+}
+
 const std::string Server::next_word()
 {
 	if (_current_line >= _content_file.size())
 		return "";
 	if (_current_word >= _content_file[_current_line].size())
 	{
-		if (_current_line + 1 >= _content_file.size())
+		if (next_non_empty_line() >= _content_file.size())
 			return "";
 		while (_content_file[++_current_line].empty())
 			;

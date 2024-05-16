@@ -19,7 +19,7 @@ void Server::setup_server_socket(server &server)
 	server.addr.sin_port = htons(server.port);
 	bzero(&(server.addr.sin_zero), sizeof(server.addr.sin_zero));
 
-	if (bind(server.listen_fd, (struct sockaddr *)&server.addr, sizeof(server.addr)) != 0)
+	if (bind(server.listen_fd, (struct sockaddr *)&server.addr, sizeof(server.addr)) != 0 && errno != EADDRINUSE)
 	{
 		close(server.listen_fd);
 		close(_epoll_fd);

@@ -73,6 +73,7 @@ class Response
 
 	public:
 		Response();
+		Response(const unsigned short error, const server &server, const std::map<unsigned int, std::string> &error_codes);
 		Response(const Request &request, const server &server, const std::map<unsigned int, std::string> &error_codes);
 		Response(const Response &other);
 		Response &operator=(const Response &other);

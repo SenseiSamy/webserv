@@ -33,7 +33,8 @@ void Response::_get()
 		return;
 	_find_type();
 	int err = _check_and_rewrite_uri();
-	if (err == 0) {
+	if (err == 0)
+	{
 		std::ifstream file((_path_to_root + _uri).c_str());
 		if (!file.is_open())
 		{
@@ -42,7 +43,7 @@ void Response::_get()
 		}
 		set_status_code(200);
 		set_status_message(_error_codes[200]);
-		_add_content_type();
+		// _add_content_type();
 		std::string line;
 		while (std::getline(file, line))
 			_body += line + "\n";

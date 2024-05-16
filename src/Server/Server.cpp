@@ -1,3 +1,5 @@
+#include "Server.hpp"
+#include "Request.hpp"
 #include "Response.hpp"
 
 #include <cerrno>
@@ -140,42 +142,49 @@ std::string Server::to_string(size_t i) const
 	return oss.str();
 }
 
-const server &Server::find_server(Request &request)
+const server &Server::find_server(const std::string &host)
 {
-  const std::string &host = request.get_headers_key("Host");
-  if (host.empty())
-    return _servers[0];
+	if (host.empty())
+		return _servers[0];
 
-  std::vector<server>::iterator it;
-  std::string hostname;
-  std::string::size_type sep = host.find(':');
-  if (sep != std::string::npos) {
-    std::stringstream ss(host.substr(sep + 1));
-    ss >> sep;
-    hostname = host.substr(0, sep);
+	std::vector<server>::iterator it;
+	std::string hostname;
+	std::string::size_type sep = host.find(':');
+	if (sep != std::string::npos)
+	{
+		std::stringstream ss(host.substr(sep + 1));
+		ss >> sep;
+		hostname = host.substr(0, sep);
 
-    it = _servers.begin();
-    while (it != _servers.end())
-    {
-      if (it->host == hostname && it->port == sep)
-        return *it;
-      ++it;
-    }
-  }
-  else
-    hostname = host;
+		it = _servers.begin();
+		while (it != _servers.end())
+		{
+			if (it->host == hostname && it->port == sep)
+				return *it;
+			++it;
+		}
+	}
+	else
+		hostname = host;
 
-  for (it = _servers.begin(); it != _servers.end(); ++it)
-  {
-    std::vector<std::string>::iterator name_it = it->server_names.begin();
-    while (name_it != it->server_names.end())
-    {
-      if (*name_it == hostname)
-        return *it;
-      ++name_it;
-    }
-  }
-  return _servers[0];
+	for (it = _servers.begin(); it != _servers.end(); ++it)
+	{
+		std::vector<std::string>::iterator name_it = it->server_names.begin();
+		while (name_it != it->server_names.end())
+		{
+			if (*name_it == hostname)
+				return *it;
+			++name_it;
+		}
+	}
+
+	for (it = _servers.begin(); it != _servers.end(); ++it)
+	{
+		if (it->default_server)
+			return *it;
+	}
+
+	return _servers[0];
 }
 
 void Server::signal_handler(int signum)
@@ -208,7 +217,7 @@ bool Server::_accept_new_connection(server* server)
 	return (true);
 }
 
-bool Server::_read_request(int fd)
+int Server::_read_request(int fd, const server *server)
 {
 	std::string request_str;
 
@@ -219,11 +228,15 @@ bool Server::_read_request(int fd)
 		buffer[count] = '\0';
 		request_str.append(buffer, count);
 		count = read(fd, buffer, MAX_BUFFER_SIZE);
+
+		if (request_str.size() > server->max_body_size)
+			return -1;
 	}
+
 	requests[fd] += request_str;
 	if (count == 0 || request_str == "\r\n" || request_str.find("\r\n\r\n") != std::string::npos)
-		return (true);
-	return (false);
+		return 1;
+	return 0;
 }
 
 void Server::run()
@@ -265,49 +278,64 @@ void Server::run()
 			const int fd = events[i].data.fd;
 			server *server = NULL;
 
-			for (size_t j = 0; j < _servers.size(); ++j) {
-				if (_servers[j].listen_fd == fd) {
+			for (size_t j = 0; j < _servers.size(); ++j)
+			{
+				if (_servers[j].listen_fd == fd)
+				{
 					server = &_servers[j];
 					break;
 				}
 			}
 
-			if (server != NULL) { // Accepting a new connection
+			if (server != NULL) // Accepting a new connection
+			{ 
 				if (!_accept_new_connection(server))
 					continue;
 			}
-			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN))) { // An error happened
+			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN))) // An error happened
+			{ 
 				close(fd);
 				continue;
 			}
 			else // Reading client request and sending response
 			{
-				if (!_read_request(fd))
+				const int ret = _read_request(fd, server);
+				if (ret == 1)
 					continue;
-				Request request(requests[fd]);
-				requests.erase(fd);
-				if (_verbose)
+				if (ret == -1)
 				{
-					request.display();
-					std::cout << "----------------------------------------" << std::endl;
+					Response response(413, *server, _error_codes);
+					std::string response_str = response.convert();
+					send(fd, response_str.c_str(), response_str.size(), 0);
 				}
-				const struct server server = find_server(request);
-				Response response(request, server, _error_codes);
-				if (_verbose)
-					response.display();
-				std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
-				if (response.get_status_code() == 200)
-					std::cout << "\033[1;32m" << response.get_status_code();
 				else
-					std::cout << "\033[1;31m" << response.get_status_code() << " " << response.get_status_message();
-				std::cout << "\033[0m -" << std::endl;
-				if (_verbose)
-					std::cout << "----------------------------------------" << std::endl;
+				{
+					Request request(requests[fd]);
+					requests.erase(fd);
+					if (_verbose)
+					{
+						request.display();
+						std::cout << "----------------------------------------" << std::endl;
+					}
+					const struct server server = find_server(request.get_headers_key("Host"));
+					Response response(request, server, _error_codes);
+					if (_verbose)
+						response.display();
+					std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
+					if (response.get_status_code() == 200)
+						std::cout << "\033[1;32m" << response.get_status_code();
+					else
+						std::cout << "\033[1;31m" << response.get_status_code() << " " << response.get_status_message();
+					std::cout << "\033[0m -" << std::endl;
+					if (_verbose)
+						std::cout << "----------------------------------------" << std::endl;
 
-				std::string response_str = response.convert();
+					std::string response_str = response.convert();
 
-				send(fd, response_str.c_str(), response_str.size(), 0);
-				close(fd);
+					send(fd, response_str.c_str(), response_str.size(), 0);
+					close(fd);
+				}
+
 			}
 		}
 	}

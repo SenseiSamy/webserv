@@ -77,6 +77,7 @@ class Server
 		std::map<int, std::string> requests;
 
 		// Index management
+		size_t next_non_empty_line();
 		void reset_index();
 		const std::string next_word();
 		const std::string previous_word();
@@ -99,9 +100,9 @@ class Server
 		static void signal_handler(int signum);
 
 		// Execution
-		const server &find_server(Request &request);
+		const server &find_server(const std::string &host);
 		bool _accept_new_connection(server* server);
-		bool _read_request(int fd);
+		int _read_request(int fd, const server *server);
 
 	public:
 		Server();

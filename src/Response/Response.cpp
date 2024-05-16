@@ -7,6 +7,11 @@ Response::Response(): _status_code(0), _status_message(""), _body(""), _headers(
 	_generate();
 }
 
+Response::Response(const unsigned short error, const server &server, const std::map<unsigned int, std::string> &error_codes): _status_code(error), _status_message(error_codes.at(error)), _body(""), _headers(), _request(), _error_codes(error_codes), _uri(""), _path_to_root(""), _server(server), _is_cgi(false)
+{
+	_generate_error(error);
+}
+
 Response::Response(const Request &request, const server &server, const std::map<unsigned int, std::string> &error_codes): _status_code(0), _status_message(""), _body(""), _headers(), _request(request), _error_codes(error_codes), _uri(""), _path_to_root(""), _server(server), _is_cgi(false)
 {
 	_set_root();
@@ -53,9 +58,8 @@ Response::~Response()
 {
 }
 
-
 void Response::_generate()
-{
+{	
 	if (_request.get_version() != "HTTP/1.1")
 	{
 		_generate_error(505);
