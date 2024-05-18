@@ -1,3 +1,4 @@
+#include "Utils.hpp"
 #include "Response.hpp"
 
 #include <dirent.h>
@@ -176,14 +177,8 @@ void Response::_add_content_type()
 void Response::_set_root()
 {
 	char tmp[PATH_MAX];
-	_path_to_root = realpath(_server.root.c_str(), tmp);
-}
-
-static inline std::string to_string(int num)
-{
-	std::stringstream ss;
-	ss << num;
-	return ss.str();
+	const char *root = _server.root.c_str();
+	_path_to_root = realpath(root, tmp);
 }
 
 void Response::_generate_error(int num)

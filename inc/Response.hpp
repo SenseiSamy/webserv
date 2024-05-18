@@ -37,7 +37,7 @@ private:
 
 	// Utils
 	Request _request;
-	std::map<unsigned int, std::string> _error_codes;
+	std::map<unsigned short, std::string> _error_codes;
 	std::string _uri;
 	std::string _path_to_root;
 	server _server;
@@ -73,8 +73,8 @@ private:
 
 public:
 	Response();
-	Response(const unsigned short error, const server &server, const std::map<unsigned int, std::string> &error_codes);
-	Response(const Request &request, const server &server, const std::map<unsigned int, std::string> &error_codes);
+	Response(const unsigned short error, const server &server, const std::map<unsigned short, std::string> &error_codes);
+	Response(const Request &request, const server &server, const std::map<unsigned short, std::string> &error_codes);
 	Response(const Response &other);
 	Response &operator=(const Response &other);
 	~Response();
@@ -82,7 +82,7 @@ public:
 	// getters
 	const int &get_status_code() const;
 	const int &get_type() const;
-	const std::map<unsigned int, std::string> &get_error_codes() const;
+	const std::map<unsigned short, std::string> &get_error_codes() const;
 	const std::string &get_status_message() const;
 	const std::string &get_body() const;
 	const std::map<std::string, std::string> &get_headers() const;

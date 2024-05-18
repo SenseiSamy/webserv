@@ -18,9 +18,9 @@
 
 volatile sig_atomic_t g_signal_status = 0;
 
-static const std::map<unsigned int, std::string> initerror_codes()
+static const std::map<unsigned short, std::string> initerror_codes()
 {
-	std::map<unsigned int, std::string> error_codes;
+	std::map<unsigned short, std::string> error_codes;
 
 	error_codes[100] = "Continue";
 	error_codes[101] = "Switching Protocols";
@@ -136,13 +136,6 @@ Server::~Server()
 	}
 }
 
-std::string Server::to_string(size_t i) const
-{
-	std::ostringstream oss;
-	oss << i;
-	return oss.str();
-}
-
 const server &Server::find_server(const std::string &host)
 {
 	if (host.empty())
@@ -218,7 +211,7 @@ bool Server::_accept_new_connection(server *server)
 	return (true);
 }
 
-int Server::_read_request(int fd, const server *server)
+int Server::_read_request(int fd)
 {
 	std::string request_str;
 
@@ -229,15 +222,12 @@ int Server::_read_request(int fd, const server *server)
 		buffer[count] = '\0';
 		request_str.append(buffer, count);
 		count = read(fd, buffer, MAX_BUFFER_SIZE);
-
-		if (request_str.size() > server->max_body_size)
-			return -1;
 	}
 
 	requests[fd] += request_str;
 	if (count == 0 || request_str == "\r\n" || request_str.find("\r\n\r\n") != std::string::npos)
-		return 1;
-	return 0;
+		return 0;
+	return 1;
 }
 
 void Server::run()
@@ -301,7 +291,7 @@ void Server::run()
 			}
 			else // Reading client request and sending response
 			{
-				const int ret = _read_request(fd, server);
+				const int ret = _read_request(fd);
 				if (ret == 1)
 					continue;
 				if (ret == -1)

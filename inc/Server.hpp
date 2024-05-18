@@ -72,7 +72,7 @@ private:
 	size_t _current_line;
 
 	static bool _stop_server;
-	const std::map<unsigned int, std::string> _error_codes;
+	const std::map<unsigned short, std::string> _error_codes;
 	std::vector<server> _servers;
 	std::map<int, std::string> requests;
 
@@ -102,7 +102,7 @@ private:
 	// Execution
 	const server &find_server(const std::string &host);
 	bool _accept_new_connection(server *server);
-	int _read_request(int fd, const server *server);
+	int _read_request(int fd);
 
 public:
 	Server();
@@ -120,9 +120,6 @@ public:
 
 	// Displays
 	void display() const;
-
-	// Others
-	std::string to_string(size_t i) const;
 
 	void run();
 };

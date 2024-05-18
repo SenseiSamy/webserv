@@ -1,16 +1,9 @@
 #include "Server.hpp"
+#include "Utils.hpp"
 
 #include <algorithm>
-#include <sstream>
 #include <stdexcept>
 #include <sys/types.h>
-
-static ssize_t to_size_t(std::string value)
-{
-	ssize_t result;
-	std::istringstream(value) >> result;
-	return result;
-}
 
 void Server::route_value(route &route, const std::string &word)
 {

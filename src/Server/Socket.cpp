@@ -33,5 +33,6 @@ void Server::setup_server_socket(server &server)
 		throw std::runtime_error("listen() failed " + std::string(strerror(errno)));
 	}
 
-	std::cout << "\033[1;32m" << "Server listening on " << server.host << ":" << server.port << "\033[0m" << std::endl;
+	std::cout << "Server listening on :\033[1;32m" << server.host << ":" << server.port << "\033[0m" << std::endl
+	<< "\t       root :\033[1;32m" << server.root << "\033[0m" << std::endl;
 }

@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "Utils.hpp"
 
 #include <cstddef>
 #include <fstream>
