@@ -1,9 +1,9 @@
 #include "Response.hpp"
 
-#include <iostream>
-#include <sstream>
 #include <fstream>
+#include <iostream>
 #include <ostream>
+#include <sstream>
 
 void Response::_post()
 {
@@ -12,7 +12,6 @@ void Response::_post()
 	if (boundpos != std::string::npos)
 	{
 		boundaries = boundaries.substr(boundpos + 9);
-		// std::cout << boundaries << std::endl;
 		std::istringstream data(this->_request.get_body());
 		std::string filename;
 		std::string line;
@@ -50,10 +49,8 @@ void Response::_post()
 			file.write(buff, 5000);
 			contentadd++;
 		}
-		data.read(buff, _request.get_content_length() -
-							(5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
-		file.write(buff, _request.get_content_length() -
-								(5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
+		data.read(buff, _request.get_content_length() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
+		file.write(buff, _request.get_content_length() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
 		file.close();
 	}
 }

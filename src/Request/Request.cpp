@@ -1,15 +1,15 @@
 #include "Request.hpp"
 
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <unistd.h>
-#include <iostream>
 
-Request::Request(): _request("")
+Request::Request() : _request("")
 {
 }
 
-Request::Request(const std::string &request): _request(request)
+Request::Request(const std::string &request) : _request(request)
 {
 	parse();
 }
@@ -94,7 +94,7 @@ void Request::parse()
 		std::string header_name;
 		std::string header_value;
 
-		if (std::getline(header_iss, header_name, ':') && std::getline(header_iss, header_value)) 
+		if (std::getline(header_iss, header_name, ':') && std::getline(header_iss, header_value))
 		{
 			header_name = trim(header_name);
 			header_value = trim(header_value);
@@ -104,7 +104,8 @@ void Request::parse()
 		if (_method == "POST" && _headers.find("Content-Length") != _headers.end())
 		{
 			std::istringstream(_headers["Content-Length"]) >> _content_length;
-			_body.assign(std::istreambuf_iterator<char>(iss), std::istreambuf_iterator<char>()); // Read the rest of the stream
+			_body.assign(std::istreambuf_iterator<char>(iss),
+									 std::istreambuf_iterator<char>()); // Read the rest of the stream
 		}
 	}
 }

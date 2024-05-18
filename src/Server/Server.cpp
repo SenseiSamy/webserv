@@ -9,12 +9,12 @@
 #include <ostream>
 #include <sstream>
 
+#include <csignal>
 #include <iostream>
 #include <sys/epoll.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
-#include <csignal>
 
 volatile sig_atomic_t g_signal_status = 0;
 
@@ -94,7 +94,8 @@ Server::Server() : _current_word(0), _current_line(0), _error_codes(initerror_co
 {
 }
 
-Server::Server(const char *config_file, const bool verbose) : _verbose(verbose), _config_file(config_file), _current_word(0), _current_line(0), _error_codes(initerror_codes())
+Server::Server(const char *config_file, const bool verbose)
+		: _verbose(verbose), _config_file(config_file), _current_word(0), _current_line(0), _error_codes(initerror_codes())
 {
 	read_config();
 	parsing_config();
@@ -193,7 +194,7 @@ void Server::signal_handler(int signum)
 	_stop_server = true;
 }
 
-bool Server::_accept_new_connection(server* server)
+bool Server::_accept_new_connection(server *server)
 {
 	sockaddr_in client_addr;
 	socklen_t client_addr_len = sizeof(client_addr);
@@ -224,7 +225,7 @@ int Server::_read_request(int fd, const server *server)
 	char buffer[MAX_BUFFER_SIZE];
 	ssize_t count = read(fd, buffer, MAX_BUFFER_SIZE);
 	while (count > 0)
-	{ 
+	{
 		buffer[count] = '\0';
 		request_str.append(buffer, count);
 		count = read(fd, buffer, MAX_BUFFER_SIZE);
@@ -251,7 +252,7 @@ void Server::run()
 	for (size_t i = 0; i < _servers.size(); ++i)
 	{
 		setup_server_socket(_servers[i]);
-	
+
 		ev.events = EPOLLIN | EPOLLET;
 		ev.data.fd = _servers[i].listen_fd;
 		if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, _servers[i].listen_fd, &ev) == -1)
@@ -288,12 +289,13 @@ void Server::run()
 			}
 
 			if (server != NULL) // Accepting a new connection
-			{ 
+			{
 				if (!_accept_new_connection(server))
 					continue;
 			}
-			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN))) // An error happened
-			{ 
+			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) ||
+							 (!(events[i].events & EPOLLIN))) // An error happened
+			{
 				close(fd);
 				continue;
 			}
@@ -335,7 +337,6 @@ void Server::run()
 					send(fd, response_str.c_str(), response_str.size(), 0);
 					close(fd);
 				}
-
 			}
 		}
 	}

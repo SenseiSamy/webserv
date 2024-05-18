@@ -2,7 +2,6 @@
 
 #include <cstdlib>
 #include <iostream>
-
 #include <cstring>
 
 int main(int argc, const char *argv[])
@@ -28,7 +27,6 @@ int main(int argc, const char *argv[])
 		else
 			file_index = i;
 	}
-
 
 	try
 	{

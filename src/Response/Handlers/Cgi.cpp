@@ -3,14 +3,14 @@
 #include <algorithm>
 #include <sys/wait.h>
 
-static char* strdup(const std::string &str)
+static char *strdup(const std::string &str)
 {
 	char *new_str = new char[str.size()];
 	std::strcpy(new_str, str.c_str());
 	return (new_str);
 }
 
-int Response::_fork_and_exec(int* fd, int& pid, std::string path_to_exec_prog)
+int Response::_fork_and_exec(int *fd, int &pid, std::string path_to_exec_prog)
 {
 	if (pipe(fd) == -1)
 		return (EXIT_FAILURE);
@@ -21,8 +21,8 @@ int Response::_fork_and_exec(int* fd, int& pid, std::string path_to_exec_prog)
 		std::string scriptPath = _path_to_root + _uri;
 		if (path_to_exec_prog.empty())
 		{
-			char* args[] = {strdup(scriptPath), NULL};
-			char** envp = _map_to_env();
+			char *args[] = {strdup(scriptPath), NULL};
+			char **envp = _map_to_env();
 			execve(scriptPath.c_str(), args, envp);
 			for (int i = 0; envp[i]; ++i)
 				delete envp[i];
@@ -49,7 +49,7 @@ int Response::_fork_and_exec(int* fd, int& pid, std::string path_to_exec_prog)
 	return (EXIT_SUCCESS);
 }
 
-std::string Response::_get_cgi_output(int* fd)
+std::string Response::_get_cgi_output(int *fd)
 {
 	std::string rep;
 	char buf[128];
@@ -90,10 +90,9 @@ int Response::_cgi_request(std::string &rep, std::string path_to_exec_prog)
 	return (EXIT_SUCCESS);
 }
 
-
-char** Response::_map_to_env()
+char **Response::_map_to_env()
 {
-	char** env = new char*[_meta_var.size() + 1];
+	char **env = new char *[_meta_var.size() + 1];
 	std::map<std::string, std::string>::iterator it;
 	std::size_t i;
 
@@ -109,14 +108,13 @@ char** Response::_map_to_env()
 	return (env);
 }
 
-static void header_to_var(char& c)
+static void header_to_var(char &c)
 {
 	if (c == '-')
 		c = '_';
 	else
 		c = std::toupper(c);
 }
-
 
 void Response::_init_meta_var()
 {
@@ -130,22 +128,24 @@ void Response::_init_meta_var()
 	_meta_var["REQUEST_METHOD"] = _request.get_method();
 	_meta_var["REQUEST_URI"] = _request.get_uri();
 	_meta_var["SCRIPT_NAME"] = _uri;
-	_meta_var["QUERY_STRING"] = (_request.get_uri().find('?') == std::string::npos ? "" : _request.get_uri().substr(_request.get_uri().find('?') + 1));
-	_meta_var["AUTH_TYPE"] = "";      // Implement based on specific auth handling
+	_meta_var["QUERY_STRING"] =
+			(_request.get_uri().find('?') == std::string::npos ? ""
+																												 : _request.get_uri().substr(_request.get_uri().find('?') + 1));
+	_meta_var["AUTH_TYPE"] = ""; // Implement based on specific auth handling
 	_meta_var["CONTENT_LENGTH"] = get_headers_key("Content-Length");
 	_meta_var["CONTENT_TYPE"] = get_headers_key("Content-Type");
 	_meta_var["GATEWAY_INTERFACE"] = "CGI/1.1";
 	if (_uri.size() < _request.get_uri().size())
 		_meta_var["PATH_INFO"] = _request.get_uri().substr(_uri.size(), std::string::npos);
 	else
-	 	_meta_var["PATH_INFO"] = "";
+		_meta_var["PATH_INFO"] = "";
 
 	_meta_var["PATH_TRANSLATED"] = ""; // Translate PATH_INFO to filesystem path
-	_meta_var["REMOTE_ADDR"] = "";     // To be retrieved from socket information
-	_meta_var["REMOTE_HOST"] = "";     // Optional: resolve REMOTE_ADDR to hostname
-	_meta_var["REMOTE_USER"] = "";     // User from authenticated session
-	_meta_var["SERVER_NAME"] = "";     // Retrieved from server configuration or host header
-	_meta_var["SERVER_PORT"] = "";     // Retrieved from server configuration
+	_meta_var["REMOTE_ADDR"] = "";		 // To be retrieved from socket information
+	_meta_var["REMOTE_HOST"] = "";		 // Optional: resolve REMOTE_ADDR to hostname
+	_meta_var["REMOTE_USER"] = "";		 // User from authenticated session
+	_meta_var["SERVER_NAME"] = "";		 // Retrieved from server configuration or host header
+	_meta_var["SERVER_PORT"] = "";		 // Retrieved from server configuration
 	_meta_var["SERVER_PROTOCOL"] = "HTTP/1.1";
 	_meta_var["SERVER_SOFTWARE"] = "webserv-42/1.0";
 }
@@ -167,8 +167,7 @@ int Response::_cgi()
 		{
 			std::string rep;
 			std::string uri = _uri.substr(0, i + it->first.size());
-			std::string path_info = _uri.substr(i + it->first.size(),
-				std::string::npos);
+			std::string path_info = _uri.substr(i + it->first.size(), std::string::npos);
 			_is_cgi = true;
 			if (_cgi_request(rep, it->second) != 0)
 			{

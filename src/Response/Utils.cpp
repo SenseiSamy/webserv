@@ -3,12 +3,11 @@
 #include <dirent.h>
 #include <iostream>
 #include <linux/limits.h>
-#include <sys/stat.h>
-#include <fstream>
 #include <sstream>
 #include <stdlib.h>
-#include <unistd.h>
+#include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 bool Response::_is_a_directory(const std::string &uri) const
 {
@@ -26,15 +25,15 @@ bool Response::_is_a_file(const std::string &uri) const
 	return (S_ISREG(statbuf.st_mode));
 }
 
-bool Response::_exists (const std::string& name) const
+bool Response::_exists(const std::string &name) const
 {
 	struct stat buffer;
-	if (stat (name.c_str(), &buffer) != 0)
+	if (stat(name.c_str(), &buffer) != 0)
 		return (false);
 	return (true);
 }
 
-bool Response::_write_perm(const std::string& name) const
+bool Response::_write_perm(const std::string &name) const
 {
 	return (access(name.c_str(), W_OK));
 }
@@ -60,10 +59,10 @@ int Response::_check_and_rewrite_uri()
 	return (0);
 }
 
-
 void Response::_redirect()
 {
-	if (_route == NULL || _route->redirect.empty()) {
+	if (_route == NULL || _route->redirect.empty())
+	{
 		_generate_error(500);
 		return;
 	}
@@ -74,8 +73,8 @@ void Response::_redirect()
 
 void Response::_directory_listing()
 {
-	struct dirent* entry;
-	DIR* directory = opendir((_path_to_root +_uri).c_str());
+	struct dirent *entry;
+	DIR *directory = opendir((_path_to_root + _uri).c_str());
 	if (directory == NULL)
 	{
 		_generate_error(500);
@@ -86,13 +85,12 @@ void Response::_directory_listing()
 	set_status_message(_error_codes[200]);
 	set_headers("Content-Type", "text/html");
 
-	_body += "<h1>Index of " + _uri + "</h1>\n"; 
+	_body += "<h1>Index of " + _uri + "</h1>\n";
 	_body += "<ul>\n";
 	_body += "<li><a href=..>..</a></li?>";
 	while ((entry = readdir(directory)) != NULL)
 	{
-		if (std::string(entry->d_name) == ".." || std::string(entry->d_name)
-			== ".")
+		if (std::string(entry->d_name) == ".." || std::string(entry->d_name) == ".")
 			continue;
 		_body += "<li><a href=\"";
 		_body += _uri + "/" + entry->d_name;
@@ -190,7 +188,8 @@ static inline std::string to_string(int num)
 
 void Response::_generate_error(int num)
 {
-	for (std::map<std::string, std::string>::iterator it = _server.error_pages.begin(); it != _server.error_pages.end(); ++it)
+	for (std::map<std::string, std::string>::iterator it = _server.error_pages.begin(); it != _server.error_pages.end();
+			 ++it)
 	{
 		if (std::atoi(it->first.c_str()) == num)
 		{

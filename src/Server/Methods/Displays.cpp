@@ -19,7 +19,7 @@ void Server::display() const
 		std::cout << "  max_body_size: \'" << _servers[i].max_body_size << "\'" << std::endl;
 		std::cout << "  error_pages:" << std::endl;
 		for (std::map<std::string, std::string>::const_iterator it = _servers[i].error_pages.begin();
-			 it != _servers[i].error_pages.end(); it++)
+				 it != _servers[i].error_pages.end(); it++)
 			std::cout << "    \'" << it->first << "\': \'" << it->second << "\' " << std::endl;
 		std::cout << "  routes:" << std::endl;
 		for (size_t j = 0; j < _servers[i].routes.size(); j++)
@@ -35,7 +35,7 @@ void Server::display() const
 			std::cout << "      default_file: \'" << _servers[i].routes[j].default_file << "\'" << std::endl;
 			std::cout << "      cgi:" << std::endl;
 			for (std::map<std::string, std::string>::const_iterator it = _servers[i].routes[j].cgi.begin();
-				 it != _servers[i].routes[j].cgi.end(); it++)
+					 it != _servers[i].routes[j].cgi.end(); it++)
 				std::cout << "        \'" << it->first << "\': \'" << it->second << "\'" << std::endl;
 			std::cout << "      cgi_upload_path: \'" << _servers[i].routes[j].cgi_upload_path << "\'" << std::endl;
 			std::cout << "      cgi_upload_enable: \'" << _servers[i].routes[j].cgi_upload_enable << "\'" << std::endl;

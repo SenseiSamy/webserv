@@ -1,7 +1,7 @@
 #include "Server.hpp"
 
-#include <iostream>
 #include <arpa/inet.h>
+#include <iostream>
 #include <unistd.h>
 
 void Server::setup_server_socket(server &server)
@@ -15,7 +15,7 @@ void Server::setup_server_socket(server &server)
 		throw std::runtime_error("setsockopt() failed " + std::string(strerror(errno)));
 
 	server.addr.sin_family = AF_INET;
-	server.addr.sin_addr.s_addr = inet_addr(server.host.c_str()); 
+	server.addr.sin_addr.s_addr = inet_addr(server.host.c_str());
 	server.addr.sin_port = htons(server.port);
 	bzero(&(server.addr.sin_zero), sizeof(server.addr.sin_zero));
 
