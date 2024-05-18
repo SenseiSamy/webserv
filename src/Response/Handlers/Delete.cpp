@@ -1,5 +1,7 @@
 #include "Response.hpp"
 
+// import remove function
+#include <cstdio>
 #include <string>
 #include <sys/stat.h>
 
