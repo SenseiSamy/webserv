@@ -1,9 +1,0 @@
-body {
-	background-image: url('./Background.jpg');
-	background-position: center;
-	background-repeat: repeat;
-	height: 100vh; /* This ensures the background covers the entire viewport height */
-	margin: 0; /* Remove default margin */
-	padding: 0; /* Remove default padding */
-	color:aliceblue
-}
