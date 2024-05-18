@@ -322,9 +322,17 @@ void Server::run()
 					if (_verbose)
 						std::cout << "----------------------------------------" << std::endl;
 
-					std::string response_str = response.convert();
-
-					send(fd, response_str.c_str(), response_str.size(), 0);
+					if (request.get_body().size() > server.max_body_size)
+					{
+						Response error_response(413, server, _error_codes);
+						std::string error_response_str = error_response.convert();
+						send(fd, error_response_str.c_str(), error_response_str.size(), 0);
+					}
+					else
+					{
+						std::string response_str = response.convert();
+						send(fd, response_str.c_str(), response_str.size(), 0);
+					}
 					close(fd);
 				}
 			}

@@ -1,9 +1,7 @@
 #include "Response.hpp"
 
-// import remove function
 #include <cstdio>
 #include <string>
-#include <sys/stat.h>
 
 void Response::_delete()
 {
@@ -18,7 +16,6 @@ void Response::_delete()
 		else if (!std::remove(filename.c_str()))
 		{
 			set_status_code(204);
-			set_status_message(_error_codes[204]);
 			return;
 		}
 		else
@@ -33,7 +30,6 @@ void Response::_delete()
 		else if (!std::remove(filename.c_str()))
 		{
 			set_status_code(204);
-			set_status_message(_error_codes[204]);
 			return;
 		}
 		else

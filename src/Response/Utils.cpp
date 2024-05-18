@@ -68,7 +68,6 @@ void Response::_redirect()
 		return;
 	}
 	set_status_code(307);
-	set_status_message(_error_codes[307]);
 	set_headers("Location", _route->redirect);
 }
 
@@ -83,7 +82,6 @@ void Response::_directory_listing()
 	}
 
 	set_status_code(200);
-	set_status_message(_error_codes[200]);
 	set_headers("Content-Type", "text/html");
 
 	_body += "<h1>Index of " + _uri + "</h1>\n";
@@ -197,7 +195,6 @@ void Response::_generate_error(int num)
 	}
 
 	set_status_code(num);
-	set_status_message(_error_codes[num]);
 	set_headers("Content-Type", "text/html");
 	_body = "<h1>" + to_string(num) + "\n" + _error_codes[num] + "</h1>\n";
 	set_content_lenght();

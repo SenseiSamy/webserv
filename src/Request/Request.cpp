@@ -1,5 +1,7 @@
 #include "Request.hpp"
+#include "Response.hpp"
 
+#include <cstddef>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -65,7 +67,7 @@ static const std::string trim(const std::string &str)
 	return str.substr(first, (last - first + 1));
 }
 
-void Request::parse()
+void Request::parse(const size_t &max_body_size)
 {
 	std::istringstream iss(_request);
 	std::string request_line;
@@ -104,8 +106,16 @@ void Request::parse()
 		if (_method == "POST" && _headers.find("Content-Length") != _headers.end())
 		{
 			std::istringstream(_headers["Content-Length"]) >> _content_length;
-			_body.assign(std::istreambuf_iterator<char>(iss),
-									 std::istreambuf_iterator<char>()); // Read the rest of the stream
+
+			std::istreambuf_iterator<char> it(iss);
+			std::istreambuf_iterator<char> end;
+			size_t bytes_read = 0;
+			while (it != end && bytes_read < max_body_size)
+			{
+				_body.push_back(*it);
+				++it;
+				++bytes_read;
+			}
 		}
 	}
 }

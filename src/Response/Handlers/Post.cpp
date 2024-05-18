@@ -1,43 +1,43 @@
 #include "Response.hpp"
 
 #include <fstream>
-#include <iostream>
-#include <ostream>
 #include <sstream>
 
 void Response::_post()
 {
 	std::string boundaries = _request.get_headers_key("Content-Type");
 	size_t boundpos = boundaries.find("boundary=");
+
 	if (boundpos != std::string::npos)
 	{
 		boundaries = boundaries.substr(boundpos + 9);
 		std::istringstream data(this->_request.get_body());
 		std::string filename;
 		std::string line;
-		size_t bodyread = 0;
-		int tokenheader = 2;
-		while (std::getline(data, line) && tokenheader)
+		size_t body_read = 0;
+		int token_header = 2;
+
+		while (std::getline(data, line) && token_header)
 		{
 			if (line.find(boundaries))
-				bodyread += line.length();
+				body_read += line.length();
 			if (line.find("filename=") != std::string::npos)
 			{
 				filename = line.substr(line.find("filename=") + 10);
-				tokenheader--;
-				bodyread += line.length();
+				token_header--;
+				body_read += line.length();
 			}
 			else if (line.find("Content-Type:") != std::string::npos)
 			{
-				tokenheader--;
-				bodyread += line.length();
+				token_header--;
+				body_read += line.length();
 			}
-			if (tokenheader == 0)
+			if (token_header == 0)
 				break;
 		}
+
 		filename = filename.substr(0, filename.size() - 2);
 
-		std::cout << boundaries << std::endl;
 		std::getline(data, line);
 		std::ofstream file(filename.c_str(), std::ios::binary);
 		char buff[5000];
@@ -49,8 +49,8 @@ void Response::_post()
 			file.write(buff, 5000);
 			contentadd++;
 		}
-		data.read(buff, _request.get_content_length() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
-		file.write(buff, _request.get_content_length() - (5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
+		data.read(buff, _request.get_content_length() - (5000 * (contentadd - 1) + (body_read + boundaries.length() + 10)));
+		file.write(buff, _request.get_content_length() - (5000 * (contentadd - 1) + (body_read + boundaries.length() + 10)));
 		file.close();
 	}
 }

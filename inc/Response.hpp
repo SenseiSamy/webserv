@@ -91,9 +91,8 @@ public:
 	const server &get_server() const;
 
 	// setters
-	void set_status_code(int code);
-	void set_status_message(const std::string &message);
-	void setBody(const std::string &responseBody);
+	void set_status_code(const unsigned short &code);
+	void set_body(const std::string &responseBody);
 	void set_headers(const std::string &key, const std::string &value);
 	void set_content_lenght();
 

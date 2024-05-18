@@ -175,7 +175,6 @@ int Response::_cgi()
 				return (true);
 			}
 			set_status_code(200);
-			set_status_message(_error_codes[200]);
 			_body += rep;
 			set_content_lenght();
 			return (true);

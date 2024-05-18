@@ -53,7 +53,7 @@ public:
 
 	// Others
 	void clear();
-	void parse();
+	void parse(const size_t &max_body_size = 1000000);
 };
 
 #endif // REQUEST_HPP
