@@ -3,12 +3,15 @@
 
 #include <map>
 #include <string>
+#include <fstream>
+#ifndef BUF_SIZE
+ #define BUF_SIZE 4096
+#endif
 
 class Request
 {
 	private:
 		std::string _request;
-
 		std::string _method;
 		std::string _uri;
 		std::string _version;
@@ -16,14 +19,18 @@ class Request
 		size_t _content_length;
 		std::string _body;
 		std::string _query_string;
+		bool _header_complete;
+		bool _complete;
+		char body_buf[BUF_SIZE + 1];
+		std::fstream tmp_file;
 
 	public:
 		Request();
 		Request(const std::string &request);
 		Request(const Request &request);
 		~Request();
-		Request &operator=(const Request &request);
-
+		Request& operator=(const Request &request);
+		Request& operator+=(const std::string& str);
 		// Getters
 		const std::string &get_request() const;
 		const std::string &get_method() const;
@@ -54,6 +61,7 @@ class Request
 		// Others    
 		void clear();
 		void parse();
+		bool is_header_complete();
 };
 
 #endif // REQUEST_HPP

@@ -102,7 +102,7 @@ class Server
 		// Execution
 		const server &find_server(const std::string &host);
 		bool _accept_new_connection(server* server);
-		int _read_request(int fd, const server *server);
+		bool _read_request(int fd);
 
 	public:
 		Server();

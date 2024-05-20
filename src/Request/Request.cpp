@@ -5,13 +5,14 @@
 #include <unistd.h>
 #include <iostream>
 
-Request::Request(): _request("")
+Request::Request(): _request(""), _header_complete(false)
 {
 }
 
-Request::Request(const std::string &request): _request(request)
+Request::Request(const std::string &request): _request(request), _header_complete(false)
 {
-	parse();
+	if (is_header_complete())
+		parse();
 }
 
 Request::Request(const Request &request)
@@ -42,8 +43,17 @@ Request &Request::operator=(const Request &request)
 		_headers = request._headers;
 		_content_length = request._content_length;
 		_body = request._body;
+		_header_complete = request._header_complete;
 	}
 	return *this;
+}
+
+Request &Request::operator+=(const std::string& str)
+{
+	_request += str;
+	if (is_header_complete())
+		parse();
+	return (*this);
 }
 
 void Request::clear()
@@ -54,6 +64,17 @@ void Request::clear()
 	_headers.clear();
 	_content_length = 0;
 	_body.clear();
+}
+
+bool Request::is_header_complete()
+{
+	if (_header_complete)
+		return (true);
+	if (_request.find("\r\n\r\n") != std::string::npos) {
+		_header_complete = true;
+		return (true);
+	}
+	return (false);
 }
 
 static const std::string trim(const std::string &str)
@@ -90,6 +111,8 @@ void Request::parse()
 	std::string line;
 	while (std::getline(iss, line) && !line.empty())
 	{
+		if (line == "\r")
+			break;
 		std::istringstream header_iss(line);
 		std::string header_name;
 		std::string header_value;
@@ -101,10 +124,23 @@ void Request::parse()
 			_headers[header_name] = header_value.substr(0, header_value.size() - 1);
 		}
 
-		if (_method == "POST" && _headers.find("Content-Length") != _headers.end())
-		{
-			std::istringstream(_headers["Content-Length"]) >> _content_length;
-			_body.assign(std::istreambuf_iterator<char>(iss), std::istreambuf_iterator<char>()); // Read the rest of the stream
+		//if (_method == "POST" && _headers.find("Content-Length") != _headers.end())
+		//{
+		//	std::istringstream(_headers["Content-Length"]) >> _content_length;
+		//	_body.assign(std::istreambuf_iterator<char>(iss), std::istreambuf_iterator<char>()); // Read the rest of the stream
+		//}	
+	}
+	if (_method == "POST") {
+		int i = 0;
+		std::string name;
+		while (!tmp_file.is_open()) {
+			std::stringstream ss;
+			ss << i++;
+			name = "/tmp/" + std::string("webserv") + ss.str();
+			tmp_file.open(name.c_str(), std::ios::out | std::ios::app | std::ios::binary);
+		}
+		while (std::getline(iss, line)) {
+			tmp_file.write(line.c_str(), line.size() - 1);
 		}
 	}
 }
