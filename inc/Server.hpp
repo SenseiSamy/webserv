@@ -1,8 +1,6 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include "Request.hpp"
-
 // types
 #include <cstddef>
 #include <map>
@@ -74,7 +72,7 @@ private:
 	static bool _stop_server;
 	const std::map<unsigned short, std::string> _error_codes;
 	std::vector<server> _servers;
-	std::map<int, std::string> requests;
+	std::map<int, std::string> _requests;
 
 	// Index management
 	size_t next_non_empty_line();
@@ -103,6 +101,7 @@ private:
 	const server &find_server(const std::string &host);
 	bool _accept_new_connection(server *server);
 	int _read_request(int fd);
+	void handle_request(int fd);
 
 public:
 	Server();

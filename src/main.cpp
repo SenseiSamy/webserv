@@ -1,8 +1,8 @@
 #include "Server.hpp"
 
 #include <cstdlib>
-#include <iostream>
 #include <cstring>
+#include <iostream>
 
 int main(int argc, const char *argv[])
 {

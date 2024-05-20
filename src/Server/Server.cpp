@@ -18,7 +18,7 @@
 
 volatile sig_atomic_t g_signal_status = 0;
 
-static const std::map<unsigned short, std::string> initerror_codes()
+static inline const std::map<unsigned short, std::string> init_error_codes()
 {
 	std::map<unsigned short, std::string> error_codes;
 
@@ -90,12 +90,12 @@ static const std::map<unsigned short, std::string> initerror_codes()
 
 bool Server::_stop_server = false;
 
-Server::Server() : _current_word(0), _current_line(0), _error_codes(initerror_codes())
+Server::Server() : _current_word(0), _current_line(0), _error_codes(init_error_codes())
 {
 }
 
 Server::Server(const char *config_file, const bool verbose)
-		: _verbose(verbose), _config_file(config_file), _current_word(0), _current_line(0), _error_codes(initerror_codes())
+		: _verbose(verbose), _config_file(config_file), _current_word(0), _current_line(0), _error_codes(init_error_codes())
 {
 	read_config();
 	parsing_config();
@@ -106,11 +106,15 @@ Server::Server(const Server &other)
 {
 	if (this != &other)
 	{
+		_verbose = other._verbose;
+		_epoll_fd = other._epoll_fd;
 		_config_file = other._config_file;
 		_content_file = other._content_file;
 		_current_word = other._current_word;
 		_current_line = other._current_line;
+		_stop_server = other._stop_server;
 		_servers = other._servers;
+		_requests = other._requests;
 	}
 }
 
@@ -118,11 +122,15 @@ Server &Server::operator=(const Server &other)
 {
 	if (this != &other)
 	{
+		_verbose = other._verbose;
+		_epoll_fd = other._epoll_fd;
 		_config_file = other._config_file;
 		_content_file = other._content_file;
 		_current_word = other._current_word;
 		_current_line = other._current_line;
+		_stop_server = other._stop_server;
 		_servers = other._servers;
+		_requests = other._requests;
 	}
 	return *this;
 }
@@ -131,7 +139,7 @@ Server::~Server()
 {
 	for (size_t i = 0; i < _servers.size(); ++i)
 	{
-		std::cout << "Deleting server " << _servers[i].host << ":" << _servers[i].port << std::endl;
+		std::cout << "Closing server " << _servers[i].host << ":" << _servers[i].port << std::endl;
 		close(_servers[i].listen_fd);
 	}
 }
@@ -173,10 +181,8 @@ const server &Server::find_server(const std::string &host)
 	}
 
 	for (it = _servers.begin(); it != _servers.end(); ++it)
-	{
 		if (it->default_server)
 			return *it;
-	}
 
 	return _servers[0];
 }
@@ -224,10 +230,46 @@ int Server::_read_request(int fd)
 		count = read(fd, buffer, MAX_BUFFER_SIZE);
 	}
 
-	requests[fd] += request_str;
+	_requests[fd] += request_str;
 	if (count == 0 || request_str == "\r\n" || request_str.find("\r\n\r\n") != std::string::npos)
 		return 0;
 	return 1;
+}
+
+void Server::handle_request(int fd)
+{
+	Request request(_requests[fd]);
+	_requests.erase(fd);
+	if (_verbose)
+	{
+		request.display();
+		std::cout << "----------------------------------------" << std::endl;
+	}
+	const struct server server = find_server(request.get_headers_key("Host"));
+	Response response(request, server, _error_codes);
+	if (_verbose)
+		response.display();
+	std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
+	if (response.get_status_code() == 200)
+		std::cout << "\033[1;32m" << response.get_status_code();
+	else
+		std::cout << "\033[1;31m" << response.get_status_code() << " " << response.get_status_message();
+	std::cout << "\033[0m -" << std::endl;
+	if (_verbose)
+		std::cout << "----------------------------------------" << std::endl;
+
+	if (request.get_body().size() > server.max_body_size)
+	{
+		Response error_response(413, server, _error_codes);
+		std::string error_response_str = error_response.convert();
+		send(fd, error_response_str.c_str(), error_response_str.size(), 0);
+	}
+	else
+	{
+		std::string response_str = response.convert();
+		send(fd, response_str.c_str(), response_str.size(), 0);
+	}
+	close(fd);
 }
 
 void Server::run()
@@ -264,7 +306,7 @@ void Server::run()
 				throw std::runtime_error("epoll_wait() failed " + std::string(strerror(errno)));
 		}
 
-		for (int i = 0; i < nfds; ++i) // Iterating over all the fds that are available for reading/writing
+		for (int i = 0; i < nfds; ++i) 
 		{
 			const int fd = events[i].data.fd;
 			server *server = NULL;
@@ -278,63 +320,30 @@ void Server::run()
 				}
 			}
 
-			if (server != NULL) // Accepting a new connection
+			if (server != NULL) 
 			{
 				if (!_accept_new_connection(server))
 					continue;
 			}
 			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) ||
-							 (!(events[i].events & EPOLLIN))) // An error happened
+							 (!(events[i].events & EPOLLIN)))
 			{
 				close(fd);
 				continue;
 			}
-			else // Reading client request and sending response
+			else
 			{
 				const int ret = _read_request(fd);
-				if (ret == 1)
+				if (ret == 1) // Request not finished
 					continue;
-				if (ret == -1)
+				if (ret == -1) // Error
 				{
 					Response response(413, *server, _error_codes);
 					std::string response_str = response.convert();
 					send(fd, response_str.c_str(), response_str.size(), 0);
 				}
-				else
-				{
-					Request request(requests[fd]);
-					requests.erase(fd);
-					if (_verbose)
-					{
-						request.display();
-						std::cout << "----------------------------------------" << std::endl;
-					}
-					const struct server server = find_server(request.get_headers_key("Host"));
-					Response response(request, server, _error_codes);
-					if (_verbose)
-						response.display();
-					std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
-					if (response.get_status_code() == 200)
-						std::cout << "\033[1;32m" << response.get_status_code();
-					else
-						std::cout << "\033[1;31m" << response.get_status_code() << " " << response.get_status_message();
-					std::cout << "\033[0m -" << std::endl;
-					if (_verbose)
-						std::cout << "----------------------------------------" << std::endl;
-
-					if (request.get_body().size() > server.max_body_size)
-					{
-						Response error_response(413, server, _error_codes);
-						std::string error_response_str = error_response.convert();
-						send(fd, error_response_str.c_str(), error_response_str.size(), 0);
-					}
-					else
-					{
-						std::string response_str = response.convert();
-						send(fd, response_str.c_str(), response_str.size(), 0);
-					}
-					close(fd);
-				}
+				else // Request finished
+					handle_request(fd);
 			}
 		}
 	}
