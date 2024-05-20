@@ -4,12 +4,15 @@
 #include <string>
 #include <unistd.h>
 #include <iostream>
+#include <cstring>
+#include <fstream>
+#include <fcntl.h>
 
-Request::Request(): _request(""), _header_complete(false)
+Request::Request(): _request(""), _header_complete(false), _complete(false)
 {
 }
 
-Request::Request(const std::string &request): _request(request), _header_complete(false)
+Request::Request(const std::string &request): _request(request), _header_complete(false), _complete(false)
 {
 	if (is_header_complete())
 		parse();
@@ -26,6 +29,11 @@ Request::Request(const Request &request)
 		_headers = request._headers;
 		_content_length = request._content_length;
 		_body = request._body;
+		_query_string = request._query_string;
+		_complete = request._complete;
+		_header_complete = request._header_complete;
+		_tmp_file = request._tmp_file;
+		std::strcpy(_body_buf, request._body_buf);
 	}
 }
 
@@ -44,15 +52,21 @@ Request &Request::operator=(const Request &request)
 		_content_length = request._content_length;
 		_body = request._body;
 		_header_complete = request._header_complete;
+		
 	}
 	return *this;
 }
 
 Request &Request::operator+=(const std::string& str)
 {
-	_request += str;
-	if (is_header_complete())
-		parse();
+	if (!is_header_complete()) {
+		_request += str;
+		if (is_header_complete())
+			parse();
+	}
+	else {
+		
+	}
 	return (*this);
 }
 
@@ -72,6 +86,17 @@ bool Request::is_header_complete()
 		return (true);
 	if (_request.find("\r\n\r\n") != std::string::npos) {
 		_header_complete = true;
+		return (true);
+	}
+	return (false);
+}
+
+bool Request::is_complete()
+{
+	if (_complete)
+		return (true);
+	if (is_header_complete() && _method != "POST") {
+		_complete = true;
 		return (true);
 	}
 	return (false);
@@ -131,16 +156,21 @@ void Request::parse()
 		//}	
 	}
 	if (_method == "POST") {
+		std::fstream tmp_file;
 		int i = 0;
 		std::string name;
-		while (!tmp_file.is_open()) {
+		do {
 			std::stringstream ss;
 			ss << i++;
 			name = "/tmp/" + std::string("webserv") + ss.str();
-			tmp_file.open(name.c_str(), std::ios::out | std::ios::app | std::ios::binary);
-		}
+		} while (access(name.c_str(), F_OK) == 0);
+
+		tmp_file.open(name.c_str(), std::ios::out | std::ios::app | std::ios::binary);
+		if (!tmp_file.is_open())
+			std::cerr << "ff :(";
 		while (std::getline(iss, line)) {
 			tmp_file.write(line.c_str(), line.size() - 1);
 		}
+		tmp_file.close();
 	}
 }

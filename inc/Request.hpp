@@ -3,7 +3,6 @@
 
 #include <map>
 #include <string>
-#include <fstream>
 #ifndef BUF_SIZE
  #define BUF_SIZE 4096
 #endif
@@ -21,8 +20,8 @@ class Request
 		std::string _query_string;
 		bool _header_complete;
 		bool _complete;
-		char body_buf[BUF_SIZE + 1];
-		std::fstream tmp_file;
+		char _body_buf[BUF_SIZE + 1];
+		std::string _tmp_file;
 
 	public:
 		Request();
@@ -62,6 +61,7 @@ class Request
 		void clear();
 		void parse();
 		bool is_header_complete();
+		bool is_complete();
 };
 
 #endif // REQUEST_HPP

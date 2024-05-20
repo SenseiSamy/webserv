@@ -231,9 +231,7 @@ bool Server::_read_request(int fd)
 	}
 
 	requests[fd] += request_str;
-	if (count == 0 || request_str == "\r\n" || request_str.find("\r\n\r\n") != std::string::npos)
-		return true;
-	return false;
+	return (requests[fd].is_complete());
 }
 
 void Server::run()
@@ -294,11 +292,11 @@ void Server::run()
 				close(fd);
 				continue;
 			}
-			else // Reading client request and sending response
+			else // Reading client request and if complete, sending response
 			{
 				if (!_read_request(fd))
 					continue;
-				Request request(requests[fd]);
+				Request request = requests[fd];
 				requests.erase(fd);
 				if (_verbose)
 				{
