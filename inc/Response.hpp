@@ -13,17 +13,29 @@ private:
 	const Request &_request;
 
 	/* data */
+	std::string _version;
+	std::string _status_code;
+	std::string _status_message;
+	std::map<std::string, std::string> _headers;
+	std::string _body;
+
 	char *_response_buffer;
 	size_t _response_size;
 
 	/* Methods */
-	// Outils pour generer les methodes get post etc (par exemple: get_extention, set_mime, cgi etc)
-	// Donc en gros la Reponse est senser englober tout les outils utiliser par les methodes get post etc.
-	// Oui c'est inutile en soit, mais ca permet de garder la class Server plus propre et lisible.
 
+	/*   HTTP Methods */
+	void _get(const Request &request);
+	void _head(const Request &request);
+	void _post(const Request &request);
+	void _put(const Request &request);
+	void _delete(const Request &request);
+	void _connect(const Request &request);
+	void _options(const Request &request);
+	void _trace(const Request &request);
 
 public:
-	Response(Server &_server, const Request &request);
+	Response(Server &server, const Request &request);
 	~Response();
 
 	/* Getters */
@@ -35,6 +47,10 @@ public:
 	/* Setters */
 	void set_response_buffer(const char *response_buffer);
 	void set_response_size(const size_t &response_size);
+
+	/* Methods */
+	void generate_error_page(const unsigned short &status_code);
+	void update_response_buffer();
 };
 
 #endif // RESPONSE_HPP

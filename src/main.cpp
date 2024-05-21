@@ -72,8 +72,9 @@ int run(std::vector<Server> &servers, int epoll_fd, epoll_event *events,
 			}
 			else // existing connection
 			{
-				Request request(servers[server_index]);
-				Response response(servers[server_index], request);
+				Server &server = servers[server_index];
+				Request request(server);
+				Response response(server, request);
 			}
 		}
 	}

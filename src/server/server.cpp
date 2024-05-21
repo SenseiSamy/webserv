@@ -7,16 +7,7 @@
 #include <iostream> // std::cerr, std::endl
 #include <unistd.h> // close
 
-Server::Server(const server &serv)
-		: _error_codes(init_error_codes()), _methods_map({{"GET", &Server::_get},
-																											{"HEAD", &Server::_head},
-																											{"POST", &Server::_post},
-																											{"PUT", &Server::_put},
-																											{"DELETE", &Server::_delete},
-																											{"CONNECT", &Server::_connect},
-																											{"OPTIONS", &Server::_options},
-																											{"TRACE", &Server::_trace}}),
-			_server(serv)
+Server::Server(const server &serv) : _error_codes(init_error_codes()), _server(serv)
 {
 	if (setup_socket())
 		exit(errno);

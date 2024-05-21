@@ -1,5 +1,6 @@
 #include "Request.hpp"
 
+/* Functions */
 #include <iostream> // std::cout, std::endl
 #include <sstream>	// std::istringstream
 

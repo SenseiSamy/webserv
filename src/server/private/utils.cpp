@@ -1,5 +1,4 @@
 #include "Utils.hpp"
-#include "Response.hpp"
 #include "Server.hpp"
 
 /* Functions */
@@ -20,16 +19,13 @@ void Server::_request_line(const std::string &request)
 	_uri = tokens[1];
 	_version = tokens[2];
 
-	// check if the method is valid
-	if (_methods_map.find(_methods) == _methods_map.end())
-	{
-		_status_code = 405;
-		return;
-	}
-
 	// check if the HTTP version is valid
 	if (_version != "HTTP/1.1")
 		_status_code = 505;
+
+	if (_methods != "GET" && _methods != "HEAD" && _methods != "POST" && _methods != "PUT" && _methods != "DELETE" &&
+			_methods != "CONNECT" && _methods != "OPTIONS" && _methods != "TRACE")
+		_status_code = 501;
 }
 
 int Server::accept_client() const
@@ -44,9 +40,4 @@ int Server::accept_client() const
 	}
 
 	return client_fd;
-}
-
-void Server::send_response(const Response &response) const
-{
-	send(_client_fd, response.get_response(), response.get_response_size(), 0);
 }

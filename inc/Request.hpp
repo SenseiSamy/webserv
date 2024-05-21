@@ -21,10 +21,6 @@ public:
 	~Request();
 
 	/* Getters */
-	const Server &get_server() const;
-	const std::string &get_method() const;
-	const std::string &get_uri() const;
-	const std::string &get_version() const;
 	const std::map<std::string, std::string> &get_headers() const;
 	const std::string &get_body() const;
 

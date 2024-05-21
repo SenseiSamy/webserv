@@ -61,7 +61,6 @@ class Server
 private:
 	const server &_server;
 	const std::map<unsigned short, std::string> _error_codes;
-	const std::map<std::string, const Response (Server::*)(const Request &)> _methods_map;
 
 	sockaddr_in _addr;
 	int _client_fd;
@@ -73,17 +72,6 @@ private:
 	std::string _version;
 
 	/* Methods */
-	/*   HTTP Methods */
-	const Response _get(const Request &request);
-	const Response _head(const Request &request);
-	const Response _post(const Request &request);
-	const Response _put(const Request &request);
-	const Response _delete(const Request &request);
-	const Response _connect(const Request &request);
-	const Response _options(const Request &request);
-	const Response _trace(const Request &request);
-
-	/*   Utils */
 	void _request_line(const std::string &request);
 	void _send(const Request &request) const;
 
@@ -94,6 +82,7 @@ public:
 	/* Getters */
 	const server &get_server() const;
 	const std::map<unsigned short, std::string> &get_error_codes() const;
+	const std::map<std::string, const Response (Server::*)(const Request &)> &get_methods_map() const;
 	const int &get_client_fd() const;
 	const unsigned short &get_status_code() const;
 	const std::string &get_host() const;
@@ -112,7 +101,6 @@ public:
 	/* Methods */
 	int setup_socket();
 	int accept_client() const;
-	void send_response(const Response &response) const;
 };
 
 #endif // SERVER_HPP
