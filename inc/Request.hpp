@@ -1,49 +1,39 @@
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
+#include "Server.hpp"
+
+/* Types */
 #include <map>
 #include <string>
 
 class Request
 {
-	private:
-		std::string _request;
+private:
+	Server &_server;
 
-		std::string _method;
-		std::string _url;
-		std::string _version;
-		std::map<std::string, std::string> _headers;
-		size_t _content_length;
-		std::string _body;
-		std::string _query_string;
+	/* data */
+	std::map<std::string, std::string> _headers;
+	std::string _body;
 
-	public:
-		Request();
-		Request(const std::string &request);
-		Request(const Request &request);
-		~Request();
-		Request &operator=(const Request &request);
+public:
+	Request(Server &server);
+	~Request();
 
-		// Getters
-		std::string get_request() const;
-		std::string get_method() const;
-		std::string get_url() const;
-		std::string get_version() const;
-		std::string get_headers_key(const std::string &key);
-		std::map<std::string, std::string> get_headers() const;
-		size_t get_content_length() const;
-		std::string get_body() const;
-		std::string get_query_string() const;
-		std::string get_first_line() const;
-		// Setters
+	/* Getters */
+	const Server &get_server() const;
+	const std::string &get_method() const;
+	const std::string &get_uri() const;
+	const std::string &get_version() const;
+	const std::map<std::string, std::string> &get_headers() const;
+	const std::string &get_body() const;
 
-		// Displays
-		void display_request() const;
-		void display() const;
+	/* Setters */
+	void set_headers(const std::map<std::string, std::string> &headers);
+	void set_body(const std::string &body);
 
-		// Others    
-		void clear();
-		void parse();
+	/* Methods */
+	void parse_request(const std::string &request);
 };
 
 #endif // REQUEST_HPP

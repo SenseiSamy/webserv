@@ -13,6 +13,7 @@ DEP := $(OBJ:%.o=%.d)
 
 INC := -I$(INC_DIR)
 
+.PHONY: all
 all: $(NAME)
 
 $(NAME): $(OBJ)
@@ -24,15 +25,18 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 
 -include $(DEP)
 
+.PHONY: clean
 clean:
 	rm -rf $(OBJ_DIR)
 
+.PHONY: fclean
 fclean: clean
 	rm -f $(NAME)
 
+.PHONY: re
 re: fclean all
 
+.PHONY: scan-build
 scan-build: clean
 	scan-build make
 
-.PHONY: all clean fclean re scan-build
