@@ -8,13 +8,14 @@
 #include <fstream>
 #include <fcntl.h>
 
-Request::Request(): _request(""), _header_complete(false), _complete(false)
+Request::Request(): _request(""), _state(incomplete)
 {
 }
 
-Request::Request(const std::string &request): _request(request), _header_complete(false), _complete(false)
+Request::Request(const std::string &request): _request(request), _state(incomplete)
 {
-	if (is_header_complete())
+	refresh_state();
+	if (_state == header_complete)
 		parse();
 }
 
@@ -30,15 +31,18 @@ Request::Request(const Request &request)
 		_content_length = request._content_length;
 		_body = request._body;
 		_query_string = request._query_string;
-		_complete = request._complete;
-		_header_complete = request._header_complete;
-		_tmp_file = request._tmp_file;
-		std::strcpy(_body_buf, request._body_buf);
+		//_tmp_file = request._tmp_file;
+		_file_name = request._file_name;
+		_file_size = request._file_size;
 	}
 }
 
 Request::~Request()
 {
+	if (_tmp_file.is_open()) {
+		_tmp_file.close();
+		std::remove(_file_name.c_str());
+	}
 }
 
 Request &Request::operator=(const Request &request)
@@ -48,25 +52,37 @@ Request &Request::operator=(const Request &request)
 		_request = request._request;
 		_method = request._method;
 		_uri = request._uri;
+		_version = request._version;
 		_headers = request._headers;
 		_content_length = request._content_length;
 		_body = request._body;
-		_header_complete = request._header_complete;
-		
+		_query_string = request._query_string;
+		//_tmp_file = request._tmp_file;
+		_file_name = request._file_name;
+		_file_size = request._file_size;
 	}
 	return *this;
 }
 
 Request &Request::operator+=(const std::string& str)
 {
-	if (!is_header_complete()) {
-		_request += str;
-		if (is_header_complete())
-			parse();
+	switch (_state) {
+		case incomplete:
+			_request += str;
+			refresh_state();
+			if (_state == header_complete)
+				parse();
+			break;
+		case header_complete:
+			if (str.size() + _file_size > _content_length)
+				_tmp_file.write(str.c_str(), _content_length - _file_size);
+			else
+				_tmp_file.write(str.c_str(), str.size());
+			break;	
+		default:
+			std::cerr << "on est pas trop cense arriver la imo";
 	}
-	else {
-		
-	}
+	refresh_state();
 	return (*this);
 }
 
@@ -80,26 +96,25 @@ void Request::clear()
 	_body.clear();
 }
 
-bool Request::is_header_complete()
+void Request::refresh_state()
 {
-	if (_header_complete)
-		return (true);
-	if (_request.find("\r\n\r\n") != std::string::npos) {
-		_header_complete = true;
-		return (true);
+	if (_state == incomplete) {
+		if (_request.find("\r\n\r\n") != std::string::npos)
+			_state = header_complete;
 	}
-	return (false);
-}
-
-bool Request::is_complete()
-{
-	if (_complete)
-		return (true);
-	if (is_header_complete() && _method != "POST") {
-		_complete = true;
-		return (true);
+	if (_state == header_complete) {
+		if (_method != "POST")
+			_state = complete;
+		else {
+			if (_content_length == 0)
+				_state = invalid;
+			else if (_file_size == _content_length)
+			{
+				_state = complete;
+				_tmp_file.close();
+			}
+		}
 	}
-	return (false);
 }
 
 static const std::string trim(const std::string &str)
@@ -155,22 +170,23 @@ void Request::parse()
 		//	_body.assign(std::istreambuf_iterator<char>(iss), std::istreambuf_iterator<char>()); // Read the rest of the stream
 		//}	
 	}
+	if (_headers.find("Content-Length") != _headers.end())
+		std::istringstream(_headers["Content-Length"]) >> _content_length;
+	else
+		_content_length = 0;
+
 	if (_method == "POST") {
-		std::fstream tmp_file;
+		_file_size = 0;
 		int i = 0;
-		std::string name;
 		do {
 			std::stringstream ss;
 			ss << i++;
-			name = "/tmp/" + std::string("webserv") + ss.str();
-		} while (access(name.c_str(), F_OK) == 0);
-
-		tmp_file.open(name.c_str(), std::ios::out | std::ios::app | std::ios::binary);
-		if (!tmp_file.is_open())
-			std::cerr << "ff :(";
+			_file_name = "/tmp/" + std::string("webserv") + ss.str();
+			_tmp_file.open(_file_name.c_str(), std::ios::out | std::ios::app | std::ios::binary);
+		} while (!_tmp_file.is_open());
 		while (std::getline(iss, line)) {
-			tmp_file.write(line.c_str(), line.size() - 1);
+			_tmp_file.write(line.c_str(), line.size() - 1);
+			_file_size += line.size() - 1;
 		}
-		tmp_file.close();
 	}
 }

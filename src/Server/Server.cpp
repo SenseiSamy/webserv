@@ -217,7 +217,7 @@ bool Server::_accept_new_connection(server* server)
 	return (true);
 }
 
-bool Server::_read_request(int fd)
+void Server::_read_request(int fd)
 {
 	std::string request_str;
 
@@ -231,7 +231,6 @@ bool Server::_read_request(int fd)
 	}
 
 	requests[fd] += request_str;
-	return (requests[fd].is_complete());
 }
 
 void Server::run()
@@ -294,17 +293,22 @@ void Server::run()
 			}
 			else // Reading client request and if complete, sending response
 			{
-				if (!_read_request(fd))
+				_read_request(fd);	
+				const Request& request = requests[fd];
+				if (request.get_state() != Request::complete || request.get_state() != Request::invalid)
 					continue;
-				Request request = requests[fd];
-				requests.erase(fd);
 				if (_verbose)
 				{
 					request.display();
 					std::cout << "----------------------------------------" << std::endl;
 				}
 				const struct server server = find_server(request.get_headers_key("Host"));
-				Response response(request, server, _error_codes);
+
+				Response response;
+				if (request.get_state() == Request::complete)
+					response = Response(request, server, _error_codes);
+				else
+					response = Response();
 				if (_verbose)
 					response.display();
 				std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
@@ -319,6 +323,8 @@ void Server::run()
 				std::string response_str = response.convert();
 
 				send(fd, response_str.c_str(), response_str.size(), 0);
+
+				requests[fd].erase(fd);
 				close(fd);
 			}
 		}

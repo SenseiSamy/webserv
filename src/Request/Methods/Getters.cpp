@@ -52,3 +52,13 @@ const std::string Request::get_first_line() const
 		return "";
 	return _request.substr(0, pos);
 }
+
+enum Request::state Request::get_state() const
+{
+	return (_state);
+}
+
+const std::string Request::get_file_name() const
+{
+	return (_file_name);
+}

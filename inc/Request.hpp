@@ -3,12 +3,21 @@
 
 #include <map>
 #include <string>
+#include <fstream>
 #ifndef BUF_SIZE
  #define BUF_SIZE 4096
 #endif
 
 class Request
 {
+	public:
+		enum state {
+			incomplete,
+			header_complete,
+			complete,
+			invalid
+		};
+
 	private:
 		std::string _request;
 		std::string _method;
@@ -18,10 +27,12 @@ class Request
 		size_t _content_length;
 		std::string _body;
 		std::string _query_string;
-		bool _header_complete;
-		bool _complete;
-		char _body_buf[BUF_SIZE + 1];
-		std::string _tmp_file;
+		enum state _state;
+		std::fstream _tmp_file;
+		std::size_t _file_size;
+		std::string _file_name;
+
+		void refresh_state();
 
 	public:
 		Request();
@@ -41,6 +52,8 @@ class Request
 		const std::string &get_body() const;
 		const std::string &get_query_string() const;
 		const std::string get_first_line() const;
+		enum state get_state() const;
+		const std::string get_file_name() const;
 		
 		// Setters
 		void set_request(const std::string &request);
@@ -60,8 +73,6 @@ class Request
 		// Others    
 		void clear();
 		void parse();
-		bool is_header_complete();
-		bool is_complete();
 };
 
 #endif // REQUEST_HPP

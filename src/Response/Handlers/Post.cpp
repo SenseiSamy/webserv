@@ -5,7 +5,27 @@
 #include <fstream>
 #include <ostream>
 
+static void multipart() 
+{
+
+}
+
+static void app_form_urlencoded()
+{
+
+}
+
 void Response::_post()
+{
+	if (_request.get_headers_key("Content-Type").find("multipart/form-data") != std::string::npos)
+		multipart();
+	else if (_request.get_headers_key("Content-Type") == "application/x-www-form-urlencoded")
+		app_form_urlencoded();
+	else
+		_generate_error(400);
+}
+
+/*void Response::_post()
 {
 	std::string boundaries = _request.get_headers_key("Content-Type");
 	size_t boundpos = boundaries.find("boundary=");
@@ -55,5 +75,7 @@ void Response::_post()
 		file.write(buff, _request.get_content_length() -
 								(5000 * (contentadd - 1) + (bodyread + boundaries.length() + 10)));
 		file.close();
+
+		
 	}
-}
+}*/
