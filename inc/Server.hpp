@@ -84,7 +84,7 @@ private:
 	const Response _trace(const Request &request);
 
 	/*   Utils */
-	unsigned short _request_line(const std::string &request);
+	void _request_line(const std::string &request);
 	void _send(const Request &request) const;
 
 public:

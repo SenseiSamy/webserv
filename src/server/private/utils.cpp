@@ -5,13 +5,16 @@
 /* Functions */
 #include <iostream> // std::cerr, std::endl
 
-unsigned short Server::_request_line(const std::string &request)
+void Server::_request_line(const std::string &request)
 {
 	const std::string first_line = request.substr(0, request.find("\r\n"));
 	const std::vector<std::string> tokens = split(first_line, ' ');
 
 	if (tokens.size() != 3)
-		return 400;
+	{
+		_status_code = 400;
+		return;
+	}
 
 	_methods = tokens[0];
 	_uri = tokens[1];
@@ -19,13 +22,14 @@ unsigned short Server::_request_line(const std::string &request)
 
 	// check if the method is valid
 	if (_methods_map.find(_methods) == _methods_map.end())
-		return 405;
+	{
+		_status_code = 405;
+		return;
+	}
 
 	// check if the HTTP version is valid
 	if (_version != "HTTP/1.1")
-		return 505;
-
-	return 200;
+		_status_code = 505;
 }
 
 int Server::accept_client() const
