@@ -27,7 +27,10 @@ Response::Response(Server &server, const Request &request)
 
 	update_response_buffer();
 	send(_server.get_client_fd(), _response_buffer, _response_size, 0);
+}
 
+Response::~Response()
+{
 	delete[] _response_buffer;
 }
 

@@ -11,6 +11,7 @@ class Request;
 class Response;
 
 #define MAX_EVENTS 64
+#define BUFFER_SIZE 1024
 
 struct route
 {

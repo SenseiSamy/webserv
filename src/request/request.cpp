@@ -4,23 +4,14 @@
 #include <iostream> // std::cout, std::endl
 #include <sstream>	// std::istringstream
 
-Request::Request(Server &server) : _server(server)
+Request::Request(Server &server, const char *request, const int &client_fd)
+		: _server(server), _client_fd(client_fd), _request(request)
 {
-	char buffer[4096];
-	std::string request;
-
-	int bytes_received = recv(_server.get_client_fd(), buffer, sizeof(buffer) - 1, 0);
-	if (bytes_received < 0)
-	{
-		std::cerr << "Error: recv" << std::endl;
-		return;
-	}
-	buffer[bytes_received] = '\0';
-	request = std::string(buffer);
+	std::cout << "Request constructor" << std::endl;
 
 	parse_request(request);
 
-	std::cout << server.get_server().host << " - - \"" << _server.get_methods() << " " << _server.get_uri() << " "
+	std::cout << _server.get_server().host << " - - \"" << _server.get_methods() << " " << _server.get_uri() << " "
 						<< _server.get_version() << "\"" << std::endl;
 }
 

@@ -22,8 +22,6 @@ private:
 	char *_response_buffer;
 	size_t _response_size;
 
-	/* Methods */
-
 	/*   HTTP Methods */
 	void _get(const Request &request);
 	void _head(const Request &request);

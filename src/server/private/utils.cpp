@@ -1,9 +1,6 @@
 #include "Utils.hpp"
 #include "Server.hpp"
 
-/* Functions */
-#include <iostream> // std::cerr, std::endl
-
 void Server::_request_line(const std::string &request)
 {
 	const std::string first_line = request.substr(0, request.find("\r\n"));
@@ -26,18 +23,4 @@ void Server::_request_line(const std::string &request)
 	if (_methods != "GET" && _methods != "HEAD" && _methods != "POST" && _methods != "PUT" && _methods != "DELETE" &&
 			_methods != "CONNECT" && _methods != "OPTIONS" && _methods != "TRACE")
 		_status_code = 501;
-}
-
-int Server::accept_client() const
-{
-	sockaddr_in client_addr;
-	socklen_t client_addr_len = sizeof(client_addr);
-	int client_fd = accept(_client_fd, (sockaddr *)&client_addr, &client_addr_len);
-	if (client_fd == -1)
-	{
-		std::cerr << "Error: accept" << std::endl;
-		return client_fd;
-	}
-
-	return client_fd;
 }

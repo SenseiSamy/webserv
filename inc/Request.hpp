@@ -11,13 +11,15 @@ class Request
 {
 private:
 	Server &_server;
+	const int _client_fd;
+	const std::string _request;
 
 	/* data */
 	std::map<std::string, std::string> _headers;
 	std::string _body;
 
 public:
-	Request(Server &server);
+	Request(Server &server, const char *request, const int &client_fd);
 	~Request();
 
 	/* Getters */
