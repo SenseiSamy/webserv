@@ -58,7 +58,7 @@ struct server
 	std::vector<route> routes;											// /kapouet
 
 	server()
-			: host("127.0.0.1"), port(8080), root("www"), default_file("index.html"), default_server(true),
+			: host("127.0.0.1"), port(8080), root("www/"), default_file("index.html"), default_server(true),
 				max_body_size(1000000)
 	{
 	}
@@ -70,7 +70,7 @@ private:
 	int _server_fd;
 	struct sockaddr_in _address;
 
-	const server &_server;
+	const server _server;
 	const std::map<unsigned short, std::string> &_error_codes;
 
 	unsigned short _status_code;

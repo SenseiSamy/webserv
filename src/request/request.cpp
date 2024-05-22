@@ -7,17 +7,14 @@
 Request::Request(Server &server, const char *request, const int &client_fd)
 		: _server(server), _client_fd(client_fd), _request(request)
 {
-	std::cout << "Request constructor" << std::endl;
-
 	parse_request(request);
 
-	std::cout << _server.get_server().host << " - - \"" << _server.get_methods() << " " << _server.get_uri() << " "
-						<< _server.get_version() << "\"" << std::endl;
+	std::cout << _server.get_server().host << ":" << _server.get_server().port << " - - \"" << _server.get_methods()
+						<< " " << _server.get_uri() << " " << _server.get_version() << "\"" << std::endl;
 }
 
 Request::~Request()
 {
-	std::cout << "Request destructor" << std::endl;
 }
 
 void Request::parse_request(const std::string &request)

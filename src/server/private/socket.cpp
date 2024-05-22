@@ -25,7 +25,12 @@ void Server::_handle_request(const int &client_fd)
 	Request request(*this, buffer, client_fd);
 	Response response(*this, request);
 
-	send(_server_fd, response.get_response_buffer(), response.get_response_size(), 0);
+	// send(_server_fd, response.get_response_buffer(), response.get_response_size(), 0);
+
+	// send Hello world page to the client
+	send(client_fd, "HTTP/1.1 200 OK\nContent-Type: text/html\n\n<html><body><h1>Hello, World!</h1></body></html>", 80, 0);
+
+	close(client_fd);
 }
 
 void Server::_set_nonblocking(int sockfd)
@@ -72,12 +77,12 @@ int Server::_bind_socket(const std::string &ip, int port)
 		exit(EXIT_FAILURE);
 	}
 
-	if (listen(sockfd, 10) == -1)
-	{
-		std::cerr << "Error: listen: " << strerror(errno) << std::endl;
-		close(sockfd);
-		exit(EXIT_FAILURE);
-	}
+	// if (listen(sockfd, 10) == -1)
+	// {
+	// 	std::cerr << "Error: listen: " << strerror(errno) << std::endl;
+	// 	close(sockfd);
+	// 	exit(EXIT_FAILURE);
+	// }
 
 	return sockfd;
 }

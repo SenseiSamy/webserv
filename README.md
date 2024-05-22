@@ -8,7 +8,6 @@
 - Support des méthodes GET, POST, et DELETE.
 - Configuration simple via un fichier de configuration.
 - Logging détaillé des requêtes et des réponses.
-- Architecture multithread pour une meilleure performance.
 
 ### Prérequis
 

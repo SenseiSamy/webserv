@@ -7,8 +7,6 @@
 Server::Server(const server &serv, const std::map<unsigned short, std::string> &error_codes)
 		: _server(serv), _error_codes(error_codes)
 {
-	_server_fd = _bind_socket(_server.host, _server.port);
-	_set_nonblocking(_server_fd);
 }
 
 Server::~Server()
@@ -18,6 +16,9 @@ Server::~Server()
 
 void Server::init()
 {
+	_server_fd = _bind_socket(_server.host, _server.port);
+	_set_nonblocking(_server_fd);
+
 	if (listen(_server_fd, 10) == -1)
 	{
 		std::cerr << "Error: listen: " << strerror(errno) << std::endl;

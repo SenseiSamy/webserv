@@ -58,6 +58,10 @@ void Parsing::read_config(const std::string &config_file)
 	{
 		++line_number;
 		std::vector<std::string> words = split_line(line);
+
+		if (content_file.size() <= line_number)
+			content_file.resize(line_number + 1);
+
 		if (words.empty())
 			content_file[line_number] = std::vector<std::string>();
 		else
@@ -141,7 +145,7 @@ const Server Parsing::parse_server(const std::map<unsigned short, std::string> &
 	if (word != "}")
 		throw std::runtime_error("Syntax error: Missing '}' at line " + to_string(index_line));
 
-	return Server(result, error_codes);	
+	return Server(result, error_codes);
 }
 
 std::vector<Server> Parsing::parsing_config(const std::string &config_file,
