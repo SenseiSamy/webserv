@@ -10,9 +10,21 @@ static void multipart()
 
 }
 
-static void app_form_urlencoded()
+void Response::_app_form_urlencoded(std::string	body)
 {
-
+	std::map<std::string, std::string> variables;
+	std::stringstream ssbody(body);
+	std::string	pair;
+	while (std::getline(ssbody, pair, '&'))
+	{
+		std::string field, value;
+		size_t	pos = pair.find_first_of('=');
+		if (pos == std::string::npos)
+			return _generate_error(400);
+		field = pair.substr(0, pos);
+		value = pair.substr(pos + 1);
+		variables[field] = value;
+	}
 }
 
 void Response::_post()
@@ -20,7 +32,7 @@ void Response::_post()
 	if (_request.get_headers_key("Content-Type").find("multipart/form-data") != std::string::npos)
 		multipart();
 	else if (_request.get_headers_key("Content-Type") == "application/x-www-form-urlencoded")
-		app_form_urlencoded();
+		_app_form_urlencoded(this->_request.get_body());
 	else
 		_generate_error(400);
 }

@@ -293,6 +293,7 @@ void Server::run()
 			}
 			else // Reading client request and if complete, sending response
 			{
+
 				_read_request(fd);	
 				const Request& request = requests[fd];
 				if (request.get_state() != Request::complete || request.get_state() != Request::invalid)
