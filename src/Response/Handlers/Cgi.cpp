@@ -172,7 +172,7 @@ int Response::_cgi()
 			_is_cgi = true;
 			if (_cgi_request(rep, it->second) != 0)
 			{
-				_generate_error(500);
+				_generate_response_code(500);
 				return (true);
 			}
 			set_status_code(200);

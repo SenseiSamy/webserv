@@ -14,9 +14,9 @@ void	Response::_delete()
 	if (_is_a_directory(filename))
 	{
 		if (filename.at(filename.size() - 1) != '/')
-			_generate_error(403);
+			_generate_response_code(403);
 		else if (_write_perm(filename))
-			_generate_error(403);
+			_generate_response_code(403);
 		else if (!std::remove(filename.c_str()))
 		{
 			set_status_code(204);
@@ -24,14 +24,14 @@ void	Response::_delete()
 			return ;
 		}
 		else
-			_generate_error(500);
+			_generate_response_code(500);
 	}
 	else
 	{
 		if (_write_perm(filename))
-			_generate_error(401);
+			_generate_response_code(401);
 		else if (!_exists(filename))
-			_generate_error(404);
+			_generate_response_code(404);
 		else if (!std::remove(filename.c_str()))
 		{
 			set_status_code(204);
@@ -39,7 +39,7 @@ void	Response::_delete()
 			return ;
 		}
 		else
-			_generate_error(500);
+			_generate_response_code(500);
 
 	}
 }

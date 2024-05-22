@@ -24,7 +24,7 @@ void Response::_get()
 			if (_route->directory_listing)
 				_directory_listing();
 			else
-				_generate_error(404);
+				_generate_response_code(404);
 			return;
 		}
 	}
@@ -38,7 +38,7 @@ void Response::_get()
 		std::ifstream file((_path_to_root + _uri).c_str());
 		if (!file.is_open())
 		{
-			_generate_error(500);
+			_generate_response_code(500);
 			return;
 		}
 		set_status_code(200);
@@ -51,5 +51,5 @@ void Response::_get()
 		set_content_lenght();
 	}
 	else
-		_generate_error(err);
+		_generate_response_code(err);
 }

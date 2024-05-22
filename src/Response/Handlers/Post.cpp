@@ -20,11 +20,12 @@ void Response::_app_form_urlencoded(std::string	body)
 		std::string field, value;
 		size_t	pos = pair.find_first_of('=');
 		if (pos == std::string::npos)
-			return _generate_error(400);
+			return _generate_response_code(400);
 		field = pair.substr(0, pos);
 		value = pair.substr(pos + 1);
 		variables[field] = value;
 	}
+	return _generate_response_code(200);
 }
 
 void Response::_post()
@@ -34,7 +35,7 @@ void Response::_post()
 	else if (_request.get_headers_key("Content-Type") == "application/x-www-form-urlencoded")
 		_app_form_urlencoded(this->_request.get_body());
 	else
-		_generate_error(400);
+		_generate_response_code(400);
 }
 
 /*void Response::_post()

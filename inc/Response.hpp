@@ -53,7 +53,7 @@ class Response
 
 		void _find_type();
 		void _add_content_type();
-		void _generate_error(int num);
+		void _generate_response_code(int num);
 		void _select_route();
 		void _set_root();
 		int _check_and_rewrite_uri();

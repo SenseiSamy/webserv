@@ -64,7 +64,7 @@ int Response::_check_and_rewrite_uri()
 void Response::_redirect()
 {
 	if (_route == NULL || _route->redirect.empty()) {
-		_generate_error(500);
+		_generate_response_code(500);
 		return;
 	}
 	set_status_code(307);
@@ -78,7 +78,7 @@ void Response::_directory_listing()
 	DIR* directory = opendir((_path_to_root +_uri).c_str());
 	if (directory == NULL)
 	{
-		_generate_error(500);
+		_generate_response_code(500);
 		return;
 	}
 
@@ -188,7 +188,7 @@ static inline std::string to_string(int num)
 	return ss.str();
 }
 
-void Response::_generate_error(int num)
+void Response::_generate_response_code(int num)
 {
 	for (std::map<std::string, std::string>::iterator it = _server.error_pages.begin(); it != _server.error_pages.end(); ++it)
 	{
