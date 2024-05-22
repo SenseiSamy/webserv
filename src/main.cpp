@@ -22,10 +22,8 @@ int main(int argc, const char *argv[])
 	}
 
 	std::map<unsigned short, std::string> error_codes = init_error_codes();
-
 	std::vector<Server> servers = Parsing::parsing_config(argv[1], error_codes);
 
-	// create a thread for each server
 	std::vector<pthread_t> threads;
 	for (std::vector<Server>::iterator it = servers.begin(); it != servers.end(); ++it)
 	{
@@ -36,6 +34,15 @@ int main(int argc, const char *argv[])
 			return EXIT_FAILURE;
 		}
 		threads.push_back(thread);
+	}
+
+	for (std::vector<pthread_t>::iterator it = threads.begin(); it != threads.end(); ++it)
+	{
+		if (pthread_join(*it, NULL) != 0)
+		{
+			std::cerr << "pthread_join: failed to join thread" << std::endl;
+			return EXIT_FAILURE;
+		}
 	}
 
 	return EXIT_SUCCESS;
