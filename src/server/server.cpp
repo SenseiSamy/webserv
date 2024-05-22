@@ -2,55 +2,70 @@
 #include "Utils.hpp"
 
 /* Functions */
-#include <cerrno>		// errno
-#include <cstring>	// strerror
-#include <iostream> // std::cerr, std::endl
-#include <unistd.h> // close
+#include <cstring>		 // strerror
+#include <iostream>		 // std::cerr, std::endl
+#include <sys/epoll.h> // epoll_create1, epoll_ctl, epoll_wait
+#include <unistd.h>		 // close
 
 Server::Server(const server &serv) : _error_codes(init_error_codes()), _server(serv)
 {
-	if (setup_socket())
-		exit(errno);
+	_server_fd = _bind_socket(_server.host, _server.port);
+	_set_nonblocking(_server_fd);
+
+	_epoll_fd = epoll_create1(0);
+	if (_epoll_fd == -1)
+	{
+		std::cerr << "Error: epoll_create1: " << strerror(errno) << std::endl;
+		close(_server_fd);
+		exit(EXIT_FAILURE);
+	}
+
+	struct epoll_event ev;
+	ev.events = EPOLLIN;
+	ev.data.fd = _server_fd;
+	if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, _server_fd, &ev) == -1)
+	{
+		std::cerr << "Error: epoll_ctl: server_fd: " << strerror(errno) << std::endl;
+		close(_server_fd);
+		exit(EXIT_FAILURE);
+	}
 }
 
-Server::~Server()
+void Server::run()
 {
-	if (_client_fd != -1)
-		close(_client_fd);
-	std::cout << _server.host << ":" << _server.port << " - - Server destructor" << std::endl;
-}
-
-int Server::setup_socket()
-{
-	_client_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (_client_fd == -1)
+	struct epoll_event events[MAX_EVENTS];
+	while (true)
 	{
-		std::cerr << "Error: socket: " << strerror(errno) << std::endl;
-		return errno;
+		int event_count = epoll_wait(_epoll_fd, events, MAX_EVENTS, -1);
+		if (event_count == -1)
+		{
+			perror("epoll_wait");
+			close(_server_fd);
+			exit(EXIT_FAILURE);
+		}
+
+		for (int i = 0; i < event_count; i++)
+		{
+			if (events[i].data.fd == _server_fd)
+			{
+				int client_fd = accept(_server_fd, nullptr, nullptr);
+				if (client_fd == -1)
+				{
+					perror("accept");
+					continue;
+				}
+				_set_nonblocking(client_fd);
+				struct epoll_event ev;
+				ev.events = EPOLLIN | EPOLLET;
+				ev.data.fd = client_fd;
+				if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1)
+				{
+					perror("epoll_ctl: client_fd");
+					close(client_fd);
+				}
+			}
+			else
+				_handle_request(events[i].data.fd);
+		}
 	}
-
-	_addr.sin_family = AF_INET;
-	_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	_addr.sin_port = htons(_server.port);
-
-	int reuse = 1;
-	if (setsockopt(_client_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) == -1)
-	{
-		std::cerr << "Error: setsockopt: " << strerror(errno) << std::endl;
-		return errno;
-	}
-
-	if (bind(_client_fd, (sockaddr *)&_addr, sizeof(_addr)) == -1)
-	{
-		std::cerr << "Error: bind: " << strerror(errno) << std::endl;
-		return errno;
-	}
-
-	if (listen(_client_fd, 100) == -1)
-	{
-		std::cerr << "Error: listen: " << strerror(errno) << std::endl;
-		return errno;
-	}
-
-	return 0;
 }

@@ -59,11 +59,12 @@ struct server
 class Server
 {
 private:
+	int _server_fd;
+	int _epoll_fd;
+	struct sockaddr_in _address;
+
 	const server &_server;
 	const std::map<unsigned short, std::string> _error_codes;
-
-	sockaddr_in _addr;
-	int _client_fd;
 
 	unsigned short _status_code;
 	std::string _host;
@@ -74,6 +75,9 @@ private:
 	/* Methods */
 	void _request_line(const std::string &request);
 	void _send(const Request &request) const;
+	void _handle_request(const int &client_fd);
+	void _set_nonblocking(int sockfd);
+	int _bind_socket(const std::string &ip, int port);
 
 public:
 	Server(const server &serv);
@@ -99,8 +103,7 @@ public:
 	void set_version(const std::string &version);
 
 	/* Methods */
-	int setup_socket();
-	int accept_client() const;
+	void run();
 };
 
 #endif // SERVER_HPP

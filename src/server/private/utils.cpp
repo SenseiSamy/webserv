@@ -32,7 +32,7 @@ int Server::accept_client() const
 {
 	sockaddr_in client_addr;
 	socklen_t client_addr_len = sizeof(client_addr);
-	int client_fd = accept(client_fd, (sockaddr *)&client_addr, &client_addr_len);
+	int client_fd = accept(_client_fd, (sockaddr *)&client_addr, &client_addr_len);
 	if (client_fd == -1)
 	{
 		std::cerr << "Error: accept" << std::endl;
