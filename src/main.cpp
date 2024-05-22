@@ -3,14 +3,13 @@
 #include "Utils.hpp"
 
 /* Functions */
-#include <iostream>	 // std::cerr, std::endl
-#include <pthread.h> // pthread_create, pthread_join
+#include <iostream>		 // std::cerr, std::endl
+#include <sys/types.h> // pid_t
+#include <sys/wait.h>	 // waitpid
 
-void *run_server(void *arg)
+void run_server(Server *server)
 {
-	Server *server = static_cast<Server *>(arg);
 	server->run();
-	return NULL;
 }
 
 int main(int argc, const char *argv[])
@@ -24,23 +23,31 @@ int main(int argc, const char *argv[])
 	std::map<unsigned short, std::string> error_codes = init_error_codes();
 	std::vector<Server> servers = Parsing::parsing_config(argv[1], error_codes);
 
-	std::vector<pthread_t> threads;
+	std::vector<pid_t> child_pids;
 	for (std::vector<Server>::iterator it = servers.begin(); it != servers.end(); ++it)
 	{
-		pthread_t thread;
-		if (pthread_create(&thread, NULL, &run_server, &(*it)) != 0)
+		pid_t pid = fork();
+		if (pid == -1)
 		{
-			std::cerr << "pthread_create: failed to create thread" << std::endl;
+			std::cerr << "fork: failed to create child process" << std::endl;
 			return EXIT_FAILURE;
 		}
-		threads.push_back(thread);
+		else if (pid == 0) // Child process
+		{
+			run_server(&(*it));
+			return EXIT_SUCCESS;
+		}
+		else // Parent process
+			child_pids.push_back(pid);
 	}
 
-	for (std::vector<pthread_t>::iterator it = threads.begin(); it != threads.end(); ++it)
+	// Wait for all child processes to finish
+	int status;
+	for (std::vector<pid_t>::iterator it = child_pids.begin(); it != child_pids.end(); ++it)
 	{
-		if (pthread_join(*it, NULL) != 0)
+		if (waitpid(*it, &status, 0) == -1)
 		{
-			std::cerr << "pthread_join: failed to join thread" << std::endl;
+			std::cerr << "waitpid: failed to wait for child process" << std::endl;
 			return EXIT_FAILURE;
 		}
 	}
