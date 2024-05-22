@@ -1,8 +1,32 @@
+#include "Request.hpp"
+#include "Response.hpp"
 #include "Server.hpp"
 
 #include <arpa/inet.h> // inet_addr
 #include <fcntl.h>		 // fcntl, F_GETFL, F_SETFL, O_NONBLOCK
 #include <iostream>		 // std::cerr, std::endl
+
+void Server::_handle_request(const int &client_fd)
+{
+	char buffer[BUFFER_SIZE];
+	int bytes_read = read(client_fd, buffer, BUFFER_SIZE);
+	if (bytes_read == -1)
+	{
+		perror("read");
+		close(client_fd);
+		return;
+	}
+	else if (bytes_read == 0)
+	{
+		close(client_fd);
+		return;
+	}
+
+	Request request(*this, buffer, client_fd);
+	Response response(*this, request);
+
+	send(_server_fd, response.get_response_buffer(), response.get_response_size(), 0);
+}
 
 void Server::_set_nonblocking(int sockfd)
 {

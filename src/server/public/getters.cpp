@@ -5,11 +5,6 @@ const int &Server::get_server_fd() const
 	return _server_fd;
 }
 
-const int &Server::get_epoll_fd() const
-{
-	return _epoll_fd;
-}
-
 const server &Server::get_server() const
 {
 	return _server;

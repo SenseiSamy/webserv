@@ -1,98 +1,51 @@
 #include "Server.hpp"
-#include "Request.hpp"
-#include "Response.hpp"
-#include "Utils.hpp"
 
 /* Functions */
+#include <iostream>		 // std::cerr, std::endl
 #include <sys/epoll.h> // epoll_create1, epoll_ctl, epoll_wait
 
-Server::Server(const server &serv) : _server(serv), _error_codes(init_error_codes())
+Server::Server(const server &serv, const std::map<unsigned short, std::string> &error_codes)
+		: _server(serv), _error_codes(error_codes)
 {
 	_server_fd = _bind_socket(_server.host, _server.port);
 	_set_nonblocking(_server_fd);
-
-	_epoll_fd = epoll_create1(0);
-	if (_epoll_fd == -1)
-	{
-		perror("epoll_create1");
-		close(_server_fd);
-		exit(EXIT_FAILURE);
-	}
-
-	struct epoll_event ev;
-	ev.events = EPOLLIN;
-	ev.data.fd = _server_fd;
-	if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, _server_fd, &ev) == -1)
-	{
-		perror("epoll_ctl: server_fd");
-		close(_server_fd);
-		exit(EXIT_FAILURE);
-	}
 }
 
 Server::~Server()
 {
 	close(_server_fd);
-	close(_epoll_fd);
 }
 
-void Server::run()
+void Server::init()
 {
-	struct epoll_event events[MAX_EVENTS];
-	while (true)
+	if (listen(_server_fd, 10) == -1)
 	{
-		int event_count = epoll_wait(_epoll_fd, events, MAX_EVENTS, -1);
-		if (event_count == -1)
-		{
-			perror("epoll_wait");
-			close(_server_fd);
-			exit(EXIT_FAILURE);
-		}
-
-		for (int i = 0; i < event_count; i++)
-		{
-			if (events[i].data.fd == _server_fd)
-			{
-				int client_fd = accept(_server_fd, NULL, NULL);
-				if (client_fd == -1)
-				{
-					perror("accept");
-					continue;
-				}
-				_set_nonblocking(client_fd);
-				struct epoll_event ev;
-				ev.events = EPOLLIN | EPOLLET;
-				ev.data.fd = client_fd;
-				if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1)
-				{
-					perror("epoll_ctl: client_fd");
-					close(client_fd);
-				}
-			}
-			else
-				_handle_request(events[i].data.fd);
-		}
+		std::cerr << "Error: listen: " << strerror(errno) << std::endl;
+		close(_server_fd);
+		exit(EXIT_FAILURE);
 	}
 }
 
-void Server::_handle_request(const int &client_fd)
+void Server::accept_connection(int epoll_fd)
 {
-	char buffer[BUFFER_SIZE];
-	int bytes_read = read(client_fd, buffer, BUFFER_SIZE);
-	if (bytes_read == -1)
+	int client_fd = accept(_server_fd, NULL, NULL);
+	if (client_fd == -1)
 	{
-		perror("read");
-		close(client_fd);
+		perror("accept");
 		return;
 	}
-	else if (bytes_read == 0)
+	_set_nonblocking(client_fd);
+	struct epoll_event ev;
+	ev.events = EPOLLIN | EPOLLET;
+	ev.data.fd = client_fd;
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1)
 	{
+		perror("epoll_ctl: client_fd");
 		close(client_fd);
-		return;
 	}
+}
 
-	Request request(*this, buffer, client_fd);
-	Response response(*this, request);
-
-	send(_server_fd, response.get_response_buffer(), response.get_response_size(), 0);
+void Server::handle_client(int client_fd)
+{
+	_handle_request(client_fd);
 }

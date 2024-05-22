@@ -68,11 +68,10 @@ class Server
 {
 private:
 	int _server_fd;
-	int _epoll_fd;
 	struct sockaddr_in _address;
 
 	const server &_server;
-	const std::map<unsigned short, std::string> _error_codes;
+	const std::map<unsigned short, std::string> &_error_codes;
 
 	unsigned short _status_code;
 	std::string _host;
@@ -88,12 +87,11 @@ private:
 	int _bind_socket(const std::string &ip, int port);
 
 public:
-	Server(const server &serv);
+	Server(const server &serv, const std::map<unsigned short, std::string> &error_codes);
 	~Server();
 
 	/* Getters */
 	const int &get_server_fd() const;
-	const int &get_epoll_fd() const;
 	const server &get_server() const;
 	const std::map<unsigned short, std::string> &get_error_codes() const;
 	const unsigned short &get_status_code() const;
@@ -110,7 +108,9 @@ public:
 	void set_version(const std::string &version);
 
 	/* Methods */
-	void run();
+	void init();
+	void accept_connection(int epoll_fd);
+	void handle_client(int client_fd);
 };
 
 #endif // SERVER_HPP

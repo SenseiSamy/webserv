@@ -141,7 +141,7 @@ const Server Parsing::parse_server(const std::map<unsigned short, std::string> &
 	if (word != "}")
 		throw std::runtime_error("Syntax error: Missing '}' at line " + to_string(index_line));
 
-	return Server(result);
+	return Server(result, error_codes);	
 }
 
 std::vector<Server> Parsing::parsing_config(const std::string &config_file,
