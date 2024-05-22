@@ -2,10 +2,17 @@
 #define SERVER_HPP
 
 /* Types */
+#include <cerrno>				// errno
 #include <map>					// std::map
 #include <netinet/in.h> // sockaddr_in
 #include <string>				// std::string
 #include <vector>				// std::vector
+
+/* Functions */
+#include <cstdlib>	// exit
+#include <cstring>	// strerror
+#include <stdio.h>	// perror
+#include <unistd.h> // close
 
 class Request;
 class Response;
@@ -85,10 +92,10 @@ public:
 	~Server();
 
 	/* Getters */
+	const int &get_server_fd() const;
+	const int &get_epoll_fd() const;
 	const server &get_server() const;
 	const std::map<unsigned short, std::string> &get_error_codes() const;
-	const std::map<std::string, const Response (Server::*)(const Request &)> &get_methods_map() const;
-	const int &get_client_fd() const;
 	const unsigned short &get_status_code() const;
 	const std::string &get_host() const;
 	const std::string &get_methods() const;
@@ -96,7 +103,6 @@ public:
 	const std::string &get_version() const;
 
 	/* Setters */
-	void set_client_fd(const int &client_fd);
 	void set_status_code(const unsigned short &status_code);
 	void set_host(const std::string &host);
 	void set_methods(const std::string &methods);

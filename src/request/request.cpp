@@ -62,6 +62,6 @@ void Request::parse_request(const std::string &request)
 		_server.set_host(_headers["Host"]);
 
 	// Remove the last newline character from _body
-	if (!_body.empty() && _body.back() == '\n')
-		_body.pop_back();
+	if (!_body.empty() && _body[_body.size() - 1] == '\n')
+		_body.erase(_body.size() - 1);
 }

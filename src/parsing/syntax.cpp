@@ -3,7 +3,7 @@
 
 #include <algorithm> // std::find
 
-void route_value(route &route, const std::string &word)
+void Parsing::route_value(route &route, const std::string &word)
 {
 	const std::vector<std::string> value = get_value(word);
 
@@ -70,7 +70,8 @@ void route_value(route &route, const std::string &word)
 		throw std::runtime_error("Syntax error: Invalid keyword " + word + " at line " + to_string(index_line));
 }
 
-void server_value(server &server, const std::string &word, const std::map<unsigned short, std::string> &error_codes)
+void Parsing::server_value(server &server, const std::string &word,
+													 const std::map<unsigned short, std::string> &error_codes)
 {
 	const std::vector<std::string> value = get_value(word);
 
@@ -111,7 +112,7 @@ void server_value(server &server, const std::string &word, const std::map<unsign
 		throw std::runtime_error("Syntax error: Invalid keyword " + word + " at line " + to_string(index_line));
 }
 
-void syntax_brackets()
+void Parsing::syntax_brackets()
 {
 	size_t open_brackets = 0;
 	size_t close_brackets = 0;

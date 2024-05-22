@@ -1,10 +1,5 @@
 #include "Server.hpp"
 
-void Server::set_client_fd(const int &client_fd)
-{
-	_client_fd = client_fd;
-}
-
 void Server::set_status_code(const unsigned short &status_code)
 {
 	_status_code = status_code;

@@ -1,11 +1,8 @@
 #include "Server.hpp"
 
 #include <arpa/inet.h> // inet_addr
-#include <cerrno>			 // errno
-#include <cstring>		 // strerror
 #include <fcntl.h>		 // fcntl, F_GETFL, F_SETFL, O_NONBLOCK
 #include <iostream>		 // std::cerr, std::endl
-#include <unistd.h>		 // close
 
 void Server::_set_nonblocking(int sockfd)
 {

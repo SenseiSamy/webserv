@@ -26,7 +26,7 @@ Response::Response(Server &server, const Request &request)
 		generate_error_page(501);
 
 	update_response_buffer();
-	send(_server.get_client_fd(), _response_buffer, _response_size, 0);
+	send(_request.get_client_fd(), _response_buffer, _response_size, 0);
 }
 
 Response::~Response()

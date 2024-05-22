@@ -1,6 +1,6 @@
 #include "Parsing.hpp"
 
-static size_t next_non_empty_line()
+size_t Parsing::next_non_empty_line()
 {
 	size_t i = index_line + 1;
 	while (i < content_file.size() && content_file[i].empty())
@@ -8,7 +8,7 @@ static size_t next_non_empty_line()
 	return i;
 }
 
-const std::string next_word()
+const std::string Parsing::next_word()
 {
 	if (index_line >= content_file.size())
 		return "";
@@ -23,7 +23,7 @@ const std::string next_word()
 	return content_file[index_line][index_word++];
 }
 
-const std::string previous_word()
+const std::string Parsing::previous_word()
 {
 	if (index_line == 0 && index_word == 0)
 		return "";

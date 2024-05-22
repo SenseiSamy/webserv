@@ -1,6 +1,6 @@
 #include "Response.hpp"
 
-void Response::_put(const Request &request)
+void Response::_head(const Request &request)
 {
 	(void)request;
 }

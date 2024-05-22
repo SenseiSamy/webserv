@@ -23,6 +23,9 @@ public:
 	~Request();
 
 	/* Getters */
+	const Server &get_server() const;
+	const int &get_client_fd() const;
+	const std::string &get_request() const;
 	const std::map<std::string, std::string> &get_headers() const;
 	const std::string &get_body() const;
 

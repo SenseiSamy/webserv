@@ -22,7 +22,7 @@ private:
 	char *_response_buffer;
 	size_t _response_size;
 
-	/*   HTTP Methods */
+	/* HTTP Methods */
 	void _get(const Request &request);
 	void _head(const Request &request);
 	void _post(const Request &request);

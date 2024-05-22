@@ -4,7 +4,11 @@
 
 #include <fstream> // std::ifstream
 
-static const std::vector<std::string> split_line(const std::string &str)
+size_t Parsing::index_line = 0;
+size_t Parsing::index_word = 0;
+std::vector<std::vector<std::string> > Parsing::content_file;
+
+const std::vector<std::string> Parsing::split_line(const std::string &str)
 {
 	std::vector<std::string> words;
 	std::string word;
@@ -42,7 +46,7 @@ static const std::vector<std::string> split_line(const std::string &str)
 	return words;
 }
 
-static void read_config(const std::string &config_file)
+void Parsing::read_config(const std::string &config_file)
 {
 	std::ifstream file(config_file.c_str());
 	if (!file.is_open())
@@ -64,7 +68,7 @@ static void read_config(const std::string &config_file)
 	file.close();
 }
 
-const std::vector<std::string> get_value(const std::string &token)
+const std::vector<std::string> Parsing::get_value(const std::string &token)
 {
 	std::vector<std::string> result;
 
@@ -95,7 +99,7 @@ const std::vector<std::string> get_value(const std::string &token)
 	return result;
 }
 
-static const route parse_route()
+const route Parsing::parse_route()
 {
 	route result;
 
@@ -115,7 +119,7 @@ static const route parse_route()
 	return result;
 }
 
-static const Server parse_server(const std::map<unsigned short, std::string> &error_codes)
+const Server Parsing::parse_server(const std::map<unsigned short, std::string> &error_codes)
 {
 	server result;
 
@@ -140,8 +144,8 @@ static const Server parse_server(const std::map<unsigned short, std::string> &er
 	return Server(result);
 }
 
-std::vector<Server> parsing_config(const std::string &config_file,
-																	 const std::map<unsigned short, std::string> &error_codes)
+std::vector<Server> Parsing::parsing_config(const std::string &config_file,
+																						const std::map<unsigned short, std::string> &error_codes)
 {
 	std::vector<Server> servers;
 	read_config(config_file);

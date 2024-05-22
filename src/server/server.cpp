@@ -5,9 +5,8 @@
 
 /* Functions */
 #include <sys/epoll.h> // epoll_create1, epoll_ctl, epoll_wait
-#include <unistd.h>		 // close
 
-Server::Server(const server &serv) : _error_codes(init_error_codes()), _server(serv)
+Server::Server(const server &serv) : _server(serv), _error_codes(init_error_codes())
 {
 	_server_fd = _bind_socket(_server.host, _server.port);
 	_set_nonblocking(_server_fd);
@@ -31,6 +30,12 @@ Server::Server(const server &serv) : _error_codes(init_error_codes()), _server(s
 	}
 }
 
+Server::~Server()
+{
+	close(_server_fd);
+	close(_epoll_fd);
+}
+
 void Server::run()
 {
 	struct epoll_event events[MAX_EVENTS];
@@ -48,7 +53,7 @@ void Server::run()
 		{
 			if (events[i].data.fd == _server_fd)
 			{
-				int client_fd = accept(_server_fd, nullptr, nullptr);
+				int client_fd = accept(_server_fd, NULL, NULL);
 				if (client_fd == -1)
 				{
 					perror("accept");
