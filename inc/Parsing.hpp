@@ -24,12 +24,13 @@ private:
 
 	/* Syntax */
 	static void route_value(route &route, const std::string &word);
-	static void server_value(server &server, const std::string &word, const std::map<unsigned short, std::string> &error_codes);
+	static void server_value(server &server, const std::string &word,
+													 const std::map<unsigned short, std::string> &error_codes);
 	static void syntax_brackets();
 
 public:
 	static std::vector<Server> parsing_config(const std::string &config_file,
-																		 const std::map<unsigned short, std::string> &error_codes);
+																						const std::map<unsigned short, std::string> &error_codes);
 };
 
 #endif // PARSING_HPP
