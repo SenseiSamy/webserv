@@ -82,8 +82,6 @@ private:
 	void _post(const Request &request, Response &response);
 	void _put(const Request &request, Response &response);
 
-	inline const std::string _real_path(const std::string &path);
-
 	/* Utils */
 	void _set_nonblocking(int sockfd);
 	int _bind_socket(const std::string &ip, int port);

@@ -67,16 +67,16 @@ void Server::handle_client(int client_fd)
 	Request request(*this, buffer, client_fd);
 	Response response(*this, request);
 
-	if (request.get_method() == "DELETE")
-		_delete(request, response);
-	else if (request.get_method() == "GET")
-		_get(request, response);
-	else if (request.get_method() == "POST")
-		_post(request, response);
-	else if (request.get_method() == "PUT")
-		_put(request, response);
-	else
-		response.generate_error_page(405);
-
+	if (_status_code == 200)
+	{
+		if (request.get_method() == "DELETE")
+			_delete(request, response);
+		else if (request.get_method() == "GET")
+			_get(request, response);
+		else if (request.get_method() == "POST")
+			_post(request, response);
+		else if (request.get_method() == "PUT")
+			_put(request, response);
+	}
 	response.send_response(client_fd);
 }

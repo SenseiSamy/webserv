@@ -9,8 +9,8 @@ Request::Request(Server &server, const char *request, const int &client_fd)
 {
 	parse_request(request);
 
-	std::cout << _server.get_server().host << ":" << _server.get_server().port << " - - \"" << _server.get_methods()
-						<< " " << _server.get_uri() << " " << _server.get_version() << "\"" << std::endl;
+	std::cout << _server.get_server().host << ":" << _server.get_server().port << " - - \"" << _method << " " << _uri
+						<< " " << _version << "\" ";
 }
 
 Request::~Request()
@@ -43,7 +43,10 @@ void Request::parse_request(const std::string &request)
 	while (std::getline(iss, line))
 	{
 		if (_body.size() >= _server.get_server().max_body_size)
+		{
+			_server.set_status_code(413);
 			break;
+		}
 		_body += line;
 	}
 }
