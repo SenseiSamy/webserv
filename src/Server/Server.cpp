@@ -296,7 +296,8 @@ void Server::run()
 
 				_read_request(fd);	
 				const Request& request = requests[fd];
-				if (request.get_state() != Request::complete || request.get_state() != Request::invalid)
+				if (request.get_state() != Request::complete &&
+					request.get_state() != Request::invalid)
 					continue;
 				if (_verbose)
 				{
@@ -309,7 +310,7 @@ void Server::run()
 				if (request.get_state() == Request::complete)
 					response = Response(request, server, _error_codes);
 				else
-					response = Response();
+					response = Response(400, server, _error_codes);
 				if (_verbose)
 					response.display();
 				std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
@@ -325,7 +326,7 @@ void Server::run()
 
 				send(fd, response_str.c_str(), response_str.size(), 0);
 
-				requests[fd].erase(fd);
+				requests.erase(fd);
 				close(fd);
 			}
 		}

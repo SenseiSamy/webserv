@@ -46,7 +46,7 @@ class Request
 		const std::string &get_method() const;
 		const std::string &get_uri() const;
 		const std::string &get_version() const;
-		const std::string &get_headers_key(const std::string &key) const;
+		const std::string get_headers_key(const std::string &key) const;
 		const std::map<std::string, std::string> &get_headers() const;
 		const size_t & get_content_length() const;
 		const std::string &get_body() const;

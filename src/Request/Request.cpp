@@ -15,8 +15,10 @@ Request::Request(): _request(""), _state(incomplete)
 Request::Request(const std::string &request): _request(request), _state(incomplete)
 {
 	refresh_state();
-	if (_state == header_complete)
+	if (_state == header_complete) {
 		parse();
+		refresh_state();
+	}
 }
 
 Request::Request(const Request &request)
@@ -34,6 +36,7 @@ Request::Request(const Request &request)
 		//_tmp_file = request._tmp_file;
 		_file_name = request._file_name;
 		_file_size = request._file_size;
+		_state = request._state;
 	}
 }
 
@@ -60,6 +63,7 @@ Request &Request::operator=(const Request &request)
 		//_tmp_file = request._tmp_file;
 		_file_name = request._file_name;
 		_file_size = request._file_size;
+		_state = request._state;
 	}
 	return *this;
 }
@@ -102,7 +106,7 @@ void Request::refresh_state()
 		if (_request.find("\r\n\r\n") != std::string::npos)
 			_state = header_complete;
 	}
-	if (_state == header_complete) {
+	else if (_state == header_complete) {
 		if (_method != "POST")
 			_state = complete;
 		else {

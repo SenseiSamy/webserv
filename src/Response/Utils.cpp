@@ -178,7 +178,17 @@ void Response::_add_content_type()
 void Response::_set_root()
 {
 	char tmp[PATH_MAX];
-	_path_to_root = realpath(_server.root.c_str(), tmp);
+	const char* path;
+
+	if (!_server.root.empty())
+		path = _server.root.c_str();
+	else
+		path = "www";
+
+	if (realpath(path, tmp) != NULL)
+		_path_to_root = tmp;
+	else
+	 	_path_to_root = "";
 }
 
 static inline std::string to_string(int num)
