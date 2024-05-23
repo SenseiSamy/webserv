@@ -64,6 +64,7 @@ class Response
 		void _redirect();
 		void _directory_listing();
 		void _app_form_urlencoded(std::string	body);
+		void _multipart();
 
 		int _cgi();
 		void _post();

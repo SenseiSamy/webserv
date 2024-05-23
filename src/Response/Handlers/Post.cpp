@@ -1,13 +1,40 @@
 #include "Response.hpp"
 
+#include <cstddef>
 #include <iostream>
 #include <sstream>
 #include <fstream>
 #include <ostream>
 
-static void multipart() 
-{
+#define BUFFER_SIZE 4096
 
+static bool read_and_write_file() {
+	
+}
+
+void Response::_multipart() 
+{
+	char buffer[BUFFER_SIZE + 1];
+	std::size_t boundpos = _request.get_headers_key("Content-Type").find("boundary=");
+	if (boundpos == std::string::npos) {
+		_generate_response_code(400);
+		return;
+	}
+	std::string boundary = "--" + _request.get_headers_key("Content-Type").substr(boundpos, std::string::npos);
+	std::size_t	match_counter = 0;
+
+	std::ifstream body(_request.get_file_name().c_str(), std::ios::in
+		| std::ios::binary);
+	if (!body.is_open()) {
+		_generate_response_code(500);
+		return;
+	}
+
+	while (true) {
+		body.read(buffer, BUFFER_SIZE);
+		buffer[BUFFER_SIZE] = '\0';
+		
+	}
 }
 
 void Response::_app_form_urlencoded(std::string	body)
@@ -31,7 +58,7 @@ void Response::_app_form_urlencoded(std::string	body)
 void Response::_post()
 {
 	if (_request.get_headers_key("Content-Type").find("multipart/form-data") != std::string::npos)
-		multipart();
+		_multipart();
 	else if (_request.get_headers_key("Content-Type") == "application/x-www-form-urlencoded")
 		_app_form_urlencoded(this->_request.get_body());
 	else
