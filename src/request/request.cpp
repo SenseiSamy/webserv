@@ -19,46 +19,31 @@ Request::~Request()
 
 void Request::parse_request(const std::string &request)
 {
-	std::istringstream iss_request(request);
+	std::istringstream iss(request);
 	std::string line;
-	bool in_body = false;
 
-	std::getline(iss_request, line); // First line is the request line
+	// Parse request line
+	std::getline(iss, line);
+	std::istringstream first_line(line);
+	first_line >> _method >> _uri >> _version;
 
-	while (std::getline(iss_request, line))
+	// Parse headers
+	while (std::getline(iss, line))
 	{
-		if (line == "\r")
-		{
-			in_body = true;
-			continue;
-		}
-
-		if (!in_body)
-		{
-			size_t colon_pos = line.find(":");
-			if (colon_pos != std::string::npos)
-			{
-				std::string header_name = line.substr(0, colon_pos);
-				std::string header_value = line.substr(colon_pos + 2); // Skip ": "
-				_headers[header_name] = header_value;
-			}
-		}
-		else
-		{
-			if (_body.size() + line.size() + 1 > _server.get_server().max_body_size)
-			{
-				_body.clear();
-
-				break;
-			}
-			_body += line + "\n";
-		}
+		if (line.empty())
+			break;
+		std::istringstream header(line);
+		std::string key, value;
+		std::getline(header, key, ':');
+		std::getline(header, value);
+		_headers[key] = value;
 	}
 
-	if (_headers.count("Host") > 0)
-		_server.set_host(_headers["Host"]);
-
-	// Remove the last newline character from _body
-	if (!_body.empty() && _body[_body.size() - 1] == '\n')
-		_body.erase(_body.size() - 1);
+	// Parse body
+	while (std::getline(iss, line))
+	{
+		if (_body.size() >= _server.get_server().max_body_size)
+			break;
+		_body += line;
+	}
 }

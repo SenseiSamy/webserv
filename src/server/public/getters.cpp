@@ -19,23 +19,3 @@ const unsigned short &Server::get_status_code() const
 {
 	return _status_code;
 }
-
-const std::string &Server::get_host() const
-{
-	return _host;
-}
-
-const std::string &Server::get_methods() const
-{
-	return _methods;
-}
-
-const std::string &Server::get_uri() const
-{
-	return _uri;
-}
-
-const std::string &Server::get_version() const
-{
-	return _version;
-}

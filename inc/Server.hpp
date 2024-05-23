@@ -74,15 +74,17 @@ private:
 	const std::map<unsigned short, std::string> &_error_codes;
 
 	unsigned short _status_code;
-	std::string _host;
-	std::string _methods;
-	std::string _uri;
-	std::string _version;
 
 	/* Methods */
-	void _request_line(const std::string &request);
-	void _send(const Request &request) const;
-	void _handle_request(const int &client_fd);
+	/* HTTP Methods */
+	void _delete(const Request &request, Response &response);
+	void _get(const Request &request, Response &response);
+	void _post(const Request &request, Response &response);
+	void _put(const Request &request, Response &response);
+
+	inline const std::string _real_path(const std::string &path);
+
+	/* Utils */
 	void _set_nonblocking(int sockfd);
 	int _bind_socket(const std::string &ip, int port);
 
@@ -95,17 +97,9 @@ public:
 	const server &get_server() const;
 	const std::map<unsigned short, std::string> &get_error_codes() const;
 	const unsigned short &get_status_code() const;
-	const std::string &get_host() const;
-	const std::string &get_methods() const;
-	const std::string &get_uri() const;
-	const std::string &get_version() const;
 
 	/* Setters */
 	void set_status_code(const unsigned short &status_code);
-	void set_host(const std::string &host);
-	void set_methods(const std::string &methods);
-	void set_uri(const std::string &uri);
-	void set_version(const std::string &version);
 
 	/* Methods */
 	void init();

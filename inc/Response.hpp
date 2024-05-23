@@ -11,6 +11,7 @@ class Response
 private:
 	Server &_server;
 	const Request &_request;
+	std::string _path;
 
 	/* data */
 	std::string _version;
@@ -19,18 +20,11 @@ private:
 	std::map<std::string, std::string> _headers;
 	std::string _body;
 
+	/* buffer */
 	char *_response_buffer;
 	size_t _response_size;
 
-	/* HTTP Methods */
-	void _get(const Request &request);
-	void _head(const Request &request);
-	void _post(const Request &request);
-	void _put(const Request &request);
-	void _delete(const Request &request);
-	void _connect(const Request &request);
-	void _options(const Request &request);
-	void _trace(const Request &request);
+	/* Utils */
 
 public:
 	Response(Server &server, const Request &request);
@@ -47,8 +41,11 @@ public:
 	void set_response_size(const size_t &response_size);
 
 	/* Methods */
+	size_t length() const;
 	void generate_error_page(const unsigned short &status_code);
 	void update_response_buffer();
+
+	void send_response(const int &client_fd);
 };
 
 #endif // RESPONSE_HPP

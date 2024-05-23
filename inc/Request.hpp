@@ -15,6 +15,9 @@ private:
 	const std::string _request;
 
 	/* data */
+	std::string _method;
+	std::string _uri;
+	std::string _version;
 	std::map<std::string, std::string> _headers;
 	std::string _body;
 
@@ -23,13 +26,17 @@ public:
 	~Request();
 
 	/* Getters */
-	const Server &get_server() const;
 	const int &get_client_fd() const;
 	const std::string &get_request() const;
+	const std::string &get_method() const;
+	const std::string &get_uri() const;
+	const std::string &get_version() const;
 	const std::map<std::string, std::string> &get_headers() const;
 	const std::string &get_body() const;
-
 	/* Setters */
+	void set_method(const std::string &method);
+	void set_uri(const std::string &uri);
+	void set_version(const std::string &version);
 	void set_headers(const std::map<std::string, std::string> &headers);
 	void set_body(const std::string &body);
 
