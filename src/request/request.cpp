@@ -26,6 +26,23 @@ void Request::parse_request(const std::string &request)
 	std::getline(iss, line);
 	std::istringstream first_line(line);
 	first_line >> _method >> _uri >> _version;
+	if (_method.empty() || _uri.empty() || _version.empty())
+	{
+		_server.set_status_code(400);
+		return;
+	}
+
+	if (_method != "GET" && _method != "POST" && _method != "PUT" && _method != "DELETE")
+	{
+		_server.set_status_code(405);
+		return;
+	}
+
+	if (_version != "HTTP/1.0" && _version != "HTTP/1.1")
+	{
+		_server.set_status_code(505);
+		return;
+	}
 
 	// Parse headers
 	while (std::getline(iss, line))
@@ -35,7 +52,18 @@ void Request::parse_request(const std::string &request)
 		std::istringstream header(line);
 		std::string key, value;
 		std::getline(header, key, ':');
+		if (header.eof() || key.empty())
+		{
+			_server.set_status_code(400);
+			return;
+		}
 		std::getline(header, value);
+		if (value.empty())
+		{
+			_server.set_status_code(400);
+			return;
+		}
+
 		_headers[key] = value;
 	}
 
@@ -45,7 +73,7 @@ void Request::parse_request(const std::string &request)
 		if (_body.size() >= _server.get_server().max_body_size)
 		{
 			_server.set_status_code(413);
-			break;
+			return; // Set code to 413 and return
 		}
 		_body += line;
 	}

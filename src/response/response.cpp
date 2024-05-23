@@ -6,20 +6,10 @@
 
 Response::Response(Server &server, const Request &request)
 		: _server(server), _request(request), _version(request.get_version()), _route(_find_route()),
-			_file_path(_real_path(request.get_uri())), _content_length(0), _is_cgi(false)
+			_file_path(_real_path(request.get_uri())), _content_length(0), _file_type(_get_file_type(_file_path)), _is_cgi(false)
 {
-	const std::string &methods = request.get_method();
-	if (methods != "GET" && methods != "POST" && methods != "PUT" && methods != "DELETE")
-	{
-		generate_error_page(405);
-		return;
-	}
-
-	if (_version != "HTTP/1.0" && _version != "HTTP/1.1")
-	{
-		generate_error_page(505);
-		return;
-	}
+	_headers["Server"] = "webserv";
+	_headers["Connection"] = "close";
 }
 
 Response::~Response()
