@@ -3,8 +3,10 @@
 #include "Response.hpp"
 
 /* Functions */
+#include <cstddef>
 #include <iostream>		 // std::cerr, std::endl
 #include <sys/epoll.h> // epoll_create1, epoll_ctl, epoll_wait
+#include <sys/types.h>
 
 Server::Server(const server &serv, const std::map<unsigned short, std::string> &error_codes)
 		: _server(serv), _error_codes(error_codes), _status_code(200)
@@ -50,33 +52,31 @@ void Server::accept_connection(int epoll_fd)
 
 void Server::handle_client(int client_fd)
 {
-	char buffer[BUFFER_SIZE];
-	int bytes_read = read(client_fd, buffer, BUFFER_SIZE);
-	if (bytes_read == -1)
+	Request request(*this, NULL, client_fd);
+	while (!request.is_complete())
 	{
-		perror("read");
-		close(client_fd);
-		return;
-	}
-	else if (bytes_read == 0)
-	{
-		close(client_fd);
-		return;
+		char buffer[BUFFER_SIZE];
+		ssize_t bytes_read = recv(client_fd, buffer, BUFFER_SIZE, 0);
+		if (bytes_read == -1)
+		{
+			perror("recv");
+			close(client_fd);
+			return;
+		}
+		else if (bytes_read == 0)
+			break;
+		request += Request(*this, buffer, client_fd);
 	}
 
-	Request request(*this, buffer, client_fd);
 	Response response(*this, request);
-
-	if (_status_code == 200)
-	{
-		if (request.get_method() == "DELETE")
-			_delete(request, response);
-		else if (request.get_method() == "GET")
-			_get(request, response);
-		else if (request.get_method() == "POST")
-			_post(request, response);
-		else if (request.get_method() == "PUT")
-			_put(request, response);
-	}
-	response.send_response(client_fd);
+	if (request.get_method() == "GET")
+		_get(request, response);
+	else if (request.get_method() == "POST")
+		_post(request, response);
+	else if (request.get_method() == "PUT")
+		_put(request, response);
+	else if (request.get_method() == "DELETE")
+		_delete(request, response);
+	else
+		response.generate_error_page(405);
 }

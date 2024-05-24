@@ -73,7 +73,9 @@ private:
 	const server _server;
 	const std::map<unsigned short, std::string> &_error_codes;
 
+	std::map<int, Request> _requests; // client_fd, Request
 	unsigned short _status_code;
+
 
 	/* Methods */
 	/* HTTP Methods */
