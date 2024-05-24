@@ -1,4 +1,5 @@
 #include "Request.hpp"
+#include "Server.hpp"
 
 #include <sstream>
 #include <string>
@@ -188,9 +189,10 @@ void Request::parse()
 			_file_name = "/tmp/" + std::string("webserv") + ss.str();
 			_tmp_file.open(_file_name.c_str(), std::ios::out | std::ios::app | std::ios::binary);
 		} while (!_tmp_file.is_open());
-		while (std::getline(iss, line)) {
-			_tmp_file.write(line.c_str(), line.size() - 1);
-			_file_size += line.size() - 1;
-		}
+
+		char buffer[MAX_BUFFER_SIZE]; 
+		iss.read(buffer, MAX_BUFFER_SIZE);
+		_tmp_file.write(buffer, iss.gcount());
+		_file_size += iss.gcount();
 	}
 }
