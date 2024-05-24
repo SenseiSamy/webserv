@@ -73,18 +73,34 @@ int Response::_cgi_request(std::string &rep, std::string path_to_exec_prog)
 {
 	_init_meta_var();
 	int fd[2];
+	int	saved_fd;
+	int	fd_data;
 	int pid = 0;
 
+	if (_request.get_method() == "POST" && _request.get_headers_key("Content-Type") == "application/x-www-form-urlencoded")
+	{
+		saved_fd = dup(STDIN_FILENO);
+		fd_data = open(_request.get_file_name().c_str(), O_RDONLY);
+		if (fd_data == -1)
+			return (500);
+		dup2(fd_data, STDIN_FILENO);
+		close(fd_data);
+	}
 	if (access((_path_to_root + _uri).c_str(), F_OK) == -1)
 		return (404);
 	if (path_to_exec_prog.empty() && access((_path_to_root + _uri).c_str(), X_OK) == -1)
 		return (403);
 
 	if (_fork_and_exec(fd, pid, path_to_exec_prog) == 1)
+	{
+		dup2(saved_fd, STDIN_FILENO);
+		close(saved_fd);
 		return (EXIT_FAILURE);
+	}
 
 	waitpid(pid, NULL, 0);
-
+	dup2(saved_fd, STDIN_FILENO);
+	close(saved_fd);
 	rep = _get_cgi_output(fd);
 
 	return (EXIT_SUCCESS);
@@ -184,3 +200,4 @@ int Response::_cgi()
 	}
 	return (false);
 }
+

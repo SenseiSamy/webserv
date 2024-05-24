@@ -28,7 +28,6 @@ static bool multipart_file(std::string filename, std::ifstream& body)
 	while (true) {
 		body.read(buffer, BUFFER_SIZE);
 		buffer[BUFFER_SIZE] = '\0';
-		
 	}
 	return (true);
 }
@@ -42,7 +41,6 @@ void Response::_multipart()
 		return;
 	}
 	std::string boundary = "--" + _request.get_headers_key("Content-Type").substr(boundpos + 9, std::string::npos);
-
 	std::ifstream body(_request.get_file_name().c_str(), std::ios::in
 		| std::ios::binary);
 	if (!body.is_open()) {
@@ -81,21 +79,10 @@ void Response::_multipart()
 	}
 }
 
-void Response::_app_form_urlencoded(std::string	body)
+void Response::_app_form_urlencoded()
 {
-	std::map<std::string, std::string> variables;
-	std::stringstream ssbody(body);
-	std::string	pair;
-	while (std::getline(ssbody, pair, '&'))
-	{
-		std::string field, value;
-		size_t	pos = pair.find_first_of('=');
-		if (pos == std::string::npos)
-			return _generate_response_code(400);
-		field = pair.substr(0, pos);
-		value = pair.substr(pos + 1);
-		variables[field] = value;
-	}
+	if (_cgi())
+		return ;
 	return _generate_response_code(200);
 }
 
@@ -104,7 +91,7 @@ void Response::_post()
 	if (_request.get_headers_key("Content-Type").find("multipart/form-data") != std::string::npos)
 		_multipart();
 	else if (_request.get_headers_key("Content-Type") == "application/x-www-form-urlencoded")
-		_app_form_urlencoded(this->_request.get_body());
+		_app_form_urlencoded();
 	else
 		_generate_response_code(400);
 }
