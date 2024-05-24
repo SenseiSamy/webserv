@@ -1,6 +1,7 @@
 #include "Response.hpp"
 
 #include <cstddef>
+#include <iosfwd>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -18,17 +19,22 @@ static void crlf_getline(std::ifstream& is, std::string& str)
 		str.erase(str.size() - 1);
 }
 
-static bool multipart_file(std::string filename, std::ifstream& body)
+static bool multipart_file(std::string filename, std::ifstream& body, std::string boundary)
 {
 	char buffer[BUFFER_SIZE + 1];
 	std::size_t	match_counter = 0;
+	std::size_t bytes_read = 0;
+	std::ofstream output_file(filename, std::ios::out | std::ios::binary | std::ios::trunc);
 
-	(void)filename;
-	(void)match_counter;
+	if (!output_file.is_open())
+		return (false);
+
 	while (true) {
 		body.read(buffer, BUFFER_SIZE);
-		buffer[BUFFER_SIZE] = '\0';
-		
+		for (std::size_t i = 0; i < body.gcount(); ++i) {
+			if (buffer[i] == boundary[match_counter])
+				
+		}
 	}
 	return (true);
 }
@@ -75,6 +81,7 @@ void Response::_multipart()
 			return;
 		}
 		if (!filename.empty()) {
+			std::streampos begin = body.tellg();
 			multipart_file(filename, body);
 		}
 		crlf_getline(body, line);
