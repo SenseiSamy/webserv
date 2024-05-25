@@ -52,31 +52,25 @@ void Server::accept_connection(int epoll_fd)
 
 void Server::handle_client(int client_fd)
 {
-	Request request(*this, NULL, client_fd);
-	while (!request.is_complete())
+	char buffer[BUFFER_SIZE];
+
+	ssize_t bytes_read = recv(client_fd, buffer, BUFFER_SIZE, 0);
+	while (bytes_read > 0)
 	{
-		char buffer[BUFFER_SIZE];
-		ssize_t bytes_read = recv(client_fd, buffer, BUFFER_SIZE, 0);
-		if (bytes_read == -1)
-		{
-			perror("recv");
-			close(client_fd);
-			return;
-		}
-		else if (bytes_read == 0)
+		_requests[client_fd].append(buffer, bytes_read);
+		if (_requests[client_fd].find("\r\n\r\n") != std::string::npos)
 			break;
-		request += Request(*this, buffer, client_fd);
+		bytes_read = recv(client_fd, buffer, BUFFER_SIZE, 0);
 	}
 
+	// check if the request is complete
+	Request request(*this, _requests[client_fd].c_str(), client_fd);
+	if (!request.is_complet())
+		return;
+
 	Response response(*this, request);
-	if (request.get_method() == "GET")
-		_get(request, response);
-	else if (request.get_method() == "POST")
-		_post(request, response);
-	else if (request.get_method() == "PUT")
-		_put(request, response);
-	else if (request.get_method() == "DELETE")
-		_delete(request, response);
-	else
-		response.generate_error_page(405);
+	response.send_response(client_fd);
+
+	close(client_fd);
+	_requests.erase(client_fd);
 }

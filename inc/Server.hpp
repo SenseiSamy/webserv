@@ -73,7 +73,7 @@ private:
 	const server _server;
 	const std::map<unsigned short, std::string> &_error_codes;
 
-	std::map<int, Request> _requests; // client_fd, Request
+	std::map<int, std::string> _requests; // client_fd, request
 	unsigned short _status_code;
 
 
