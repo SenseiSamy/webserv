@@ -1,6 +1,7 @@
 #include "Response.hpp"
 
 #include <cstddef>
+#include <ios>
 #include <iosfwd>
 #include <iostream>
 #include <sstream>
@@ -8,6 +9,7 @@
 #include <ostream>
 #include <string>
 #include <algorithm>
+#include <sys/types.h>
 
 #define BUFFER_SIZE 4096
 
@@ -19,24 +21,39 @@ static void crlf_getline(std::ifstream& is, std::string& str)
 		str.erase(str.size() - 1);
 }
 
-static bool multipart_file(std::string filename, std::ifstream& body, std::string boundary)
+static ssize_t multipart_file(std::string filename, std::ifstream& body, std::string boundary)
 {
 	char buffer[BUFFER_SIZE + 1];
 	std::size_t	match_counter = 0;
 	std::size_t bytes_read = 0;
-	std::ofstream output_file(filename, std::ios::out | std::ios::binary | std::ios::trunc);
+	std::ofstream output_file(filename.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
 
 	if (!output_file.is_open())
-		return (false);
+		return (-1);
 
 	while (true) {
 		body.read(buffer, BUFFER_SIZE);
-		for (std::size_t i = 0; i < body.gcount(); ++i) {
-			if (buffer[i] == boundary[match_counter])
-				
+		if (body.bad())
+			return (-1);
+		for (ssize_t i = 0; i < body.gcount(); ++i) {
+			if (buffer[i] == boundary[match_counter]) {
+				++match_counter;
+				if (match_counter == boundary.size()) {
+					output_file.close();
+					return (bytes_read);
+				}
+			}
+			else {
+				if (match_counter > 0) {
+					output_file.write(boundary.c_str(), match_counter);
+					bytes_read += match_counter;
+					match_counter = 0;
+				}
+				output_file.write(&buffer[i], 1);
+				++bytes_read;
+			}
 		}
 	}
-	return (true);
 }
 
 void Response::_multipart() 
@@ -57,7 +74,7 @@ void Response::_multipart()
 
 	std::string filename;
 	crlf_getline(body, line);
-	while (line != boundary + "--" && body.good()) {
+	while (line != boundary + "--" && !body.bad()) {
 		filename.clear();
 		if (line != boundary) {
 			_generate_response_code(400);
@@ -81,10 +98,18 @@ void Response::_multipart()
 		}
 		if (!filename.empty()) {
 			std::streampos begin = body.tellg();
-			multipart_file(filename, body);
+			ssize_t i = multipart_file(filename, body, boundary);
+			if (i == -1) {
+				_generate_response_code(400);
+				return;
+			}
+			body.clear();
+			body.seekg(begin);
+			body.seekg(i, std::ios_base::cur);
 		}
 		crlf_getline(body, line);
 	}
+	_generate_response_code(201);
 }
 
 void Response::_app_form_urlencoded()

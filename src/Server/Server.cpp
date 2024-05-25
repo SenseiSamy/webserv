@@ -219,18 +219,13 @@ bool Server::_accept_new_connection(server* server)
 
 void Server::_read_request(int fd)
 {
-	std::string request_str;
-
 	char buffer[MAX_BUFFER_SIZE];
 	ssize_t count = read(fd, buffer, MAX_BUFFER_SIZE);
 	while (count > 0)
 	{ 
-		buffer[count] = '\0';
-		request_str.append(buffer, count);
+		requests[fd] += std::string(buffer, count);
 		count = read(fd, buffer, MAX_BUFFER_SIZE);
 	}
-
-	requests[fd] += request_str;
 }
 
 void Server::run()
@@ -326,6 +321,7 @@ void Server::run()
 
 				send(fd, response_str.c_str(), response_str.size(), 0);
 
+				requests[fd].clear();
 				requests.erase(fd);
 				close(fd);
 			}

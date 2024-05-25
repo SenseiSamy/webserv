@@ -42,12 +42,7 @@ Request::Request(const Request &request)
 }
 
 Request::~Request()
-{
-	if (_tmp_file.is_open()) {
-		_tmp_file.close();
-		std::remove(_file_name.c_str());
-	}
-}
+{}
 
 Request &Request::operator=(const Request &request)
 {
@@ -79,10 +74,14 @@ Request &Request::operator+=(const std::string& str)
 				parse();
 			break;
 		case header_complete:
-			if (str.size() + _file_size > _content_length)
+			if (str.size() + _file_size > _content_length) {
 				_tmp_file.write(str.c_str(), _content_length - _file_size);
-			else
+				_file_size += _content_length - _file_size;
+			}
+			else {
 				_tmp_file.write(str.c_str(), str.size());
+				_file_size += str.size();
+			}
 			break;	
 		default:
 			std::cerr << "on est pas trop cense arriver la imo";
@@ -99,6 +98,8 @@ void Request::clear()
 	_headers.clear();
 	_content_length = 0;
 	_body.clear();
+	if (!_file_name.empty() && access(_file_name.c_str(), F_OK) == 0)
+		std::remove(_file_name.c_str());
 }
 
 void Request::refresh_state()
@@ -187,6 +188,8 @@ void Request::parse()
 			std::stringstream ss;
 			ss << i++;
 			_file_name = "/tmp/" + std::string("webserv") + ss.str();
+			if (access(_file_name.c_str(), F_OK) == 0)
+				continue;
 			_tmp_file.open(_file_name.c_str(), std::ios::out | std::ios::app | std::ios::binary);
 		} while (!_tmp_file.is_open());
 

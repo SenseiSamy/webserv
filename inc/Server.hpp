@@ -74,7 +74,7 @@ class Server
 		static bool _stop_server;
 		const std::map<unsigned int, std::string> _error_codes;
 		std::vector<server> _servers;
-		std::map<int, std::string> requests;
+		std::map<int, Request> requests;
 
 		// Index management
 		size_t next_non_empty_line();
