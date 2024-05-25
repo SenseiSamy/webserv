@@ -64,6 +64,8 @@ void Request::concatenate_request(const std::string &request)
 			}
 		}
 	}
+	if (_tmp_body.is_open())
+		_tmp_body.close();
 }
 
 void Request::parse_request_line()
