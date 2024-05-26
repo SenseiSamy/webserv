@@ -1,6 +1,7 @@
 #include "Server.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
+#include "Utils.hpp"
 
 /* Functions */
 #include <cstddef>
@@ -31,6 +32,11 @@ void Server::init()
 	}
 }
 
+bool Server::has_error() const
+{
+	return (_status_code >= 400);
+}
+
 void Server::accept_connection(int epoll_fd)
 {
 	int client_fd = accept(_server_fd, NULL, NULL);
@@ -50,27 +56,29 @@ void Server::accept_connection(int epoll_fd)
 	}
 }
 
-void Server::handle_client(int client_fd)
+void Server::handle_client(const int &client_fd)
 {
 	char buffer[BUFFER_SIZE];
 
 	ssize_t bytes_read = recv(client_fd, buffer, BUFFER_SIZE, 0);
 	while (bytes_read > 0)
 	{
-		_requests[client_fd].append(buffer, bytes_read);
-		if (_requests[client_fd].find("\r\n\r\n") != std::string::npos)
-			break;
+		_requests[client_fd].concatenate_request(std::string(buffer, bytes_read));
 		bytes_read = recv(client_fd, buffer, BUFFER_SIZE, 0);
 	}
-
-	// check if the request is complete
-	Request request(*this, _requests[client_fd].c_str(), client_fd);
-	if (!request.is_complet())
+	if (bytes_read == -1)
+	{
+		perror("recv");
+		close(client_fd);
 		return;
+	}
 
-	Response response(*this, request);
-	response.send_response(client_fd);
-
-	close(client_fd);
-	_requests.erase(client_fd);
+	if (_requests[client_fd].is_complet() || has_error())
+	{
+		std::cout << _requests[client_fd];
+		Response response(*this, _requests[client_fd]);
+		std::cout << " " << to_string(_error_codes) << std::endl;
+		response.send_response(client_fd);
+		close(client_fd);
+	}
 }

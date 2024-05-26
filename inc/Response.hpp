@@ -15,7 +15,7 @@ class Response
 private:
 	Server &_server;
 	const Request &_request;
-	std::string _response_str;
+	std::string _response;
 
 	/* data */
 	const std::string &_version;
@@ -24,11 +24,12 @@ private:
 	std::map<std::string, std::string> _headers;
 	std::string _body;
 
-	/* buffer */
-
 	/* Additional variables */
+
 	const route *_route;
+	std::string _real_path_root;
 	std::string _file_path;
+	std::string _real_path_file;
 	size_t _content_length;
 	int _file_type;
 	std::string _content_type;
@@ -38,15 +39,28 @@ private:
 	bool _is_cgi;
 	std::string _cgi_script_path;
 	std::string _cgi_output;
+	std::map<std::string, std::string> _env;
 
 	/* Utils */
 	const std::string _real_path(const std::string &path);
 	int _get_file_type(const std::string &file_path) const;
 	void _set_content_type(const std::string &file_extension);
+	void _set_content_length();
 	void _set_status(const std::string &status_code, const std::string &status_message);
 	void _read_file_content(const std::string &file_path);
-	void _execute_cgi_script();
 	const route *_find_route() const;
+
+	/* Cgi */
+	int _is_cgi_script(const std::string &file_path) const;
+	void _cgi_upload(const std::string &file_path);
+	void _cgi(const std::string &file_path);
+
+	/* Methods */
+	void _get(const Request &request);
+	void _head(const Request &request);
+	void _post(const Request &request);
+	void _put(const Request &request);
+	void _delete(const Request &request);
 
 public:
 	Response(Server &server, const Request &request);

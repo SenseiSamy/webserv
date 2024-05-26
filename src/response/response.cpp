@@ -1,15 +1,25 @@
 #include "Response.hpp"
 
 /* Functions */
+#include <limits.h> // PATH_MAX
 #include <sstream>	// std::ostringstream
 #include <unistd.h> // write
 
 Response::Response(Server &server, const Request &request)
 		: _server(server), _request(request), _version(request.get_version()), _route(_find_route()),
-			_file_path(_real_path(request.get_uri())), _content_length(0), _file_type(_get_file_type(_file_path)), _is_cgi(false)
+			_real_path_root(_real_path(_server.get_server().root)), _content_length(0),
+			_file_type(_get_file_type(_request.get_uri())), _is_cgi(false)
 {
 	_headers["Server"] = "webserv";
 	_headers["Connection"] = "close";
+
+	if (_real_path_root.empty() && !_server.has_error())
+		_server.set_status_code(403);
+	else if (_real_path_root.find(_server.get_server().root) != 0 && !_server.has_error())
+		_server.set_status_code(404);
+
+	if (_server.has_error())
+		generate_error_page(_server.get_status_code());
 }
 
 Response::~Response()
@@ -29,11 +39,6 @@ void Response::generate_page()
 
 	// End headers section
 	response_stream << "\r\n";
-
-	// Write body
-	response_stream << _body;
-
-	_response_str = response_stream.str();
 }
 
 void Response::generate_error_page(const unsigned short &status_code)
@@ -57,5 +62,5 @@ void Response::generate_error_page(const unsigned short &status_code)
 
 void Response::send_response(const int &client_fd)
 {
-	send(client_fd, _response_str.c_str(), _response_str.size(), 0);
+	(void)send(client_fd, _response.c_str(), _response.size(), 0);
 }

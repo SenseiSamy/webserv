@@ -67,22 +67,15 @@ struct server
 class Server
 {
 private:
+	/* Network */
 	int _server_fd;
 	struct sockaddr_in _address;
 
+	/* Server */
 	const server _server;
-	const std::map<unsigned short, std::string> &_error_codes;
-
-	std::map<int, std::string> _requests; // client_fd, request
+	const std::map<unsigned short, std::string> &_error_codes; // status_code, status_message
 	unsigned short _status_code;
-
-
-	/* Methods */
-	/* HTTP Methods */
-	void _delete(const Request &request, Response &response);
-	void _get(const Request &request, Response &response);
-	void _post(const Request &request, Response &response);
-	void _put(const Request &request, Response &response);
+	std::map<int, Request> _requests; // client_fd, Request
 
 	/* Utils */
 	void _set_nonblocking(int sockfd);
@@ -103,8 +96,10 @@ public:
 
 	/* Methods */
 	void init();
+	// return true if the server has an error code
+	bool has_error() const;
 	void accept_connection(int epoll_fd);
-	void handle_client(int client_fd);
+	void handle_client(const int &client_fd);
 };
 
 #endif // SERVER_HPP

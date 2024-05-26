@@ -2,27 +2,21 @@
 
 /* Types */
 #include <limits.h> // PATH_MAX
+#include <sstream>	// std::ostringstream
 
 /* Functions */
 #include <sys/stat.h> // stat
 
 const std::string Response::_real_path(const std::string &path)
 {
-	const std::string absolute_path = _server.get_server().root + path;
 	char resolved_path[PATH_MAX];
 
-	if (realpath(absolute_path.c_str(), resolved_path) == NULL)
+	if (realpath(path.c_str(), resolved_path) == NULL)
 		return "";
 
 	return resolved_path;
 }
 
-/**
- * Determines the type of the file specified by the given file path.
- *
- * @param file_path The path of the file to check.
- * @return Returns 0 if the file is a regular file, 1 if it is a directory, or -1 if there was an error.
- */
 int Response::_get_file_type(const std::string &file_path) const
 {
 	struct stat file_stat;
@@ -54,6 +48,13 @@ void Response::_set_content_type(const std::string &file_extension)
 		_headers["Content-Type"] = "image/gif";
 	else
 		_headers["Content-Type"] = "application/octet-stream";
+}
+
+void Response::_set_content_length()
+{
+	std::ostringstream oss;
+	oss << _content_length;
+	_headers["Content-Length"] = oss.str();
 }
 
 void Response::_set_status(const std::string &status_code, const std::string &status_message)
