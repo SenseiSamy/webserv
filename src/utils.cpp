@@ -70,6 +70,22 @@ const std::map<unsigned short, std::string> init_error_codes()
 	return error_codes;
 }
 
+char **to_cstr_array(const std::map<std::string, std::string> &map)
+{
+	char **cstr_array = new char *[map.size() + 1];
+	size_t i = 0;
+
+	for (std::map<std::string, std::string>::const_iterator it = map.begin(); it != map.end(); ++it)
+	{
+		cstr_array[i] = new char[it->first.size() + it->second.size() + 2];
+		std::string str = it->first + "=" + it->second;
+		std::strcpy(cstr_array[i], str.c_str());
+		i++;
+	}
+	cstr_array[i] = NULL;
+	return (cstr_array);
+}
+
 const std::vector<std::string> split(const std::string &str, char delim)
 {
 	std::vector<std::string> tokens;

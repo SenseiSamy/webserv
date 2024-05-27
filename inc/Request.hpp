@@ -49,11 +49,11 @@ public:
 	/* Getters */
 	const Server &get_server() const;
 	const int &get_client_fd() const;
-	const std::string &get_request() const;
 	const std::string &get_method() const;
 	const std::string &get_uri() const;
 	const std::string &get_version() const;
 	const std::map<std::string, std::string> &get_headers() const;
+	const std::string get_headers_key(const std::string &key) const;
 
 	/* Setters */
 	void set_method(const std::string &method);

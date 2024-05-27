@@ -5,11 +5,6 @@ const int &Request::get_client_fd() const
 	return _client_fd;
 }
 
-const std::string &Request::get_request() const
-{
-	return _request;
-}
-
 const std::string &Request::get_method() const
 {
 	return _method;
@@ -28,4 +23,12 @@ const std::string &Request::get_version() const
 const std::map<std::string, std::string> &Request::get_headers() const
 {
 	return _headers;
+}
+
+const std::string Request::get_headers_key(const std::string &key) const
+{
+	const std::map<std::string, std::string>::const_iterator it = _headers.find(key);
+	if (it == _headers.end())
+		return ("");
+	return (it->second);
 }
