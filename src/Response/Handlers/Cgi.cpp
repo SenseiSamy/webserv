@@ -1,8 +1,17 @@
 #include "Response.hpp"
-
+#include <sstream>
 #include <algorithm>
+#include <cstdlib>
+#include <ctime>
 #include <sys/wait.h>
 #include <unistd.h>
+
+static inline std::string to_string(int num)
+{
+	std::stringstream ss;
+	ss << num;
+	return ss.str();
+}
 
 static char* strdup(const std::string &str)
 {
@@ -85,12 +94,20 @@ int Response::_cgi_request(std::string &rep, std::string path_to_exec_prog,
 	if (path_to_exec_prog.empty() && access((_path_to_root + _uri).c_str(), X_OK) == -1)
 		return (403);
 
+	clock_t timer = clock();
 	if (_fork_and_exec(fd, pid, path_to_exec_prog, fd_in) == 1)
-		return (EXIT_FAILURE);
+		return (500);
 
-	waitpid(pid, NULL, 0);
+	int p;
+	while ((p = waitpid(pid, NULL, WNOHANG)) == 0) {
+		if (p == -1)
+			return (500);
+		if ((((double) (clock() - timer)) / CLOCKS_PER_SEC) > 10.0) {
+			kill(pid, SIGKILL);
+			return (504);
+		}
+	}
 	rep = _get_cgi_output(fd);
-
 	return (EXIT_SUCCESS);
 }
 
@@ -174,9 +191,12 @@ int Response::_cgi(int fd_in)
 			std::string path_info = _uri.substr(i + it->first.size(),
 				std::string::npos);
 			_is_cgi = true;
-			if (_cgi_request(rep, it->second, fd_in) != 0)
+			int status = _cgi_request(rep, it->second, fd_in);
+			if (status != EXIT_SUCCESS)
 			{
-				_generate_response_code(500);
+				set_status_code(status);
+				set_status_message(_error_codes[status]);
+				_body = "\r\n<h1>" + to_string(status) + " " + _error_codes[status] + "</h1>\n";
 				return (true);
 			}
 			set_status_code(200);

@@ -215,6 +215,6 @@ void Response::_generate_response_code(int num)
 	set_status_code(num);
 	set_status_message(_error_codes[num]);
 	set_headers("Content-Type", "text/html");
-	_body = "<h1>" + to_string(num) + _error_codes[num] + "</h1>\n";
+	_body = "<h1>" + to_string(num) + " " + _error_codes[num] + "</h1>\n";
 	set_content_lenght();
 }
