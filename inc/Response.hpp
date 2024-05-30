@@ -48,9 +48,11 @@ class Response
 		// cgi
 		void _init_meta_var();
 		char** _map_to_env();
-		int _fork_and_exec(int* fd, int& pid, std::string path_to_exec_prog);
+		int _fork_and_exec(int* fd, int& pid, std::string path_to_exec_prog,
+			int fd_in);
 		std::string _get_cgi_output(int* fd);
-		int _cgi_request(std::string &rep, std::string path_to_exec_prog);
+		int _cgi_request(std::string &rep, std::string path_to_exec_prog,
+			int fd_in);
 
 		void _find_type();
 		void _add_content_type();
@@ -67,7 +69,7 @@ class Response
 		void _app_form_urlencoded();
 		void _multipart();
 
-		int _cgi();
+		int _cgi(int fd_in);
 		void _post();
 		void _get();
 		void _delete();

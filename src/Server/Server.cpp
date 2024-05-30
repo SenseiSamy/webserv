@@ -153,8 +153,8 @@ const server &Server::find_server(const std::string &host)
 	if (sep != std::string::npos)
 	{
 		std::stringstream ss(host.substr(sep + 1));
-		ss >> sep;
 		hostname = host.substr(0, sep);
+		ss >> sep;
 
 		it = _servers.begin();
 		while (it != _servers.end())

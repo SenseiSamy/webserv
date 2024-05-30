@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <sys/wait.h>
+#include <unistd.h>
 
 static char* strdup(const std::string &str)
 {
@@ -10,13 +11,16 @@ static char* strdup(const std::string &str)
 	return (new_str);
 }
 
-int Response::_fork_and_exec(int* fd, int& pid, std::string path_to_exec_prog)
+int Response::_fork_and_exec(int* fd, int& pid, std::string path_to_exec_prog,
+	int fd_in)
 {
 	if (pipe(fd) == -1)
 		return (EXIT_FAILURE);
 	pid = fork();
 	if (pid == 0)
 	{
+		if (fd_in > 0)
+			dup2(fd_in, STDIN_FILENO);
 		dup2(fd[1], STDOUT_FILENO);
 		std::string scriptPath = _path_to_root + _uri;
 		if (path_to_exec_prog.empty())
@@ -69,38 +73,22 @@ std::string Response::_get_cgi_output(int* fd)
 	return (rep);
 }
 
-int Response::_cgi_request(std::string &rep, std::string path_to_exec_prog)
+int Response::_cgi_request(std::string &rep, std::string path_to_exec_prog,
+	int fd_in)
 {
 	_init_meta_var();
 	int fd[2];
-	int	saved_fd;
-	int	fd_data;
 	int pid = 0;
 
-	if (_request.get_method() == "POST" && _request.get_headers_key("Content-Type") == "application/x-www-form-urlencoded")
-	{
-		saved_fd = dup(STDIN_FILENO);
-		fd_data = open(_request.get_file_name().c_str(), O_RDONLY);
-		if (fd_data == -1)
-			return (500);
-		dup2(fd_data, STDIN_FILENO);
-		close(fd_data);
-	}
 	if (access((_path_to_root + _uri).c_str(), F_OK) == -1)
 		return (404);
 	if (path_to_exec_prog.empty() && access((_path_to_root + _uri).c_str(), X_OK) == -1)
 		return (403);
 
-	if (_fork_and_exec(fd, pid, path_to_exec_prog) == 1)
-	{
-		dup2(saved_fd, STDIN_FILENO);
-		close(saved_fd);
+	if (_fork_and_exec(fd, pid, path_to_exec_prog, fd_in) == 1)
 		return (EXIT_FAILURE);
-	}
 
 	waitpid(pid, NULL, 0);
-	dup2(saved_fd, STDIN_FILENO);
-	close(saved_fd);
 	rep = _get_cgi_output(fd);
 
 	return (EXIT_SUCCESS);
@@ -166,7 +154,7 @@ void Response::_init_meta_var()
 	_meta_var["SERVER_SOFTWARE"] = "webserv-42/1.0";
 }
 
-int Response::_cgi()
+int Response::_cgi(int fd_in)
 {
 	if (_route == NULL || _route->cgi.empty())
 		return (false);
@@ -186,7 +174,7 @@ int Response::_cgi()
 			std::string path_info = _uri.substr(i + it->first.size(),
 				std::string::npos);
 			_is_cgi = true;
-			if (_cgi_request(rep, it->second) != 0)
+			if (_cgi_request(rep, it->second, fd_in) != 0)
 			{
 				_generate_response_code(500);
 				return (true);

@@ -1,6 +1,7 @@
 #include "Response.hpp"
 
 #include <cstddef>
+#include <fcntl.h>
 #include <ios>
 #include <iosfwd>
 #include <iostream>
@@ -10,6 +11,8 @@
 #include <string>
 #include <algorithm>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #define BUFFER_SIZE 4096
 
@@ -82,7 +85,7 @@ static ssize_t multipart_form(std::ifstream& body, std::string boundary) {
 	}
 }
 
-void Response::_multipart() 
+void Response::_multipart()
 {
 	std::string line;
 	std::size_t boundpos = _request.get_headers_key("Content-Type").find("boundary=");
@@ -96,6 +99,11 @@ void Response::_multipart()
 	if (!body.is_open()) {
 		_generate_response_code(500);
 		return;
+	}
+
+	struct stat st;
+	if (stat((_path_to_root + "/upload").c_str(), &st) == -1) {
+    	mkdir((_path_to_root + "/upload").c_str(), 0700);
 	}
 
 	std::string filename;
@@ -123,7 +131,7 @@ void Response::_multipart()
 		std::streampos begin = body.tellg();
 		ssize_t i;
 		if (!filename.empty())
-			i = multipart_file(filename, body, boundary);
+			i = multipart_file(_path_to_root + "/upload/" + filename, body, boundary);
 		else
 			i = multipart_form(body, boundary);
 		if (i == -1) {
@@ -140,13 +148,21 @@ void Response::_multipart()
 
 void Response::_app_form_urlencoded()
 {
-	if (_cgi())
+	int fd = open(_request.get_file_name().c_str(), O_RDONLY);
+	if (fd == -1)
+		return;
+	if (_cgi(fd))
 		return ;
-	return _generate_response_code(200);
+	_generate_response_code(200);
 }
 
 void Response::_post()
 {
+	if (get_request().get_uri() == "/")
+		_uri = "/index.html";
+	else if (_uri.empty())
+		_uri = _request.get_uri();
+
 	if (_request.get_headers_key("Content-Type").find("multipart/form-data") != std::string::npos)
 		_multipart();
 	else if (_request.get_headers_key("Content-Type") == "application/x-www-form-urlencoded")
