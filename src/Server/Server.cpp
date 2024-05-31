@@ -9,18 +9,18 @@
 #include <ostream>
 #include <sstream>
 
-#include <csignal>
 #include <iostream>
 #include <sys/epoll.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
+#include <csignal>
 
 volatile sig_atomic_t g_signal_status = 0;
 
-static inline const std::map<unsigned short, std::string> init_error_codes()
+static const std::map<unsigned int, std::string> initerror_codes()
 {
-	std::map<unsigned short, std::string> error_codes;
+	std::map<unsigned int, std::string> error_codes;
 
 	error_codes[100] = "Continue";
 	error_codes[101] = "Switching Protocols";
@@ -90,12 +90,11 @@ static inline const std::map<unsigned short, std::string> init_error_codes()
 
 bool Server::_stop_server = false;
 
-Server::Server() : _current_word(0), _current_line(0), _error_codes(init_error_codes())
+Server::Server() : _current_word(0), _current_line(0), _error_codes(initerror_codes())
 {
 }
 
-Server::Server(const char *config_file, const bool verbose)
-		: _verbose(verbose), _config_file(config_file), _current_word(0), _current_line(0), _error_codes(init_error_codes())
+Server::Server(const char *config_file, const bool verbose) : _verbose(verbose), _config_file(config_file), _current_word(0), _current_line(0), _error_codes(initerror_codes())
 {
 	read_config();
 	parsing_config();
@@ -106,15 +105,11 @@ Server::Server(const Server &other)
 {
 	if (this != &other)
 	{
-		_verbose = other._verbose;
-		_epoll_fd = other._epoll_fd;
 		_config_file = other._config_file;
 		_content_file = other._content_file;
 		_current_word = other._current_word;
 		_current_line = other._current_line;
-		_stop_server = other._stop_server;
 		_servers = other._servers;
-		_requests = other._requests;
 	}
 }
 
@@ -122,15 +117,11 @@ Server &Server::operator=(const Server &other)
 {
 	if (this != &other)
 	{
-		_verbose = other._verbose;
-		_epoll_fd = other._epoll_fd;
 		_config_file = other._config_file;
 		_content_file = other._content_file;
 		_current_word = other._current_word;
 		_current_line = other._current_line;
-		_stop_server = other._stop_server;
 		_servers = other._servers;
-		_requests = other._requests;
 	}
 	return *this;
 }
@@ -139,9 +130,16 @@ Server::~Server()
 {
 	for (size_t i = 0; i < _servers.size(); ++i)
 	{
-		std::cout << "Closing server " << _servers[i].host << ":" << _servers[i].port << std::endl;
+		std::cout << "Deleting server " << _servers[i].host << ":" << _servers[i].port << std::endl;
 		close(_servers[i].listen_fd);
 	}
+}
+
+std::string Server::to_string(size_t i) const
+{
+	std::ostringstream oss;
+	oss << i;
+	return oss.str();
 }
 
 const server &Server::find_server(const std::string &host)
@@ -181,8 +179,10 @@ const server &Server::find_server(const std::string &host)
 	}
 
 	for (it = _servers.begin(); it != _servers.end(); ++it)
+	{
 		if (it->default_server)
 			return *it;
+	}
 
 	return _servers[0];
 }
@@ -193,7 +193,7 @@ void Server::signal_handler(int signum)
 	_stop_server = true;
 }
 
-bool Server::_accept_new_connection(server *server)
+bool Server::_accept_new_connection(server* server)
 {
 	sockaddr_in client_addr;
 	socklen_t client_addr_len = sizeof(client_addr);
@@ -240,7 +240,7 @@ void Server::run()
 	for (size_t i = 0; i < _servers.size(); ++i)
 	{
 		setup_server_socket(_servers[i]);
-
+	
 		ev.events = EPOLLIN | EPOLLET;
 		ev.data.fd = _servers[i].listen_fd;
 		if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, _servers[i].listen_fd, &ev) == -1)
@@ -262,7 +262,7 @@ void Server::run()
 				throw std::runtime_error("epoll_wait() failed " + std::string(strerror(errno)));
 		}
 
-		for (int i = 0; i < nfds; ++i) 
+		for (int i = 0; i < nfds; ++i) // Iterating over all the fds that are available for reading/writing
 		{
 			const int fd = events[i].data.fd;
 			server *server = NULL;
@@ -276,14 +276,13 @@ void Server::run()
 				}
 			}
 
-			if (server != NULL) 
-			{
+			if (server != NULL) // Accepting a new connection
+			{ 
 				if (!_accept_new_connection(server))
 					continue;
 			}
-			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) ||
-							 (!(events[i].events & EPOLLIN)))
-			{
+			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN))) // An error happened
+			{ 
 				close(fd);
 				continue;
 			}

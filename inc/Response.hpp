@@ -25,25 +25,25 @@ enum type
 
 class Response
 {
-private:
-	// Response
-	int _status_code;
-	int _type;
-	std::string _status_message;
-	std::string _body;
-	std::map<std::string, std::string> _headers;
+	private:
+		// Response
+		int _status_code;
+		int _type;
+		std::string _status_message;
+		std::string _body;
+		std::map<std::string, std::string> _headers;
 
-	// Cgi
-	std::map<std::string, std::string> _meta_var;
+		// Cgi
+		std::map<std::string, std::string> _meta_var;
 
-	// Utils
-	Request _request;
-	std::map<unsigned short, std::string> _error_codes;
-	std::string _uri;
-	std::string _path_to_root;
-	server _server;
-	route *_route;
-	bool _is_cgi;
+		// Utils
+		Request _request;
+		std::map<unsigned int, std::string> _error_codes;
+		std::string _uri;
+		std::string _path_to_root;
+		server _server;
+		route* _route;
+		bool _is_cgi;
 
 		// cgi
 		void _init_meta_var();
@@ -74,37 +74,38 @@ private:
 		void _get();
 		void _delete();
 
-	void _generate();
+		void _generate();
 
-public:
-	Response();
-	Response(const unsigned short error, const server &server, const std::map<unsigned short, std::string> &error_codes);
-	Response(const Request &request, const server &server, const std::map<unsigned short, std::string> &error_codes);
-	Response(const Response &other);
-	Response &operator=(const Response &other);
-	~Response();
+	public:
+		Response();
+		Response(const unsigned short error, const server &server, const std::map<unsigned int, std::string> &error_codes);
+		Response(const Request &request, const server &server, const std::map<unsigned int, std::string> &error_codes);
+		Response(const Response &other);
+		Response &operator=(const Response &other);
+		~Response();
 
-	// getters
-	const int &get_status_code() const;
-	const int &get_type() const;
-	const std::map<unsigned short, std::string> &get_error_codes() const;
-	const std::string &get_status_message() const;
-	const std::string &get_body() const;
-	const std::map<std::string, std::string> &get_headers() const;
-	const std::string get_headers_key(const std::string &key) const;
-	const Request &get_request() const;
-	const server &get_server() const;
+		// getters
+		const int &get_status_code() const;
+		const int &get_type() const;
+		const std::map<unsigned int, std::string> &get_error_codes() const;
+		const std::string &get_status_message() const;
+		const std::string &get_body() const;
+		const std::map<std::string, std::string> &get_headers() const;
+		const std::string get_headers_key(const std::string &key) const;
+		const Request &get_request() const;
+		const server &get_server() const;
 
-	// setters
-	void set_status_code(const unsigned short &code);
-	void set_body(const std::string &responseBody);
-	void set_headers(const std::string &key, const std::string &value);
-	void set_content_lenght();
+		// setters
+		void set_status_code(int code);
+		void set_status_message(const std::string &message);
+		void setBody(const std::string &responseBody);
+		void set_headers(const std::string &key, const std::string &value);
+		void set_content_lenght();
 
-	// displays
-	void display() const;
+		// displays
+		void display() const;
 
-	const std::string convert() const;
+		const std::string convert() const;
 };
 
 #endif // RESPONSE_HPP

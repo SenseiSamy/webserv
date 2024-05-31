@@ -1,8 +1,6 @@
 #include "Request.hpp"
 #include "Server.hpp"
 
-#include <cstddef>
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <unistd.h>
@@ -134,7 +132,7 @@ static const std::string trim(const std::string &str)
 	return str.substr(first, (last - first + 1));
 }
 
-void Request::parse(const size_t &max_body_size)
+void Request::parse()
 {
 	std::istringstream iss(_request);
 	std::string request_line;
@@ -165,7 +163,7 @@ void Request::parse(const size_t &max_body_size)
 		std::string header_name;
 		std::string header_value;
 
-		if (std::getline(header_iss, header_name, ':') && std::getline(header_iss, header_value))
+		if (std::getline(header_iss, header_name, ':') && std::getline(header_iss, header_value)) 
 		{
 			header_name = trim(header_name);
 			header_value = trim(header_value);

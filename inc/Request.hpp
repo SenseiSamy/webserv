@@ -66,13 +66,13 @@ class Request
 		void set_body(const std::string &body);
 		void set_query_string(const std::string &query_string);
 
-	// Displays
-	void display_request() const;
-	void display() const;
+		// Displays
+		void display_request() const;
+		void display() const;
 
-	// Others
-	void clear();
-	void parse(const size_t &max_body_size = 1000000);
+		// Others    
+		void clear();
+		void parse();
 };
 
 #endif // REQUEST_HPP

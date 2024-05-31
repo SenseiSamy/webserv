@@ -1,5 +1,4 @@
 #include "Server.hpp"
-#include "Utils.hpp"
 
 #include <cstddef>
 #include <fstream>
@@ -87,7 +86,8 @@ const std::vector<std::string> Server::get_value(const std::string &token)
 	}
 
 	if (result.empty())
-		throw std::runtime_error("Syntax error: Expected value after " + token + " at line " + to_string(_current_line));
+		throw std::runtime_error("Syntax error: Expected value after " + token + " at line " +
+								 to_string(_current_line));
 
 	if (word != ";")
 		throw std::runtime_error("Syntax error: Expected ';' after value at line " + to_string(_current_line));

@@ -1,9 +1,13 @@
 #include "Response.hpp"
 
-#include <cstdio>
+#include <iostream>
+#include <sstream>
+#include <fstream>
+#include <ostream>
 #include <string>
+#include <sys/stat.h>
 
-void Response::_delete()
+void	Response::_delete()
 {
 	_uri = _request.get_uri();
 	std::string filename(_path_to_root + _uri);
@@ -16,7 +20,8 @@ void Response::_delete()
 		else if (!std::remove(filename.c_str()))
 		{
 			set_status_code(204);
-			return;
+			set_status_message(_error_codes[204]);
+			return ;
 		}
 		else
 			_generate_response_code(500);
@@ -30,7 +35,8 @@ void Response::_delete()
 		else if (!std::remove(filename.c_str()))
 		{
 			set_status_code(204);
-			return;
+			set_status_message(_error_codes[204]);
+			return ;
 		}
 		else
 			_generate_response_code(500);

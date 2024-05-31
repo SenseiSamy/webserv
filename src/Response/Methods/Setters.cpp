@@ -2,18 +2,22 @@
 
 #include <sstream>
 
-void Response::set_status_code(const unsigned short &code)
+void Response::set_status_code(int code)
 {
 	_status_code = code;
-	_status_message = _error_codes[code];
 }
 
-void Response::set_body(const std::string &responseBody)
+void Response::set_status_message(const std::string& message)
+{
+	_status_message = message;
+}
+
+void Response::setBody(const std::string& responseBody)
 {
 	_body = responseBody;
 }
 
-void Response::set_headers(const std::string &key, const std::string &value)
+void Response::set_headers(const std::string& key, const std::string& value)
 {
 	_headers[key] = value;
 }
