@@ -86,51 +86,55 @@ void Response::_directory_listing()
 	set_status_message(_error_codes[200]);
 	set_headers("Content-Type", "text/html");
 
-	_body += "<!DOCTYPE html>\n<html lang=\"en\">\n";
-	_body += "<head>\n\t<meta charset=\"UTF-8\">\n";
-	_body += "\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n";
-	_body += "\t<title>Index of /files</title>\n";
-	_body += "<h1>Index of " + _uri + "</h1>\n";
-	_body += "\t<script>\n";
-	_body += "\t\tasync function deleteFile(fileName) {\n";
-	_body += "\t\t\tif (confirm(`Are you sure you want to delete ${fileName}?`)) {\n";
-	_body += "\t\t\t\ttry {\n";
-	_body += "\t\t\t\t\tconst response = await fetch(fileName, {\n";
-	_body += "\t\t\t\t\t\tmethod: 'DELETE'\n";
-	_body += "\t\t\t\t\t});\n";
-	_body += "\t\t\t\t\tif (response.ok) {\n";
-	_body += "\t\t\t\t\t\talert(`File ${fileName} deleted successfully.`);\n";
-	_body += "\t\t\t\t\t\tlocation.reload();\n";
-	_body += "\t\t\t\t\t} else {\n";
-	_body += "\t\t\t\t\t\talert(`Failed to delete ${fileName}.`);\n";
-	_body += "\t\t\t\t\t}\n";
-	_body += "\t\t\t\t} catch (error) {\n";
-	_body += "\t\t\t\t\tconsole.error('Error:', error);\n";
-	_body += "\t\t\t\t\talert(`Error deleting ${fileName}.`);\n";
-	_body += "\t\t\t\t}\n\t\t\t}\n\t\t}\n";
-	_body += "\t</script>\n";
-	_body += "</head>\n";
-	_body += "<ul>\n";
-	_body += "\t<li><a href=..>..</a></li?>\n";
+	_body += "<!DOCTYPE html>\n<html lang=\"en\">\n"
+	"<head>\n\t<meta charset=\"UTF-8\">\n"
+	"\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
+	"\t<title>Index of " + _uri +"</title>\n"
+	"<h1>Index of " + _uri + "</h1>\n"
+	"\t<script>\n"
+	"\t\tasync function deleteFile(fileName) {\n"
+	"\t\t\tif (confirm(`Are you sure you want to delete ${fileName}?`)) {\n"
+	"\t\t\t\ttry {\n"
+	"\t\t\t\t\tconst response = await fetch(fileName, {\n"
+	"\t\t\t\t\t\tmethod: 'DELETE'\n"
+	"\t\t\t\t\t});\n"
+	"\t\t\t\t\tif (response.ok) {\n"
+	"\t\t\t\t\t\talert(`File ${fileName} deleted successfully.`);\n"
+	"\t\t\t\t\t\tlocation.reload();\n"
+	"\t\t\t\t\t} else {\n"
+	"\t\t\t\t\t\talert(`Failed to delete ${fileName}.`);\n"
+	"\t\t\t\t\t}\n"
+	"\t\t\t\t} catch (error) {\n"
+	"\t\t\t\t\tconsole.error('Error:', error);\n"
+	"\t\t\t\t\talert(`Error deleting ${fileName}.`);\n"
+	"\t\t\t\t}\n\t\t\t}\n\t\t}\n"
+	"\t</script>\n"
+	"</head>\n"
+	"<body>\n"
+	"\t<ul>\n"
+	"\t\t<li><a href=..>..</a></li>\n";
 	while ((entry = readdir(directory)) != NULL)
 	{
 		if (std::string(entry->d_name) == ".." || std::string(entry->d_name)
 			== ".")
 			continue;
-		_body += "\t<li class=\"file-name\">\n\t\t<a href=\"";
+		_body += "\t\t<li class=\"file-name\">\n\t\t<a href=\"";
 		_body += _uri + "/" + entry->d_name;
-		_body += "\">";
+		_body += "\t\">";
 		_body += entry->d_name;
-		_body += "</a>\n";
+		_body += "\t</a>\n";
 		if (std::find(_route->accepted_methods.begin(), _route->accepted_methods.end(), "DELETE") != _route->accepted_methods.end())
 		{
-			_body += "\t\t<button class=\"delete-btn\" onclick=\"deleteFile(\'";
+			_body += "\t\t\t<button class=\"delete-btn\" onclick=\"deleteFile(\'";
 			_body += _uri + "/" + entry->d_name;
-			_body += "\')\"><b>Delete</b></button>\n\t</li>\n";
+			_body += "\t\')\"><b>Delete</b></button>\n\t</li>\n";
 		}
-		_body += "\n";
+		_body += "\t\n";
 	}
-	_body += "</ul>\n";
+	_body += "\t</ul>\n";
+	_body += "</body>\n</html>";
+
+
 
 	set_content_lenght();
 }
