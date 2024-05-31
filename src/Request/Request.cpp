@@ -112,9 +112,7 @@ void Request::refresh_state()
 		if (_method != "POST")
 			_state = complete;
 		else {
-			if (_content_length == 0)
-				_state = invalid;
-			else if (_file_size == _content_length)
+			if (_file_size == _content_length)
 			{
 				_state = complete;
 				_tmp_file.close();

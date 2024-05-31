@@ -168,5 +168,5 @@ void Response::_post()
 	else if (_request.get_headers_key("Content-Type") == "application/x-www-form-urlencoded")
 		_app_form_urlencoded();
 	else
-		_generate_response_code(400);
+		_generate_response_code(200);
 }

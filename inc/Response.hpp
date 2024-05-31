@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 #include <fcntl.h>
+#include <algorithm>
 
 enum Method
 {
