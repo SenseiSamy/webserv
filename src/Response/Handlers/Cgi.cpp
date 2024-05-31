@@ -31,6 +31,7 @@ int Response::_fork_and_exec(int* fd, int& pid, std::string path_to_exec_prog,
 		if (fd_in > 0)
 			dup2(fd_in, STDIN_FILENO);
 		dup2(fd[1], STDOUT_FILENO);
+		dup2(fd[1], STDERR_FILENO);
 		std::string scriptPath = _path_to_root + _uri;
 		if (path_to_exec_prog.empty())
 		{

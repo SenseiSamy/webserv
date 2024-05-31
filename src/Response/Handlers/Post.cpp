@@ -101,9 +101,15 @@ void Response::_multipart()
 		return;
 	}
 
-	struct stat st;
-	if (stat((_path_to_root + "/upload").c_str(), &st) == -1) {
-    	mkdir((_path_to_root + "/upload").c_str(), 0700);
+	std::string upload_path;
+	if (_is_a_directory(_path_to_root + _uri) && _route != NULL && std::find(_route->accepted_methods.begin(), _route->accepted_methods.end(), "POST") != _route->accepted_methods.end())
+		upload_path = _path_to_root + _uri + "/";
+	else {
+		struct stat st;
+		if (stat((_path_to_root + "/upload").c_str(), &st) == -1) {
+			mkdir((_path_to_root + "/upload").c_str(), 0700);
+		}
+		upload_path = _path_to_root + "/upload/";
 	}
 
 	std::string filename;
@@ -131,7 +137,7 @@ void Response::_multipart()
 		std::streampos begin = body.tellg();
 		ssize_t i;
 		if (!filename.empty())
-			i = multipart_file(_path_to_root + "/upload/" + filename, body, boundary);
+			i = multipart_file(upload_path + filename, body, boundary);
 		else
 			i = multipart_form(body, boundary);
 		if (i == -1) {
