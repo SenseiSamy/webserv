@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zizou2000v2</title>
+    <title>Webserv 2000</title>
     <link rel="stylesheet" type="text/css" href="styles.css">
+    <link rel="icon" href="assets/favicon.ico">
 </head>
+
 <body>
     <header>
         <h1>Welcome to Your Website</h1>
@@ -18,29 +21,29 @@
         <input type="submit" value="Upload File" name="submit">
     </form>
 
-	<section>
-		<h2>Submit Form</h2>
-		<form id="submitForm" enctype="application/x-www-form-urlencoded">
-			<label for="name"></label>
-		</form>
-		<div id="submitMessage"></div>
-	</section>
+    <section>
+        <h2>Submit Form</h2>
+        <form id="submitForm" enctype="application/x-www-form-urlencoded">
+            <label for="name"></label>
+        </form>
+        <div id="submitMessage"></div>
+    </section>
 
     <section>
         <h2>The GOAT</h2>
-        <img src="https://ssb.wiki.gallery/images/9/98/Glutonny.jpg" width="400" height="341"/>
+        <img src="https://ssb.wiki.gallery/images/9/98/Glutonny.jpg" width="400" height="341" />
         <p>This is the ultimate goat of ultimate</p>
     </section>
 
     <script>
-        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+        document.getElementById('uploadForm').addEventListener('submit', function (event) {
             event.preventDefault(); // Prevent the default form submission behavior
 
             var formData = new FormData(this); // Get form data
             var xhr = new XMLHttpRequest();
 
             xhr.open('POST', '/upload', true);
-            xhr.onload = function() {
+            xhr.onload = function () {
                 if (xhr.status === 200) {
                     // Handle successful upload
                     console.log('File uploaded successfully');
@@ -50,7 +53,7 @@
                 }
             };
 
-            xhr.onerror = function() {
+            xhr.onerror = function () {
                 // Handle network errors
                 console.error('Network error occurred');
             };
@@ -59,4 +62,5 @@
         });
     </script>
 </body>
+
 </html>
