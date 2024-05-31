@@ -4,10 +4,10 @@
 #include "Utils.hpp"
 
 /* Functions */
-#include <cstddef>
+#include <cstddef>		 // size_t
 #include <iostream>		 // std::cerr, std::endl
 #include <sys/epoll.h> // epoll_create1, epoll_ctl, epoll_wait
-#include <sys/types.h>
+#include <sys/types.h> // epoll_event, epoll_create1, epoll_ctl, epoll_wait
 
 Server::Server(const server &serv, const std::map<unsigned short, std::string> &error_codes)
 		: _server(serv), _error_codes(error_codes), _status_code(200)

@@ -30,7 +30,6 @@ private:
 		HEADERS,
 		BODY,
 		COMPLETE,
-		ERROR
 	};
 
 	State _state;

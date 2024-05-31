@@ -7,7 +7,7 @@
 #include <sstream>	// std::istringstream
 
 Request::Request(Server &server, const int &client_fd)
-		: _server(server), _client_fd(client_fd), _state(START), _content_length(0), _content_received(0)
+		: _server(server), _client_fd(client_fd), _state(START), _content_received(0), _content_length(0)
 {
 }
 
@@ -28,49 +28,62 @@ std::ostream &operator<<(std::ostream &os, const Request &request)
 void Request::concatenate_request(const std::string &request)
 {
 	_stash += request;
+	std::string::size_type i_end = 0;
+
 	if (_state == START)
 	{
-		std::string::size_type end = _stash.find("\r\n");
-		if (end != std::string::npos)
+		i_end = _stash.find("\r\n");
+		if (i_end != std::string::npos)
 		{
-			parse_request_line(end);
+			parse_request_line(i_end);
 			_state = HEADERS;
 		}
 	}
 	if (_state == HEADERS)
 	{
-		std::string::size_type end = _stash.find("\r\n\r\n");
-		if (end != std::string::npos)
+		i_end = _stash.find("\r\n\r\n");
+		if (i_end != std::string::npos)
 		{
-			parse_headers(end);
+			parse_headers(i_end);
 			_state = COMPLETE;
 		}
 	}
 	if (_state == BODY)
 	{
-		_content_received += _stash.size();
-		if (_content_received >= _content_length)
-		{
-			_tmp_body << _stash.substr(0, _content_length - (_content_received - _stash.size()));
-			_tmp_body.close();
+		if (_content_length == 0)
 			_state = COMPLETE;
-		}
 		else
-			_tmp_body << _stash;
-		_stash.clear();
+		{
+			if (_content_received >= _content_length)
+				_state = COMPLETE;
+			else
+			{
+				_content_received += _stash.size();
+				_tmp_body << _stash;
+			}
+		}
 	}
 }
 
 void Request::parse_request_line(const std::string::size_type &end)
 {
 	std::istringstream iss(_stash.substr(0, end));
-	iss >> _method >> _uri >> _version;
-	_stash.erase(0, end + 2);
+	std::string token;
 
-	if (_method != "GET" && _method != "POST" && _method != "PUT" && _method != "DELETE")
-		_server.set_status_code(501);
-	else if (_version != "HTTP/1.1")
-		_server.set_status_code(505);
+	/* Method */
+	std::getline(iss, token, ' ');
+	set_method(token);
+
+	/* URI */
+	std::getline(iss, token, ' ');
+	set_uri(token);
+
+	/* Version */
+	std::getline(iss, token, ' ');
+	set_version(token);
+
+	_state = HEADERS;
+	_stash.erase(0, end + 2);
 }
 
 void Request::parse_headers(const std::string::size_type &end)
@@ -80,30 +93,32 @@ void Request::parse_headers(const std::string::size_type &end)
 
 	while (std::getline(iss, line, '\n'))
 	{
-		std::string::size_type pos = line.find(": ");
-
-		if (pos == std::string::npos)
+		if (line == "\r")
+			break;
+		std::string::size_type i_colon = line.find(": ");
+		if (i_colon != std::string::npos)
 		{
-			_server.set_status_code(400);
-			return;
+			std::string key = line.substr(0, i_colon);
+			std::string value = line.substr(i_colon + 2, line.size() - i_colon - 3);
+			if (key.empty() || value.empty())
+				_server.set_status_code(400);
+			else
+				_headers[key] = value;
 		}
-		std::string key = line.substr(0, pos);
-		std::string value = line.substr(pos + 2, line.size() - pos - 3);
-		_headers[key] = value;
-		if (key == "Content-Length")
-			_content_length = to_size_t(value);
 	}
 	_stash.erase(0, end + 4);
 
-	if (_headers.find("Content-Length") == _headers.end())
-		_server.set_status_code(411);
-	else if (_content_length == 0)
-		_state = COMPLETE;
-	else
+	std::map<std::string, std::string>::iterator it = _headers.find("Content-Length");
+	if (it != _headers.end() && !it->second.empty())
 	{
-		_tmp_body.open("/tmp/body_" + to_string(_client_fd), std::ios::out | std::ios::binary);
+		std::istringstream(it->second) >> _content_length;
+		_tmp_body.open("tmp_body");
+		if (!_tmp_body.is_open())
+			_server.set_status_code(500);
 		_state = BODY;
 	}
+	else
+		_server.set_status_code(411);
 }
 
 bool Request::is_complet() const
