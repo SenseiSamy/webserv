@@ -1,20 +1,14 @@
 #include "Response.hpp"
 
-Response::Response()
-		: _status_code(0), _status_message(""), _body(""), _headers(), _request(), _error_codes(), _uri(""),
-			_path_to_root(""), _server(), _is_cgi(false)
-{
-	_set_root();
-	_select_route();
-	_generate();
-}
+Response::Response(): _status_code(0), _status_message(""), _body(""), _headers(), _request(), _error_codes(), _uri(""), _path_to_root(""), _server(), _is_cgi(false)
+{}
 
 Response::Response(const unsigned short error, const server &server,
 									 const std::map<unsigned short, std::string> &error_codes)
 		: _status_code(error), _status_message(error_codes.at(error)), _body(""), _headers(), _request(),
 			_error_codes(error_codes), _uri(""), _path_to_root(""), _server(server), _is_cgi(false)
 {
-	_generate_error(error);
+	_generate_response_code(error);
 }
 
 Response::Response(const Request &request, const server &server,
@@ -70,7 +64,7 @@ void Response::_generate()
 {
 	if (_request.get_version() != "HTTP/1.1")
 	{
-		_generate_error(505);
+		_generate_response_code(505);
 		return;
 	}
 
@@ -83,5 +77,5 @@ void Response::_generate()
 	else if (method == "DELETE")
 		_delete();
 	else
-		_generate_error(405);
+		_generate_response_code(405);
 }

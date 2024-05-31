@@ -1,4 +1,5 @@
 #include "Request.hpp"
+#include <exception>
 
 const std::string &Request::get_request() const
 {
@@ -20,9 +21,14 @@ const std::string &Request::get_version() const
 	return _version;
 }
 
-const std::string &Request::get_headers_key(const std::string &key) const
+const std::string Request::get_headers_key(const std::string &key) const
 {
-	return _headers.at(key);
+	try {
+		return _headers.at(key);
+	}
+	catch (std::exception& e) {
+		return ("");
+	}
 }
 
 const std::map<std::string, std::string> &Request::get_headers() const
@@ -51,4 +57,14 @@ const std::string Request::get_first_line() const
 	if (pos == std::string::npos)
 		return "";
 	return _request.substr(0, pos);
+}
+
+enum Request::state Request::get_state() const
+{
+	return (_state);
+}
+
+const std::string Request::get_file_name() const
+{
+	return (_file_name);
 }

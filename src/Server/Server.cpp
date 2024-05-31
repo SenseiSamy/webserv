@@ -155,8 +155,8 @@ const server &Server::find_server(const std::string &host)
 	if (sep != std::string::npos)
 	{
 		std::stringstream ss(host.substr(sep + 1));
-		ss >> sep;
 		hostname = host.substr(0, sep);
+		ss >> sep;
 
 		it = _servers.begin();
 		while (it != _servers.end())
@@ -217,59 +217,15 @@ bool Server::_accept_new_connection(server *server)
 	return (true);
 }
 
-int Server::_read_request(int fd)
+void Server::_read_request(int fd)
 {
-	std::string request_str;
-
 	char buffer[MAX_BUFFER_SIZE];
 	ssize_t count = read(fd, buffer, MAX_BUFFER_SIZE);
 	while (count > 0)
-	{
-		buffer[count] = '\0';
-		request_str.append(buffer, count);
+	{ 
+		requests[fd] += std::string(buffer, count);
 		count = read(fd, buffer, MAX_BUFFER_SIZE);
 	}
-
-	_requests[fd] += request_str;
-	if (count == 0 || request_str == "\r\n" || request_str.find("\r\n\r\n") != std::string::npos)
-		return 0;
-	return 1;
-}
-
-void Server::handle_request(int fd)
-{
-	Request request(_requests[fd]);
-	_requests.erase(fd);
-	if (_verbose)
-	{
-		request.display();
-		std::cout << "----------------------------------------" << std::endl;
-	}
-	const struct server server = find_server(request.get_headers_key("Host"));
-	Response response(request, server, _error_codes);
-	if (_verbose)
-		response.display();
-	std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
-	if (response.get_status_code() == 200)
-		std::cout << "\033[1;32m" << response.get_status_code();
-	else
-		std::cout << "\033[1;31m" << response.get_status_code() << " " << response.get_status_message();
-	std::cout << "\033[0m -" << std::endl;
-	if (_verbose)
-		std::cout << "----------------------------------------" << std::endl;
-
-	if (request.get_body().size() > server.max_body_size)
-	{
-		Response error_response(413, server, _error_codes);
-		std::string error_response_str = error_response.convert();
-		send(fd, error_response_str.c_str(), error_response_str.size(), 0);
-	}
-	else
-	{
-		std::string response_str = response.convert();
-		send(fd, response_str.c_str(), response_str.size(), 0);
-	}
-	close(fd);
 }
 
 void Server::run()
@@ -331,19 +287,44 @@ void Server::run()
 				close(fd);
 				continue;
 			}
-			else
+			else // Reading client request and if complete, sending response
 			{
-				const int ret = _read_request(fd);
-				if (ret == 1) // Request not finished
+
+				_read_request(fd);	
+				const Request& request = requests[fd];
+				if (request.get_state() != Request::complete &&
+					request.get_state() != Request::invalid)
 					continue;
-				if (ret == -1) // Error
+				if (_verbose)
 				{
-					Response response(413, *server, _error_codes);
-					std::string response_str = response.convert();
-					send(fd, response_str.c_str(), response_str.size(), 0);
+					request.display();
+					std::cout << "----------------------------------------" << std::endl;
 				}
-				else // Request finished
-					handle_request(fd);
+				const struct server server = find_server(request.get_headers_key("Host"));
+
+				Response response;
+				if (request.get_state() == Request::complete)
+					response = Response(request, server, _error_codes);
+				else
+					response = Response(400, server, _error_codes);
+				if (_verbose)
+					response.display();
+				std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
+				if (response.get_status_code() == 200)
+					std::cout << "\033[1;32m" << response.get_status_code();
+				else
+					std::cout << "\033[1;31m" << response.get_status_code() << " " << response.get_status_message();
+				std::cout << "\033[0m -" << std::endl;
+				if (_verbose)
+					std::cout << "----------------------------------------" << std::endl;
+
+				std::string response_str = response.convert();
+
+				send(fd, response_str.c_str(), response_str.size(), 0);
+
+				requests[fd].clear();
+				requests.erase(fd);
+				close(fd);
 			}
 		}
 	}

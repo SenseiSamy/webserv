@@ -1,7 +1,17 @@
 #include "Response.hpp"
-
+#include <sstream>
 #include <algorithm>
+#include <cstdlib>
+#include <ctime>
 #include <sys/wait.h>
+#include <unistd.h>
+
+static inline std::string to_string(int num)
+{
+	std::stringstream ss;
+	ss << num;
+	return ss.str();
+}
 
 static char *strdup(const std::string &str)
 {
@@ -10,13 +20,16 @@ static char *strdup(const std::string &str)
 	return (new_str);
 }
 
-int Response::_fork_and_exec(int *fd, int &pid, std::string path_to_exec_prog)
+int Response::_fork_and_exec(int* fd, int& pid, std::string path_to_exec_prog,
+	int fd_in)
 {
 	if (pipe(fd) == -1)
 		return (EXIT_FAILURE);
 	pid = fork();
 	if (pid == 0)
 	{
+		if (fd_in > 0)
+			dup2(fd_in, STDIN_FILENO);
 		dup2(fd[1], STDOUT_FILENO);
 		std::string scriptPath = _path_to_root + _uri;
 		if (path_to_exec_prog.empty())
@@ -69,7 +82,8 @@ std::string Response::_get_cgi_output(int *fd)
 	return (rep);
 }
 
-int Response::_cgi_request(std::string &rep, std::string path_to_exec_prog)
+int Response::_cgi_request(std::string &rep, std::string path_to_exec_prog,
+	int fd_in)
 {
 	_init_meta_var();
 	int fd[2];
@@ -80,13 +94,20 @@ int Response::_cgi_request(std::string &rep, std::string path_to_exec_prog)
 	if (path_to_exec_prog.empty() && access((_path_to_root + _uri).c_str(), X_OK) == -1)
 		return (403);
 
-	if (_fork_and_exec(fd, pid, path_to_exec_prog) == 1)
-		return (EXIT_FAILURE);
+	clock_t timer = clock();
+	if (_fork_and_exec(fd, pid, path_to_exec_prog, fd_in) == 1)
+		return (500);
 
-	waitpid(pid, NULL, 0);
-
+	int p;
+	while ((p = waitpid(pid, NULL, WNOHANG)) == 0) {
+		if (p == -1)
+			return (500);
+		if ((((double) (clock() - timer)) / CLOCKS_PER_SEC) > 10.0) {
+			kill(pid, SIGKILL);
+			return (504);
+		}
+	}
 	rep = _get_cgi_output(fd);
-
 	return (EXIT_SUCCESS);
 }
 
@@ -150,7 +171,7 @@ void Response::_init_meta_var()
 	_meta_var["SERVER_SOFTWARE"] = "webserv-42/1.0";
 }
 
-int Response::_cgi()
+int Response::_cgi(int fd_in)
 {
 	if (_route == NULL || _route->cgi.empty())
 		return (false);
@@ -169,9 +190,12 @@ int Response::_cgi()
 			std::string uri = _uri.substr(0, i + it->first.size());
 			std::string path_info = _uri.substr(i + it->first.size(), std::string::npos);
 			_is_cgi = true;
-			if (_cgi_request(rep, it->second) != 0)
+			int status = _cgi_request(rep, it->second, fd_in);
+			if (status != EXIT_SUCCESS)
 			{
-				_generate_error(500);
+				set_status_code(status);
+				set_status_message(_error_codes[status]);
+				_body = "\r\n<h1>" + to_string(status) + " " + _error_codes[status] + "</h1>\n";
 				return (true);
 			}
 			set_status_code(200);
@@ -182,3 +206,4 @@ int Response::_cgi()
 	}
 	return (false);
 }
+

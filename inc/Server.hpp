@@ -69,10 +69,10 @@ private:
 	size_t _current_word;
 	size_t _current_line;
 
-	static bool _stop_server;
-	const std::map<unsigned short, std::string> _error_codes;
-	std::vector<server> _servers;
-	std::map<int, std::string> _requests;
+		static bool _stop_server;
+		const std::map<unsigned int, std::string> _error_codes;
+		std::vector<server> _servers;
+		std::map<int, Request> requests;
 
 	// Index management
 	size_t next_non_empty_line();
@@ -97,11 +97,10 @@ private:
 	// Server management
 	static void signal_handler(int signum);
 
-	// Execution
-	const server &find_server(const std::string &host);
-	bool _accept_new_connection(server *server);
-	int _read_request(int fd);
-	void handle_request(int fd);
+		// Execution
+		const server &find_server(const std::string &host);
+		bool _accept_new_connection(server* server);
+		void _read_request(int fd);
 
 public:
 	Server();

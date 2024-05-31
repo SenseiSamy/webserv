@@ -1,19 +1,27 @@
 #include "Request.hpp"
-#include "Response.hpp"
+#include "Server.hpp"
 
 #include <cstddef>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <unistd.h>
+#include <iostream>
+#include <cstring>
+#include <fstream>
+#include <fcntl.h>
 
-Request::Request() : _request("")
+Request::Request(): _request(""), _state(incomplete)
 {
 }
 
-Request::Request(const std::string &request) : _request(request)
+Request::Request(const std::string &request): _request(request), _state(incomplete)
 {
-	parse();
+	refresh_state();
+	if (_state == header_complete) {
+		parse();
+		refresh_state();
+	}
 }
 
 Request::Request(const Request &request)
@@ -27,12 +35,16 @@ Request::Request(const Request &request)
 		_headers = request._headers;
 		_content_length = request._content_length;
 		_body = request._body;
+		_query_string = request._query_string;
+		//_tmp_file = request._tmp_file;
+		_file_name = request._file_name;
+		_file_size = request._file_size;
+		_state = request._state;
 	}
 }
 
 Request::~Request()
-{
-}
+{}
 
 Request &Request::operator=(const Request &request)
 {
@@ -41,11 +53,43 @@ Request &Request::operator=(const Request &request)
 		_request = request._request;
 		_method = request._method;
 		_uri = request._uri;
+		_version = request._version;
 		_headers = request._headers;
 		_content_length = request._content_length;
 		_body = request._body;
+		_query_string = request._query_string;
+		//_tmp_file = request._tmp_file;
+		_file_name = request._file_name;
+		_file_size = request._file_size;
+		_state = request._state;
 	}
 	return *this;
+}
+
+Request &Request::operator+=(const std::string& str)
+{
+	switch (_state) {
+		case incomplete:
+			_request += str;
+			refresh_state();
+			if (_state == header_complete)
+				parse();
+			break;
+		case header_complete:
+			if (str.size() + _file_size > _content_length) {
+				_tmp_file.write(str.c_str(), _content_length - _file_size);
+				_file_size += _content_length - _file_size;
+			}
+			else {
+				_tmp_file.write(str.c_str(), str.size());
+				_file_size += str.size();
+			}
+			break;	
+		default:
+			std::cerr << "on est pas trop cense arriver la imo";
+	}
+	refresh_state();
+	return (*this);
 }
 
 void Request::clear()
@@ -56,6 +100,29 @@ void Request::clear()
 	_headers.clear();
 	_content_length = 0;
 	_body.clear();
+	if (!_file_name.empty() && access(_file_name.c_str(), F_OK) == 0)
+		std::remove(_file_name.c_str());
+}
+
+void Request::refresh_state()
+{
+	if (_state == incomplete) {
+		if (_request.find("\r\n\r\n") != std::string::npos)
+			_state = header_complete;
+	}
+	else if (_state == header_complete) {
+		if (_method != "POST")
+			_state = complete;
+		else {
+			if (_content_length == 0)
+				_state = invalid;
+			else if (_file_size == _content_length)
+			{
+				_state = complete;
+				_tmp_file.close();
+			}
+		}
+	}
 }
 
 static const std::string trim(const std::string &str)
@@ -92,6 +159,8 @@ void Request::parse(const size_t &max_body_size)
 	std::string line;
 	while (std::getline(iss, line) && !line.empty())
 	{
+		if (line == "\r")
+			break;
 		std::istringstream header_iss(line);
 		std::string header_name;
 		std::string header_value;
@@ -103,19 +172,32 @@ void Request::parse(const size_t &max_body_size)
 			_headers[header_name] = header_value.substr(0, header_value.size() - 1);
 		}
 
-		if (_method == "POST" && _headers.find("Content-Length") != _headers.end())
-		{
-			std::istringstream(_headers["Content-Length"]) >> _content_length;
+		//if (_method == "POST" && _headers.find("Content-Length") != _headers.end())
+		//{
+		//	std::istringstream(_headers["Content-Length"]) >> _content_length;
+		//	_body.assign(std::istreambuf_iterator<char>(iss), std::istreambuf_iterator<char>()); // Read the rest of the stream
+		//}	
+	}
+	if (_headers.find("Content-Length") != _headers.end())
+		std::istringstream(_headers["Content-Length"]) >> _content_length;
+	else
+		_content_length = 0;
 
-			std::istreambuf_iterator<char> it(iss);
-			std::istreambuf_iterator<char> end;
-			size_t bytes_read = 0;
-			while (it != end && bytes_read < max_body_size)
-			{
-				_body.push_back(*it);
-				++it;
-				++bytes_read;
-			}
-		}
+	if (_method == "POST") {
+		_file_size = 0;
+		int i = 0;
+		do {
+			std::stringstream ss;
+			ss << i++;
+			_file_name = "/tmp/" + std::string("webserv") + ss.str();
+			if (access(_file_name.c_str(), F_OK) == 0)
+				continue;
+			_tmp_file.open(_file_name.c_str(), std::ios::out | std::ios::app | std::ios::binary);
+		} while (!_tmp_file.is_open());
+
+		char buffer[MAX_BUFFER_SIZE]; 
+		iss.read(buffer, MAX_BUFFER_SIZE);
+		_tmp_file.write(buffer, iss.gcount());
+		_file_size += iss.gcount();
 	}
 }

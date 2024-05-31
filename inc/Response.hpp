@@ -5,6 +5,7 @@
 #include "Server.hpp"
 #include <map>
 #include <string>
+#include <fcntl.h>
 
 enum Method
 {
@@ -44,30 +45,34 @@ private:
 	route *_route;
 	bool _is_cgi;
 
-	// cgi
-	void _init_meta_var();
-	char **_map_to_env();
-	int _fork_and_exec(int *fd, int &pid, std::string path_to_exec_prog);
-	std::string _get_cgi_output(int *fd);
-	int _cgi_request(std::string &rep, std::string path_to_exec_prog);
+		// cgi
+		void _init_meta_var();
+		char** _map_to_env();
+		int _fork_and_exec(int* fd, int& pid, std::string path_to_exec_prog,
+			int fd_in);
+		std::string _get_cgi_output(int* fd);
+		int _cgi_request(std::string &rep, std::string path_to_exec_prog,
+			int fd_in);
 
-	void _find_type();
-	void _add_content_type();
-	void _generate_error(int num);
-	void _select_route();
-	void _set_root();
-	int _check_and_rewrite_uri();
-	bool _is_a_directory(const std::string &uri) const;
-	bool _is_a_file(const std::string &uri) const;
-	bool _exists(const std::string &name) const;
-	bool _write_perm(const std::string &name) const;
-	void _redirect();
-	void _directory_listing();
+		void _find_type();
+		void _add_content_type();
+		void _generate_response_code(int num);
+		void _select_route();
+		void _set_root();
+		int _check_and_rewrite_uri();
+		bool _is_a_directory(const std::string &uri) const;
+		bool _is_a_file(const std::string &uri) const;
+		bool _exists (const std::string& name) const;
+		bool _write_perm(const std::string& name) const;
+		void _redirect();
+		void _directory_listing();
+		void _app_form_urlencoded();
+		void _multipart();
 
-	int _cgi();
-	void _post();
-	void _get();
-	void _delete();
+		int _cgi(int fd_in);
+		void _post();
+		void _get();
+		void _delete();
 
 	void _generate();
 
