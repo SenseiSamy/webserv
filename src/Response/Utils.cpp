@@ -91,7 +91,7 @@ void Response::_directory_listing()
 	"<head>\n\t<meta charset=\"UTF-8\">\n"
 	"\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
 	"\t<title>Index of " + _uri +"</title>\n"
-	"<h1>Index of " + _uri + "</h1>\n"
+	"\t<h1>Index of " + _uri + "</h1>\n"
 	"\t<script>\n"
 	"\t\tasync function deleteFile(fileName) {\n"
 	"\t\t\tif (confirm(`Are you sure you want to delete ${fileName}?`)) {\n"
@@ -101,7 +101,7 @@ void Response::_directory_listing()
 	"\t\t\t\t\t});\n"
 	"\t\t\t\t\tif (response.ok) {\n"
 	"\t\t\t\t\t\talert(`File ${fileName} deleted successfully.`);\n"
-	"\t\t\t\t\t\tlocation.reload();\n"
+	// "\t\t\t\t\t\tlocation.reload();\n"
 	"\t\t\t\t\t} else {\n"
 	"\t\t\t\t\t\talert(`Failed to delete ${fileName}.`);\n"
 	"\t\t\t\t\t}\n"
@@ -109,6 +109,29 @@ void Response::_directory_listing()
 	"\t\t\t\t\tconsole.error('Error:', error);\n"
 	"\t\t\t\t\talert(`Error deleting ${fileName}.`);\n"
 	"\t\t\t\t}\n\t\t\t}\n\t\t}\n"
+	"\n\t\tasync function uploadFile(event) {\n"
+	"\t\t\tevent.preventDefault();\n"
+	"\t\t\tconst fileInput = document.getElementById('fileInput');\n"
+	"\t\t\tconst file = fileInput.files[0];\n"
+	"\t\t\tif (!file) {\n"
+	"\t\t\t\talert('Please select a file to upload.');\n"
+	"\t\t\t\treturn;\n\t\t\t}\n"
+	"\t\t\tconst formData = new FormData();\n"
+	"\t\t\tformData.append('file', file);\n\n"
+	"\t\t\ttry {\n"
+	"\t\t\t\tconst response = await fetch('" + _uri + "', {\n"
+	"\t\t\t\t\tmethod: 'POST',\n"
+	"\t\t\t\t\tbody: formData\n"
+	"\t\t\t\t});\n"
+	"\t\t\t\tif (response.ok) {\n"
+	"\t\t\t\t\talert('File uploaded successfully.');\n"
+	"\t\t\t\t\tlocation.reload();\n"
+	"\t\t\t\t} else {\n"
+	"\t\t\t\t\talert('Failed to upload file.');\n\t\t\t\t}\n"
+	"\t\t\t} catch (error) {\n"
+	"\t\t\t\tconsole.error('Error:', error);\n"
+	"\t\t\t\talert('Error uploading file.');\n"
+	"\t\t\t}\n\t\t}\n"
 	"\t</script>\n"
 	"</head>\n"
 	"<body>\n"
@@ -132,9 +155,16 @@ void Response::_directory_listing()
 				_body += "/";
 			_body += "\t\')\"><b>Delete</b></button>\n\t</li>\n";
 		}
-		_body += "\t\n";
 	}
 	_body += "\t</ul>\n";
+	if (std::find(_route->accepted_methods.begin(), _route->accepted_methods.end(), "POST") != _route->accepted_methods.end())
+	{
+		_body += "\t<h2> Upload a new file </h2>\n"
+		"\t<form id=\"uploadForm\" onsubmit=\"uploadFile(event)\">\n"
+		"\t\t<input type=\"file\" id=\"fileInput\" name=\"file\">\n"
+		"\t\t<button type=\"submit\">Upload</button>\n"
+		"\t</form>\n";
+	}
 	_body += "</body>\n</html>";
 
 
