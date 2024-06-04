@@ -1,13 +1,12 @@
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
+#include "Server.hpp"
+
 #include <cstddef>
 #include <map>
 #include <string>
 #include <fstream>
-#ifndef BUF_SIZE
- #define BUF_SIZE 4096
-#endif
 
 class Request
 {
@@ -20,6 +19,7 @@ class Request
 		};
 
 	private:
+		server _server;
 		std::string _request;
 		std::string _method;
 		std::string _uri;
@@ -38,12 +38,12 @@ class Request
 	public:
 		Request();
 		Request(const std::string &request);
-		Request(const Request &request);
+		Request(const Request &other);
 		~Request();
-		Request& operator=(const Request &request);
 		Request& operator+=(const std::string& str);
 
 		// Getters
+		const server &get_server() const;
 		const std::string &get_request() const;
 		const std::string &get_method() const;
 		const std::string &get_uri() const;

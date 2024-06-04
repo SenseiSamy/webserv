@@ -22,51 +22,16 @@ Request::Request(const std::string &request): _request(request), _state(incomple
 	}
 }
 
-Request::Request(const Request &request)
-{
-	if (this != &request)
-	{
-		_request = request._request;
-		_method = request._method;
-		_uri = request._uri;
-		_version = request._version;
-		_headers = request._headers;
-		_content_length = request._content_length;
-		_body = request._body;
-		_query_string = request._query_string;
-		//_tmp_file = request._tmp_file;
-		_file_name = request._file_name;
-		_file_size = request._file_size;
-		_state = request._state;
-	}
-}
-
 Request::~Request()
 {}
 
-Request &Request::operator=(const Request &request)
-{
-	if (this != &request)
-	{
-		_request = request._request;
-		_method = request._method;
-		_uri = request._uri;
-		_version = request._version;
-		_headers = request._headers;
-		_content_length = request._content_length;
-		_body = request._body;
-		_query_string = request._query_string;
-		//_tmp_file = request._tmp_file;
-		_file_name = request._file_name;
-		_file_size = request._file_size;
-		_state = request._state;
-	}
-	return *this;
-}
+Request::Request(const Request &other): _request(other._request), _method(other._method), _uri(other._uri), _version(other._version), _headers(other._headers), _content_length(other._content_length), _body(other._body), _query_string(other._query_string), _state(other._state), _file_size(other._file_size), _file_name(other._file_name)
+{}
 
 Request &Request::operator+=(const std::string& str)
 {
-	switch (_state) {
+	switch (_state)
+	{
 		case incomplete:
 			_request += str;
 			refresh_state();
@@ -181,6 +146,7 @@ void Request::parse()
 	else
 		_content_length = 0;
 
+	_server = Server::find_server(_headers["Host"]);
 	if (_method == "POST") {
 		_file_size = 0;
 		int i = 0;

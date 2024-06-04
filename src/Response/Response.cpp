@@ -1,9 +1,9 @@
 #include "Response.hpp"
 
-Response::Response(): _status_code(0), _status_message(""), _body(""), _headers(), _request(), _error_codes(), _uri(""), _path_to_root(""), _server(), _is_cgi(false)
+Response::Response(): _status_code(0), _status_message(""), _body(""), _headers(), _error_codes(), _uri(""), _path_to_root(""), _server(), _is_cgi(false)
 {}
 
-Response::Response(const unsigned short error, const server &server, const std::map<unsigned short, std::string> &error_codes): _status_code(error), _status_message(error_codes.at(error)), _body(""), _headers(), _request(), _error_codes(error_codes), _uri(""), _path_to_root(""), _server(server), _is_cgi(false)
+Response::Response(const unsigned short error, const server &server, const std::map<unsigned short, std::string> &error_codes): _status_code(error), _status_message(error_codes.at(error)), _body(""), _error_codes(error_codes), _uri(""), _path_to_root(""), _server(server), _is_cgi(false)
 {
 	_generate_response_code(error);
 }
@@ -23,7 +23,6 @@ Response::Response(const Response &other)
 		_status_message = other._status_message;
 		_body = other._body;
 		_headers = other._headers;
-		_request = other._request;
 		_error_codes = other._error_codes;
 		_uri = other._uri;
 		_path_to_root = other._path_to_root;
@@ -40,7 +39,6 @@ Response &Response::operator=(const Response &response)
 		_status_message = response._status_message;
 		_body = response._body;
 		_headers = response._headers;
-		_request = response._request;
 		_error_codes = response._error_codes;
 		_uri = response._uri;
 		_path_to_root = response._path_to_root;

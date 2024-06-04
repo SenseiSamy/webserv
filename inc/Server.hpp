@@ -1,8 +1,6 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include "Request.hpp"
-
 // types
 #include <cstddef>
 #include <map>
@@ -23,6 +21,9 @@
 #ifndef MAX_BUFFER_SIZE
 #define MAX_BUFFER_SIZE 4096
 #endif
+
+class Request;
+class Response;
 
 typedef struct route
 {
@@ -71,9 +72,8 @@ class Server
 		size_t _current_word;
 		size_t _current_line;
 
-		static bool _stop_server;
 		const std::map<unsigned short, std::string> _error_codes;
-		std::vector<server> _servers;
+
 		std::map<int, Request> requests;
 
 		// Index management
@@ -97,7 +97,6 @@ class Server
 		void parsing_config();
 
 		// Execution
-		const server &find_server(const std::string &host);
 		bool _accept_new_connection(server* server);
 		void _read_request(int fd);
 
@@ -108,6 +107,8 @@ class Server
 		~Server();
 		Server &operator=(const Server &other);
 
+		static std::vector<server> _servers;
+		
 		// Getters
 		std::vector<route> get_route(const size_t i) const;
 		std::vector<server> get_servers() const;
@@ -119,6 +120,7 @@ class Server
 		void display() const;
 
 		// Others
+		static const server &find_server(const std::string &host);
 		std::string to_string(size_t i) const;
 
 		void run();

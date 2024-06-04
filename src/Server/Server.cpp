@@ -104,7 +104,6 @@ Server::Server(const Server &other)
 		_content_file = other._content_file;
 		_current_word = other._current_word;
 		_current_line = other._current_line;
-		_servers = other._servers;
 	}
 }
 
@@ -116,14 +115,13 @@ Server &Server::operator=(const Server &other)
 		_content_file = other._content_file;
 		_current_word = other._current_word;
 		_current_line = other._current_line;
-		_servers = other._servers;
 	}
 	return *this;
 }
 
 Server::~Server()
 {
-	for (size_t i = 0; i < _servers.size(); ++i)
+	for (size_t i = 0; i < Server::_servers.size(); ++i)
 	{
 		std::cout << "Deleting server " << _servers[i].host << ":" << _servers[i].port << std::endl;
 		close(_servers[i].listen_fd);
@@ -140,7 +138,7 @@ std::string Server::to_string(size_t i) const
 const server &Server::find_server(const std::string &host)
 {
 	if (host.empty())
-		return _servers[0];
+		return Server::_servers[0];
 
 	std::vector<server>::iterator it;
 	std::string hostname;
@@ -151,8 +149,8 @@ const server &Server::find_server(const std::string &host)
 		hostname = host.substr(0, sep);
 		ss >> sep;
 
-		it = _servers.begin();
-		while (it != _servers.end())
+		it = Server::_servers.begin();
+		while (it != Server::_servers.end())
 		{
 			if (it->host == hostname && it->port == sep)
 				return *it;
@@ -162,7 +160,7 @@ const server &Server::find_server(const std::string &host)
 	else
 		hostname = host;
 
-	for (it = _servers.begin(); it != _servers.end(); ++it)
+	for (it = Server::_servers.begin(); it != Server::_servers.end(); ++it)
 	{
 		std::vector<std::string>::iterator name_it = it->server_names.begin();
 		while (name_it != it->server_names.end())
@@ -173,13 +171,13 @@ const server &Server::find_server(const std::string &host)
 		}
 	}
 
-	for (it = _servers.begin(); it != _servers.end(); ++it)
+	for (it = Server::_servers.begin(); it != Server::_servers.end(); ++it)
 	{
 		if (it->default_server)
 			return *it;
 	}
 
-	return _servers[0];
+	return Server::_servers[0];
 }
 
 bool Server::_accept_new_connection(server* server)
@@ -216,7 +214,8 @@ void Server::_read_request(int fd)
 		requests[fd].set_state(Request::invalid);
 
 	if (requests[fd].get_state() == Request::header_complete &&
-		requests[fd].get_headers_key("Expect") == std::string("100-continue")) {
+		requests[fd].get_headers_key("Expect") == std::string("100-continue"))
+	{
 		send(fd, "HTTP/1.1 100 Continue\r\n\r\n", 25, 0);
 		requests[fd].set_headers_key("Expect", "");
 	}
@@ -231,13 +230,13 @@ void Server::run()
 		throw std::runtime_error("epoll_create1() failed " + std::string(strerror(errno)));
 
 	struct epoll_event ev, events[MAX_EVENTS];
-	for (size_t i = 0; i < _servers.size(); ++i)
+	for (size_t i = 0; i < Server::_servers.size(); ++i)
 	{
-		setup_server_socket(_servers[i]);
+		setup_server_socket(Server::_servers[i]);
 	
 		ev.events = EPOLLIN | EPOLLOUT;
-		ev.data.fd = _servers[i].listen_fd;
-		if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, _servers[i].listen_fd, &ev) == -1)
+		ev.data.fd = Server::_servers[i].listen_fd;
+		if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, Server::_servers[i].listen_fd, &ev) == -1)
 		{
 			close(_epoll_fd);
 			throw std::runtime_error("epoll_ctl() failed " + std::string(strerror(errno)));
@@ -261,11 +260,11 @@ void Server::run()
 			const int fd = events[i].data.fd;
 			server *server = NULL;
 
-			for (size_t j = 0; j < _servers.size(); ++j)
+			for (size_t j = 0; j < Server::_servers.size(); ++j)
 			{
-				if (_servers[j].listen_fd == fd)
+				if (Server::_servers[j].listen_fd == fd)
 				{
-					server = &_servers[j];
+					server = &Server::_servers[j];
 					break;
 				}
 			}
@@ -290,9 +289,9 @@ void Server::run()
 					request.display();
 					std::cout << "----------------------------------------" << std::endl;
 				}
-				const struct server server = find_server(request.get_headers_key("Host"));
-
 				Response response;
+				struct server server = request.get_server();
+
 				if (request.get_state() == Request::complete)
 					response = Response(request, server, _error_codes);
 				else

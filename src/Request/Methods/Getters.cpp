@@ -1,5 +1,9 @@
 #include "Request.hpp"
-#include <exception>
+
+const server &Request::get_server() const
+{
+	return _server;
+}
 
 const std::string &Request::get_request() const
 {
