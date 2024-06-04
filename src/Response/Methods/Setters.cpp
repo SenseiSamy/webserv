@@ -12,9 +12,9 @@ void Response::set_status_message(const std::string& message)
 	_status_message = message;
 }
 
-void Response::setBody(const std::string& responseBody)
+void Response::set_body(const std::string& body)
 {
-	_body = responseBody;
+	_body = body;
 }
 
 void Response::set_headers(const std::string& key, const std::string& value)

@@ -18,9 +18,9 @@
 
 volatile sig_atomic_t g_signal_status = 0;
 
-static const std::map<unsigned int, std::string> initerror_codes()
+static const std::map<unsigned short, std::string> initerror_codes()
 {
-	std::map<unsigned int, std::string> error_codes;
+	std::map<unsigned short, std::string> error_codes;
 
 	error_codes[100] = "Continue";
 	error_codes[101] = "Switching Protocols";
@@ -221,11 +221,15 @@ void Server::_read_request(int fd)
 {
 	char buffer[MAX_BUFFER_SIZE];
 	ssize_t count = read(fd, buffer, MAX_BUFFER_SIZE);
-	while (count > 0)
+	if (count > 0)
 	{ 
 		requests[fd] += std::string(buffer, count);
 		count = read(fd, buffer, MAX_BUFFER_SIZE);
 	}
+	else if (count == 0)
+		requests[fd].set_state(Request::complete);
+	else
+		close(fd);
 }
 
 void Server::run()

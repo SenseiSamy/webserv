@@ -72,7 +72,7 @@ class Server
 		size_t _current_line;
 
 		static bool _stop_server;
-		const std::map<unsigned int, std::string> _error_codes;
+		const std::map<unsigned short, std::string> _error_codes;
 		std::vector<server> _servers;
 		std::map<int, Request> requests;
 
