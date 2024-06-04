@@ -196,7 +196,7 @@ bool Server::_accept_new_connection(server* server)
 
 	fcntl(client_fd, F_SETFL, O_NONBLOCK);
 
-	ev.events = EPOLLIN | EPOLLET;
+	ev.events = EPOLLIN | EPOLLOUT;
 	ev.data.fd = client_fd;
 	if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1)
 	{
@@ -210,15 +210,16 @@ void Server::_read_request(int fd)
 {
 	char buffer[MAX_BUFFER_SIZE];
 	ssize_t count = read(fd, buffer, MAX_BUFFER_SIZE);
-	if (count > 0)
-	{ 
-		requests[fd] += std::string(buffer, count);
-		count = read(fd, buffer, MAX_BUFFER_SIZE);
+	requests[fd] += std::string(buffer, count);
+
+	if (count == 0 || count == -1)
+		requests[fd].set_state(Request::invalid);
+
+	if (requests[fd].get_state() == Request::header_complete &&
+		requests[fd].get_headers_key("Expect") == std::string("100-continue")) {
+		send(fd, "HTTP/1.1 100 Continue\r\n\r\n", 25, 0);
+		requests[fd].set_headers_key("Expect", "");
 	}
-	else if (count == 0)
-		requests[fd].set_state(Request::complete);
-	else
-		close(fd);
 }
 
 void Server::run()
@@ -234,7 +235,7 @@ void Server::run()
 	{
 		setup_server_socket(_servers[i]);
 	
-		ev.events = EPOLLIN | EPOLLET;
+		ev.events = EPOLLIN | EPOLLOUT;
 		ev.data.fd = _servers[i].listen_fd;
 		if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, _servers[i].listen_fd, &ev) == -1)
 		{
@@ -274,12 +275,9 @@ void Server::run()
 				if (!_accept_new_connection(server))
 					continue;
 			}
-			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN))) // An error happened
-			{ 
+			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP)) // An error happened
 				close(fd);
-				continue;
-			}
-			else // Reading client request and if complete, sending response
+			else if (events[i].events & EPOLLIN) // Reading client request and if complete, sending response
 			{
 
 				_read_request(fd);	
