@@ -101,7 +101,7 @@ void Response::_directory_listing()
 	"\t\t\t\t\t});\n"
 	"\t\t\t\t\tif (response.ok) {\n"
 	"\t\t\t\t\t\talert(`File ${fileName} deleted successfully.`);\n"
-	// "\t\t\t\t\t\tlocation.reload();\n"
+	"\t\t\t\t\t\tlocation.reload();\n"
 	"\t\t\t\t\t} else {\n"
 	"\t\t\t\t\t\talert(`Failed to delete ${fileName}.`);\n"
 	"\t\t\t\t\t}\n"
