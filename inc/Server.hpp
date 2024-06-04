@@ -96,9 +96,6 @@ class Server
 		const route parse_route();
 		void parsing_config();
 
-		// Server management
-		static void signal_handler(int signum);
-
 		// Execution
 		const server &find_server(const std::string &host);
 		bool _accept_new_connection(server* server);

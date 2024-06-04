@@ -16,8 +16,6 @@
 #include <vector>
 #include <csignal>
 
-volatile sig_atomic_t g_signal_status = 0;
-
 static const std::map<unsigned short, std::string> initerror_codes()
 {
 	std::map<unsigned short, std::string> error_codes;
@@ -88,8 +86,6 @@ static const std::map<unsigned short, std::string> initerror_codes()
 	return error_codes;
 }
 
-bool Server::_stop_server = false;
-
 Server::Server() : _current_word(0), _current_line(0), _error_codes(initerror_codes())
 {
 }
@@ -98,7 +94,6 @@ Server::Server(const char *config_file, const bool verbose) : _verbose(verbose),
 {
 	read_config();
 	parsing_config();
-	signal(SIGINT, Server::signal_handler);
 }
 
 Server::Server(const Server &other)
@@ -187,12 +182,6 @@ const server &Server::find_server(const std::string &host)
 	return _servers[0];
 }
 
-void Server::signal_handler(int signum)
-{
-	std::cout << "Caught signal " << signum << std::endl;
-	_stop_server = true;
-}
-
 bool Server::_accept_new_connection(server* server)
 {
 	sockaddr_in client_addr;
@@ -255,7 +244,7 @@ void Server::run()
 	}
 	std::cout << "----------------------------------------" << std::endl;
 
-	while (!_stop_server)
+	while (true)
 	{
 		int nfds = epoll_wait(_epoll_fd, events, MAX_EVENTS, -1);
 		if (nfds < 0)
@@ -313,9 +302,11 @@ void Server::run()
 				if (_verbose)
 					response.display();
 				std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
-				if (response.get_status_code() == 200)
+				if (response.get_status_code() >= 100 && response.get_status_code() < 200)
+					std::cout << "\033[1;34m" << response.get_status_code();
+				else if (response.get_status_code() >= 200 && response.get_status_code() < 300)
 					std::cout << "\033[1;32m" << response.get_status_code();
-				else
+				else if (response.get_status_code() >= 300)
 					std::cout << "\033[1;31m" << response.get_status_code() << " " << response.get_status_message();
 				std::cout << "\033[0m -" << std::endl;
 				if (_verbose)
