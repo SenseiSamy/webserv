@@ -1,5 +1,15 @@
 #include "Request.hpp"
 
+void Request::set_servers(const std::vector<server> &servers)
+{
+	_servers = servers;
+}
+
+void Request::set_server(const server &server)
+{
+	_server = server;
+}
+
 void Request::set_request(const std::string &request)
 {
 	_request = request;

@@ -13,9 +13,9 @@ static ssize_t to_size_t(std::string value)
 }
 
 
-void Server::route_value(route &route, const std::string &word)
+void Server::_route_value(route &route, const std::string &word)
 {
-	const std::vector<std::string> value = get_value(word);
+	const std::vector<std::string> value = _get_value(word);
 
 	if (word != "cgi" && value.size() != 1)
 		throw std::runtime_error("Syntax error: Expected one value after " + word + " at line " + to_string(_current_line));
@@ -77,9 +77,9 @@ void Server::route_value(route &route, const std::string &word)
 		throw std::runtime_error("Syntax error: Invalid keyword " + word + " at line " + to_string(_current_line));
 }
 
-void Server::server_value(server &server, const std::string &word)
+void Server::_server_value(server &server, const std::string &word)
 {
-	const std::vector<std::string> value = get_value(word);
+	const std::vector<std::string> value = _get_value(word);
 
 	if (word != "error_pages" && value.size() != 1)
 		throw std::runtime_error("Syntax error: Expected one value after " + word + " at line " + to_string(_current_line));
@@ -119,17 +119,17 @@ void Server::server_value(server &server, const std::string &word)
 									to_string(_current_line));
 }
 
-void Server::syntax_brackets()
+void Server::_syntax_brackets()
 {
 	size_t open_brackets = 0;
 	size_t close_brackets = 0;
-	std::string word = next_word();
+	std::string word = _next_word();
 
 	while (word != "")
 	{
 		if (word == "server" || word == "route")
 		{
-			word = next_word();
+			word = _next_word();
 			if (word != "{")
 				throw std::runtime_error("Syntax error: Expected '{' after " + word + "at line " + to_string(_current_line));
 			++open_brackets;

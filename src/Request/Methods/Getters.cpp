@@ -1,5 +1,10 @@
 #include "Request.hpp"
 
+const std::vector<server> &Request::get_servers() const
+{
+	return _servers;
+}
+
 const server &Request::get_server() const
 {
 	return _server;
@@ -32,10 +37,12 @@ const std::map<std::string, std::string> &Request::get_headers() const
 
 const std::string Request::get_headers_key(const std::string &key) const
 {
-	try {
+	try
+	{
 		return _headers.at(key);
 	}
-	catch (std::exception& e) {
+	catch (std::exception &e)
+	{
 		return ("");
 	}
 }
@@ -55,7 +62,7 @@ const std::string &Request::get_query_string() const
 	return _query_string;
 }
 
-const enum Request::state &Request::get_state() const
+const enum state &Request::get_state() const
 {
 	return _state;
 }
@@ -74,7 +81,6 @@ const std::string &Request::get_file_name() const
 {
 	return _file_name;
 }
-
 
 const std::string Request::get_first_line() const
 {

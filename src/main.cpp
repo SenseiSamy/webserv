@@ -29,7 +29,6 @@ int main(int argc, const char *argv[])
 			file_index = i;
 	}
 
-
 	try
 	{
 		Server server(argv[file_index], verbose);

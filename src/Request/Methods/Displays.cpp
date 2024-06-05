@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-void Request::display_request() const
+void Request::display_request_str() const
 {
 	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); it++)
 		std::cout << it->first << " " << it->second << " ";

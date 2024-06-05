@@ -41,7 +41,7 @@ static const std::vector<std::string> split_line(const std::string &str)
 	return words;
 }
 
-void Server::read_config()
+void Server::_read_config()
 {
 	std::ifstream file(_config_file.c_str());
 	if (!file.is_open())
@@ -63,14 +63,14 @@ void Server::read_config()
 	file.close();
 }
 
-const std::vector<std::string> Server::get_value(const std::string &token)
+const std::vector<std::string> Server::_get_value(const std::string &token)
 {
 	std::vector<std::string> result;
 
-	if (next_word() != "=")
+	if (_next_word() != "=")
 		throw std::runtime_error("Syntax error: Expected '=' after " + token + " at line " + to_string(_current_line));
 
-	std::string word = next_word();
+	std::string word = _next_word();
 	while (word != "" && word != ";")
 	{
 		if ((word[0] == '"' && word[word.size() - 1] == '"') || (word[0] == '\'' && word[word.size() - 1] == '\''))
@@ -82,12 +82,11 @@ const std::vector<std::string> Server::get_value(const std::string &token)
 			else
 				throw std::runtime_error("Syntax error: Missing \" or ' at line " + to_string(_current_line));
 		}
-		word = next_word();
+		word = _next_word();
 	}
 
 	if (result.empty())
-		throw std::runtime_error("Syntax error: Expected value after " + token + " at line " +
-								 to_string(_current_line));
+		throw std::runtime_error("Syntax error: Expected value after " + token + " at line " + to_string(_current_line));
 
 	if (word != ";")
 		throw std::runtime_error("Syntax error: Expected ';' after value at line " + to_string(_current_line));
@@ -95,7 +94,7 @@ const std::vector<std::string> Server::get_value(const std::string &token)
 	return result;
 }
 
-const route Server::parse_route()
+const route Server::_parse_route()
 {
 	route result;
 
@@ -109,11 +108,11 @@ const route Server::parse_route()
 	result.cgi_upload_path = "/tmp/upload";
 	result.cgi_upload_enable = true;
 
-	std::string word = next_word();
+	std::string word = _next_word();
 	while (word != "" && word != "}")
 	{
-		route_value(result, word);
-		word = next_word();
+		_route_value(result, word);
+		word = _next_word();
 	}
 
 	if (word != "}")
@@ -125,7 +124,7 @@ const route Server::parse_route()
 	return result;
 }
 
-const server Server::parse_server()
+const server Server::_parse_server()
 {
 	server result;
 
@@ -139,19 +138,19 @@ const server Server::parse_server()
 	result.error_pages = std::map<std::string, std::string>();
 	result.routes = std::vector<route>();
 
-	std::string word = next_word();
+	std::string word = _next_word();
 	while (word != "" && word != "}")
 	{
 		if (word == "route")
 		{
-			const std::string next = next_word();
+			const std::string next = _next_word();
 			if (next != "{")
 				throw std::runtime_error("Syntax error: Expected '{' after route at line " + to_string(_current_line));
-			result.routes.push_back(parse_route());
+			result.routes.push_back(_parse_route());
 		}
 		else
-			server_value(result, word);
-		word = next_word();
+			_server_value(result, word);
+		word = _next_word();
 	}
 
 	if (word != "}")
@@ -160,22 +159,22 @@ const server Server::parse_server()
 	return result;
 }
 
-void Server::parsing_config()
+void Server::_parsing_config()
 {
-	std::string word = next_word();
+	std::string word = _next_word();
 
 	while (true)
 	{
 		if (word == "server")
 		{
-			std::string next = next_word();
+			std::string next = _next_word();
 			if (next != "{")
 				throw std::runtime_error("Syntax error: Expected '{' after server at line " + to_string(_current_line));
-			_servers.push_back(parse_server());
+			_servers.push_back(_parse_server());
 		}
 		else
 			throw std::runtime_error("Syntax error: Invalid keyword " + word + " at line " + to_string(_current_line));
-		word = next_word();
+		word = _next_word();
 		if (word == "")
 			break;
 	}

@@ -9,14 +9,14 @@
 #include <ostream>
 #include <sstream>
 
+#include <csignal>
 #include <iostream>
 #include <sys/epoll.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
-#include <csignal>
 
-static const std::map<unsigned short, std::string> initerror_codes()
+static const std::map<unsigned short, std::string> init_error_codes()
 {
 	std::map<unsigned short, std::string> error_codes;
 
@@ -68,7 +68,7 @@ static const std::map<unsigned short, std::string> initerror_codes()
 	error_codes[425] = "Too Early";
 	error_codes[426] = "Upgrade Required";
 	error_codes[428] = "Precondition Required";
-	error_codes[429] = "Too Many Requests";
+	error_codes[429] = "Too Many _requests";
 	error_codes[431] = "Request Header Fields Too Large";
 	error_codes[451] = "Unavailable For Legal Reasons";
 	error_codes[500] = "Internal Server Error";
@@ -86,20 +86,25 @@ static const std::map<unsigned short, std::string> initerror_codes()
 	return error_codes;
 }
 
-Server::Server() : _current_word(0), _current_line(0), _error_codes(initerror_codes())
+Server::Server() : _error_codes(init_error_codes()), _current_word(0), _current_line(0)
 {
 }
 
-Server::Server(const char *config_file, const bool verbose) : _verbose(verbose), _config_file(config_file), _current_word(0), _current_line(0), _error_codes(initerror_codes())
+Server::Server(const char *config_file, bool verbose)
+		: _verbose(verbose), _error_codes(init_error_codes()), _config_file(config_file), _current_word(0), _current_line(0)
 {
-	read_config();
-	parsing_config();
+	_read_config();
+	_parsing_config();
 }
 
 Server::Server(const Server &other)
 {
 	if (this != &other)
 	{
+		_verbose = other._verbose;
+		_epoll_fd = other._epoll_fd;
+		_servers = other._servers;
+		_requests = other._requests;
 		_config_file = other._config_file;
 		_content_file = other._content_file;
 		_current_word = other._current_word;
@@ -111,6 +116,10 @@ Server &Server::operator=(const Server &other)
 {
 	if (this != &other)
 	{
+		_verbose = other._verbose;
+		_epoll_fd = other._epoll_fd;
+		_servers = other._servers;
+		_requests = other._requests;
 		_config_file = other._config_file;
 		_content_file = other._content_file;
 		_current_word = other._current_word;
@@ -135,52 +144,7 @@ std::string Server::to_string(size_t i) const
 	return oss.str();
 }
 
-const server &Server::find_server(const std::string &host)
-{
-	if (host.empty())
-		return Server::_servers[0];
-
-	std::vector<server>::iterator it;
-	std::string hostname;
-	std::string::size_type sep = host.find(':');
-	if (sep != std::string::npos)
-	{
-		std::stringstream ss(host.substr(sep + 1));
-		hostname = host.substr(0, sep);
-		ss >> sep;
-
-		it = Server::_servers.begin();
-		while (it != Server::_servers.end())
-		{
-			if (it->host == hostname && it->port == sep)
-				return *it;
-			++it;
-		}
-	}
-	else
-		hostname = host;
-
-	for (it = Server::_servers.begin(); it != Server::_servers.end(); ++it)
-	{
-		std::vector<std::string>::iterator name_it = it->server_names.begin();
-		while (name_it != it->server_names.end())
-		{
-			if (*name_it == hostname)
-				return *it;
-			++name_it;
-		}
-	}
-
-	for (it = Server::_servers.begin(); it != Server::_servers.end(); ++it)
-	{
-		if (it->default_server)
-			return *it;
-	}
-
-	return Server::_servers[0];
-}
-
-bool Server::_accept_new_connection(server* server)
+bool Server::_accept_new_connection(server *server)
 {
 	sockaddr_in client_addr;
 	socklen_t client_addr_len = sizeof(client_addr);
@@ -208,16 +172,22 @@ void Server::_read_request(int fd)
 {
 	char buffer[MAX_BUFFER_SIZE];
 	ssize_t count = read(fd, buffer, MAX_BUFFER_SIZE);
-	requests[fd] += std::string(buffer, count);
+
+	if (_requests[fd].get_servers().size() == 0)
+	{
+		_requests[fd].set_servers(_servers);
+		_requests[fd].set_server(_requests[fd].get_servers()[0]);
+	}
+	_requests[fd] += std::string(buffer, count);
 
 	if (count == 0 || count == -1)
-		requests[fd].set_state(Request::invalid);
+		_requests[fd].set_state(invalid);
 
-	if (requests[fd].get_state() == Request::header_complete &&
-		requests[fd].get_headers_key("Expect") == std::string("100-continue"))
+	if (_requests[fd].get_state() == header_complete &&
+			_requests[fd].get_headers_key("Expect") == std::string("100-continue"))
 	{
 		send(fd, "HTTP/1.1 100 Continue\r\n\r\n", 25, 0);
-		requests[fd].set_headers_key("Expect", "");
+		_requests[fd].set_headers_key("Expect", "");
 	}
 }
 
@@ -232,8 +202,8 @@ void Server::run()
 	struct epoll_event ev, events[MAX_EVENTS];
 	for (size_t i = 0; i < Server::_servers.size(); ++i)
 	{
-		setup_server_socket(Server::_servers[i]);
-	
+		_setup_server_socket(Server::_servers[i]);
+
 		ev.events = EPOLLIN | EPOLLOUT;
 		ev.data.fd = Server::_servers[i].listen_fd;
 		if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, Server::_servers[i].listen_fd, &ev) == -1)
@@ -270,7 +240,7 @@ void Server::run()
 			}
 
 			if (server != NULL) // Accepting a new connection
-			{ 
+			{
 				if (!_accept_new_connection(server))
 					continue;
 			}
@@ -278,11 +248,9 @@ void Server::run()
 				close(fd);
 			else if (events[i].events & EPOLLIN) // Reading client request and if complete, sending response
 			{
-
-				_read_request(fd);	
-				const Request& request = requests[fd];
-				if (request.get_state() != Request::complete &&
-					request.get_state() != Request::invalid)
+				_read_request(fd);
+				const Request &request = _requests[fd];
+				if (request.get_state() != complete && request.get_state() != invalid)
 					continue;
 				if (_verbose)
 				{
@@ -292,10 +260,17 @@ void Server::run()
 				Response response;
 				struct server server = request.get_server();
 
-				if (request.get_state() == Request::complete)
+				if (request.get_state() == complete)
 					response = Response(request, server, _error_codes);
-				else
-					response = Response(400, server, _error_codes);
+				else if (request.get_state() == invalid)
+				{
+					if (request.get_file_size() > server.max_body_size) // Payload Too Large
+						response = Response(413, server, _error_codes);
+					else if (request.get_file_size() == 0) // Bad Request
+						response = Response(400, server, _error_codes);
+					else // Length Required
+						response = Response(411, server, _error_codes);
+				}
 				if (_verbose)
 					response.display();
 				std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
@@ -313,8 +288,8 @@ void Server::run()
 
 				send(fd, response_str.c_str(), response_str.size(), 0);
 
-				requests[fd].clear();
-				requests.erase(fd);
+				_requests[fd].clear();
+				_requests.erase(fd);
 				close(fd);
 			}
 		}

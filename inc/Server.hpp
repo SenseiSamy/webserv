@@ -1,29 +1,23 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-// types
-#include <cstddef>
-#include <map>
-#include <string>
-#include <sys/types.h>
-#include <vector>
+/* Types */
+#include <cerrno>				// errno
+#include <map>					// std::map
+#include <netinet/in.h> // struct sockaddr_in
+#include <string>				// std::string
+#include <sys/types.h>	// size_t
+#include <vector>				// std::vector
 
-// fonctions
-#include <cerrno>
-#include <cstring>
-#include <netinet/in.h>
-#include <unistd.h>
+/* Functions */
+#include <cstring>	// strerror
+#include <unistd.h> // close
 
-#ifndef MAX_EVENTS
 #define MAX_EVENTS 64
-#endif
-
-#ifndef MAX_BUFFER_SIZE
 #define MAX_BUFFER_SIZE 4096
-#endif
 
+/* Classes */
 class Request;
-class Response;
 
 typedef struct route
 {
@@ -32,15 +26,15 @@ typedef struct route
 
 	// optional
 	std::vector<std::string> accepted_methods; // GET
-	std::string root;                          // /tmp/www
-	std::string redirect;                     // /var/www/html
-	bool directory_listing;                    // true
-	std::string default_file;                  // index.html
+	std::string root;													 // /tmp/www
+	std::string redirect;											 // /var/www/html
+	bool directory_listing;										 // true
+	std::string default_file;									 // index.html
 
 	/// cgi
 	std::map<std::string, std::string> cgi; // .php /usr/bin/php-cgi
-	std::string cgi_upload_path;            // /tmp/upload
-	bool cgi_upload_enable;                 // true
+	std::string cgi_upload_path;						// /tmp/upload
+	bool cgi_upload_enable;									// true
 } route;
 
 typedef struct server
@@ -49,81 +43,88 @@ typedef struct server
 	int listen_fd;
 
 	// required
-	std::string host; // 127.0.0.1
-	unsigned short port;     // 8080
+	std::string host;		 // 127.0.0.1
+	unsigned short port; // 8080
 
 	// optional
-	std::string root;                               // /var/www/html
-	std::string default_file;                       // index.html
-	std::vector<std::string> server_names;          // example.com
-	bool default_server;                            // true
-	size_t max_body_size;                           // 1000000
+	std::string root;																// /var/www/html
+	std::string default_file;												// index.html
+	std::vector<std::string> server_names;					// example.com
+	bool default_server;														// true
+	size_t max_body_size;														// 1000000
 	std::map<std::string, std::string> error_pages; // 404 /404.html
-	std::vector<route> routes;                      // /kapouet
+	std::vector<route> routes;											// /kapouet
 } server;
 
 class Server
 {
-	private:
-		bool _verbose;
-		int _epoll_fd;
-		std::string _config_file;
-		std::map<size_t, std::vector<std::string> > _content_file;
-		size_t _current_word;
-		size_t _current_line;
+private:
+	bool _verbose;
+	int _epoll_fd;
+	const std::map<unsigned short, std::string> _error_codes;
+	std::vector<server> _servers;
+	std::map<int, Request> _requests;
 
-		const std::map<unsigned short, std::string> _error_codes;
+	/* Parsing */
+	std::string _config_file;
+	std::map<size_t, std::vector<std::string> > _content_file;
+	size_t _current_word;
+	size_t _current_line;
 
-		std::map<int, Request> requests;
+	size_t _next_non_empty_line();
+	void _reset_index();
+	const std::string _next_word();
+	const std::string _previous_word();
+	const std::vector<std::string> _get_value(const std::string &token);
+	void _route_value(route &result, const std::string &word);
+	void _server_value(server &server, const std::string &word);
+	void _syntax_brackets();
+	void _read_config();
+	const server _parse_server();
+	const route _parse_route();
+	void _parsing_config();
 
-		// Index management
-		size_t next_non_empty_line();
-		void reset_index();
-		const std::string next_word();
-		const std::string previous_word();
+	/* Server */
+	void _setup_server_socket(server &server);
+	bool _accept_new_connection(server *server);
+	void _read_request(int fd);
 
-		const std::vector<std::string> get_value(const std::string &token);
+public:
+	Server();
+	Server(const char *config_file, bool verbose);
+	Server(const Server &other);
+	~Server();
+	Server &operator=(const Server &other);
 
-		// Socket management
-		void setup_server_socket(server &server);
+	// Getters
+	const bool &get_verbose() const;
+	const int &get_epoll_fd() const;
+	const std::map<unsigned short, std::string> &get_error_codes() const;
+	const std::vector<server> &get_servers() const;
+	const std::map<int, Request> &get_requests() const;
+	const std::string &get_config_file() const;
+	const std::map<size_t, std::vector<std::string> > &get_content_file() const;
+	const size_t &get_current_word() const;
+	const size_t &get_current_line() const;
 
-		// Parsing
-		void route_value(route &result, const std::string &word);
-		void server_value(server &server, const std::string &word);
-		void syntax_brackets();
-		void read_config();
-		const server parse_server();
-		const route parse_route();
-		void parsing_config();
+	// Setters
+	void set_verbose(const bool &verbose);
+	void set_epoll_fd(const int &epoll_fd);
+	void set_error_codes(const std::map<unsigned short, std::string> &error_codes);
+	void set_servers(const std::vector<server> &servers);
+	void set_requests(const std::map<int, Request> &requests);
+	void set_config_file(const std::string &config_file);
+	void set_content_file(const std::map<size_t, std::vector<std::string> > &content_file);
+	void set_current_word(const size_t &current_word);
+	void set_current_line(const size_t &current_line);
 
-		// Execution
-		bool _accept_new_connection(server* server);
-		void _read_request(int fd);
+	// Displays
+	void display() const;
 
-	public:
-		Server();
-		Server(const char *config_file, const bool verbose);
-		Server(const Server &other);
-		~Server();
-		Server &operator=(const Server &other);
+	// Others
+	std::string to_string(size_t i) const;
 
-		static std::vector<server> _servers;
-		
-		// Getters
-		std::vector<route> get_route(const size_t i) const;
-		std::vector<server> get_servers() const;
-
-		// Setters
-		void set_servers(std::vector<server> servers);
-
-		// Displays
-		void display() const;
-
-		// Others
-		static const server &find_server(const std::string &host);
-		std::string to_string(size_t i) const;
-
-		void run();
+	void run();
 };
 
 #endif // SERVER_HPP

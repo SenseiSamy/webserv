@@ -1,15 +1,14 @@
 #include "Response.hpp"
 
+#include <algorithm>
 #include <dirent.h>
 #include <iostream>
 #include <linux/limits.h>
-#include <sys/stat.h>
-#include <fstream>
 #include <sstream>
 #include <stdlib.h>
-#include <unistd.h>
+#include <sys/stat.h>
 #include <sys/types.h>
-#include <algorithm>
+#include <unistd.h>
 
 bool Response::_is_a_directory(const std::string &uri) const
 {
@@ -27,15 +26,15 @@ bool Response::_is_a_file(const std::string &uri) const
 	return (S_ISREG(statbuf.st_mode));
 }
 
-bool Response::_exists (const std::string& name) const
+bool Response::_exists(const std::string &name) const
 {
 	struct stat buffer;
-	if (stat (name.c_str(), &buffer) != 0)
+	if (stat(name.c_str(), &buffer) != 0)
 		return (false);
 	return (true);
 }
 
-bool Response::_write_perm(const std::string& name) const
+bool Response::_write_perm(const std::string &name) const
 {
 	return (access(name.c_str(), W_OK));
 }
@@ -61,10 +60,10 @@ int Response::_check_and_rewrite_uri()
 	return (0);
 }
 
-
 void Response::_redirect()
 {
-	if (_route == NULL || _route->redirect.empty()) {
+	if (_route == NULL || _route->redirect.empty())
+	{
 		_generate_response_code(500);
 		return;
 	}
@@ -75,8 +74,8 @@ void Response::_redirect()
 
 void Response::_directory_listing()
 {
-	struct dirent* entry;
-	DIR* directory = opendir((_path_to_root +_uri).c_str());
+	struct dirent *entry;
+	DIR *directory = opendir((_path_to_root + _uri).c_str());
 	if (directory == NULL)
 	{
 		_generate_response_code(500);
@@ -88,66 +87,72 @@ void Response::_directory_listing()
 	set_headers("Content-Type", "text/html");
 
 	_body += "<!DOCTYPE html>\n<html lang=\"en\">\n"
-	"<head>\n\t<meta charset=\"UTF-8\">\n"
-	"\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
-	"\t<title>Index of " + _uri +"</title>\n"
-	"\t<h1>Index of " + _uri + "</h1>\n"
-	"\t<script>\n"
-	"\t\tasync function deleteFile(fileName) {\n"
-	"\t\t\tif (confirm(`Are you sure you want to delete ${fileName}?`)) {\n"
-	"\t\t\t\ttry {\n"
-	"\t\t\t\t\tconst response = await fetch(fileName, {\n"
-	"\t\t\t\t\t\tmethod: 'DELETE'\n"
-	"\t\t\t\t\t});\n"
-	"\t\t\t\t\tif (response.ok) {\n"
-	"\t\t\t\t\t\talert(`File ${fileName} deleted successfully.`);\n"
-	"\t\t\t\t\t\tlocation.reload();\n"
-	"\t\t\t\t\t} else {\n"
-	"\t\t\t\t\t\talert(`Failed to delete ${fileName}.`);\n"
-	"\t\t\t\t\t}\n"
-	"\t\t\t\t} catch (error) {\n"
-	"\t\t\t\t\tconsole.error('Error:', error);\n"
-	"\t\t\t\t\talert(`Error deleting ${fileName}.`);\n"
-	"\t\t\t\t}\n\t\t\t}\n\t\t}\n"
-	"\n\t\tasync function uploadFile(event) {\n"
-	"\t\t\tevent.preventDefault();\n"
-	"\t\t\tconst fileInput = document.getElementById('fileInput');\n"
-	"\t\t\tconst file = fileInput.files[0];\n"
-	"\t\t\tif (!file) {\n"
-	"\t\t\t\talert('Please select a file to upload.');\n"
-	"\t\t\t\treturn;\n\t\t\t}\n"
-	"\t\t\tconst formData = new FormData();\n"
-	"\t\t\tformData.append('file', file);\n\n"
-	"\t\t\ttry {\n"
-	"\t\t\t\tconst response = await fetch('" + _uri + "', {\n"
-	"\t\t\t\t\tmethod: 'POST',\n"
-	"\t\t\t\t\tbody: formData\n"
-	"\t\t\t\t});\n"
-	"\t\t\t\tif (response.ok) {\n"
-	"\t\t\t\t\talert('File uploaded successfully.');\n"
-	"\t\t\t\t\tlocation.reload();\n"
-	"\t\t\t\t} else {\n"
-	"\t\t\t\t\talert('Failed to upload file.');\n\t\t\t\t}\n"
-	"\t\t\t} catch (error) {\n"
-	"\t\t\t\tconsole.error('Error:', error);\n"
-	"\t\t\t\talert('Error uploading file.');\n"
-	"\t\t\t}\n\t\t}\n"
-	"\t</script>\n"
-	"</head>\n"
-	"<body>\n"
-	"\t<ul>\n"
-	"\t\t<li><a href=..>..</a></li>\n";
+					 "<head>\n\t<meta charset=\"UTF-8\">\n"
+					 "\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
+					 "\t<title>Index of " +
+					 _uri +
+					 "</title>\n"
+					 "\t<h1>Index of " +
+					 _uri +
+					 "</h1>\n"
+					 "\t<script>\n"
+					 "\t\tasync function deleteFile(fileName) {\n"
+					 "\t\t\tif (confirm(`Are you sure you want to delete ${fileName}?`)) {\n"
+					 "\t\t\t\ttry {\n"
+					 "\t\t\t\t\tconst response = await fetch(fileName, {\n"
+					 "\t\t\t\t\t\tmethod: 'DELETE'\n"
+					 "\t\t\t\t\t});\n"
+					 "\t\t\t\t\tif (response.ok) {\n"
+					 "\t\t\t\t\t\talert(`File ${fileName} deleted successfully.`);\n"
+					 "\t\t\t\t\t\tlocation.reload();\n"
+					 "\t\t\t\t\t} else {\n"
+					 "\t\t\t\t\t\talert(`Failed to delete ${fileName}.`);\n"
+					 "\t\t\t\t\t}\n"
+					 "\t\t\t\t} catch (error) {\n"
+					 "\t\t\t\t\tconsole.error('Error:', error);\n"
+					 "\t\t\t\t\talert(`Error deleting ${fileName}.`);\n"
+					 "\t\t\t\t}\n\t\t\t}\n\t\t}\n"
+					 "\n\t\tasync function uploadFile(event) {\n"
+					 "\t\t\tevent.preventDefault();\n"
+					 "\t\t\tconst fileInput = document.getElementById('fileInput');\n"
+					 "\t\t\tconst file = fileInput.files[0];\n"
+					 "\t\t\tif (!file) {\n"
+					 "\t\t\t\talert('Please select a file to upload.');\n"
+					 "\t\t\t\treturn;\n\t\t\t}\n"
+					 "\t\t\tconst formData = new FormData();\n"
+					 "\t\t\tformData.append('file', file);\n\n"
+					 "\t\t\ttry {\n"
+					 "\t\t\t\tconst response = await fetch('" +
+					 _uri +
+					 "', {\n"
+					 "\t\t\t\t\tmethod: 'POST',\n"
+					 "\t\t\t\t\tbody: formData\n"
+					 "\t\t\t\t});\n"
+					 "\t\t\t\tif (response.ok) {\n"
+					 "\t\t\t\t\talert('File uploaded successfully.');\n"
+					 "\t\t\t\t\tlocation.reload();\n"
+					 "\t\t\t\t} else {\n"
+					 "\t\t\t\t\talert('Failed to upload file.');\n\t\t\t\t}\n"
+					 "\t\t\t} catch (error) {\n"
+					 "\t\t\t\tconsole.error('Error:', error);\n"
+					 "\t\t\t\talert('Error uploading file.');\n"
+					 "\t\t\t}\n\t\t}\n"
+					 "\t</script>\n"
+					 "</head>\n"
+					 "<body>\n"
+					 "\t<ul>\n"
+					 "\t\t<li><a href=..>..</a></li>\n";
 	while ((entry = readdir(directory)) != NULL)
 	{
-		if (std::string(entry->d_name) == ".." || std::string(entry->d_name)
-			== ".")
+		if (std::string(entry->d_name) == ".." || std::string(entry->d_name) == ".")
 			continue;
 		_body += "\t\t<li class=\"file-name\">\n\t\t<a href=\"";
 		_body += _uri + "/" + entry->d_name;
 		_body += "\t\">";
 		_body += entry->d_name;
 		_body += "\t</a>\n";
-		if (std::find(_route->accepted_methods.begin(), _route->accepted_methods.end(), "DELETE") != _route->accepted_methods.end())
+		if (std::find(_route->accepted_methods.begin(), _route->accepted_methods.end(), "DELETE") !=
+				_route->accepted_methods.end())
 		{
 			_body += "\t\t\t<button class=\"delete-btn\" onclick=\"deleteFile(\'";
 			_body += _uri + "/" + entry->d_name;
@@ -157,17 +162,16 @@ void Response::_directory_listing()
 		}
 	}
 	_body += "\t</ul>\n";
-	if (std::find(_route->accepted_methods.begin(), _route->accepted_methods.end(), "POST") != _route->accepted_methods.end())
+	if (std::find(_route->accepted_methods.begin(), _route->accepted_methods.end(), "POST") !=
+			_route->accepted_methods.end())
 	{
 		_body += "\t<h2> Upload a new file </h2>\n"
-		"\t<form id=\"uploadForm\" onsubmit=\"uploadFile(event)\">\n"
-		"\t\t<input type=\"file\" id=\"fileInput\" name=\"file\">\n"
-		"\t\t<button type=\"submit\">Upload</button>\n"
-		"\t</form>\n";
+						 "\t<form id=\"uploadForm\" onsubmit=\"uploadFile(event)\">\n"
+						 "\t\t<input type=\"file\" id=\"fileInput\" name=\"file\">\n"
+						 "\t\t<button type=\"submit\">Upload</button>\n"
+						 "\t</form>\n";
 	}
 	_body += "</body>\n</html>";
-
-
 
 	set_content_lenght();
 }
@@ -245,7 +249,7 @@ void Response::_add_content_type()
 void Response::_set_root()
 {
 	char tmp[PATH_MAX];
-	const char* path;
+	const char *path;
 
 	if (!_server.root.empty())
 		path = _server.root.c_str();
@@ -255,7 +259,7 @@ void Response::_set_root()
 	if (realpath(path, tmp) != NULL)
 		_path_to_root = tmp;
 	else
-	 	_path_to_root = "";
+		_path_to_root = "";
 }
 
 static inline std::string to_string(int num)
@@ -267,7 +271,8 @@ static inline std::string to_string(int num)
 
 void Response::_generate_response_code(int num)
 {
-	for (std::map<std::string, std::string>::iterator it = _server.error_pages.begin(); it != _server.error_pages.end(); ++it)
+	for (std::map<std::string, std::string>::iterator it = _server.error_pages.begin(); it != _server.error_pages.end();
+			 ++it)
 	{
 		if (std::atoi(it->first.c_str()) == num)
 		{
