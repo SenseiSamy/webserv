@@ -151,7 +151,7 @@ void Response::_multipart()
 		ssize_t i;
 		if (!filename.empty() && _is_a_directory((_path_to_root + _uri).c_str()) && std::find(_route->accepted_methods.begin(), _route->accepted_methods.end(), "POST") != _route->accepted_methods.end())
 			i = multipart_file(_path_to_root + _uri + "/" + filename, body, boundary);
-		if (!filename.empty())
+		else if (!filename.empty())
 			i = multipart_file(_path_to_root + "/upload/" + filename, body, boundary);
 		else
 			i = multipart_form(body, boundary);
