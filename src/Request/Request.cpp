@@ -186,7 +186,6 @@ void Request::parse()
 	request_iss >> tmp;
 	if (!tmp.empty())
 	{
-		_status_code = 400;
 		_state = invalid;
 		return;
 	}
@@ -195,7 +194,7 @@ void Request::parse()
 	std::string::size_type i = _uri.find("?");
 	if (i != std::string::npos)
 	{
-		_query_string = _uri.substr(i + 1);
+		_query_string = _uri.substr(i + 1);	
 		_uri = _uri.substr(0, i);
 	}
 
