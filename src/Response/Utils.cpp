@@ -42,20 +42,20 @@ bool Response::_write_perm(const std::string &name) const
 int Response::_check_and_rewrite_uri()
 {
 	if (access((_path_to_root + _uri).c_str(), F_OK) == -1)
-		return (404);
+		return (404); // Not Found
 	if (access((_path_to_root + _uri).c_str(), R_OK) == -1)
-		return (403);
+		return (403); // Forbidden
 	if (_is_a_directory((_path_to_root + _uri).c_str()))
-		return (403);
+		return (403); // Forbidden
 
 	char path[PATH_MAX];
 	if (realpath((_path_to_root + _uri).c_str(), path) == NULL)
-		return (500);
+		return (500); // Internal Server Error
 	_uri = path;
 	if (getcwd(path, PATH_MAX) == NULL)
-		return (500);
+		return (500); // Internal Server Error
 	if (_uri.find(_path_to_root) != 0)
-		return (403);
+		return (403); // Forbidden
 	_uri.erase(0, std::string(_path_to_root).size());
 	return (0);
 }
@@ -147,7 +147,10 @@ void Response::_directory_listing()
 		if (std::string(entry->d_name) == ".." || std::string(entry->d_name) == ".")
 			continue;
 		_body += "\t\t<li class=\"file-name\">\n\t\t<a href=\"";
-		_body += _uri + "/" + entry->d_name;
+		_body += _uri;
+		if (_uri[_uri.size() - 1] != '/')
+			_body += "/";
+		_body += entry->d_name;
 		_body += "\t\">";
 		_body += entry->d_name;
 		_body += "\t</a>\n";

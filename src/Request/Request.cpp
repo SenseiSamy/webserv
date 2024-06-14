@@ -180,8 +180,7 @@ void Request::parse()
 
 	// Extract request line
 	std::istringstream request_iss(request_line);
-	if (!(request_iss >> _method >> _uri >> _version))
-		return;
+	request_iss >> _method >> _uri >> _version;
 
 	// Extract query string
 	std::string::size_type i = _uri.find("?");
