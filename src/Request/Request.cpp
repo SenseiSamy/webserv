@@ -181,6 +181,15 @@ void Request::parse()
 	// Extract request line
 	std::istringstream request_iss(request_line);
 	request_iss >> _method >> _uri >> _version;
+	std::string tmp;
+
+	request_iss >> tmp;
+	if (!tmp.empty())
+	{
+		_status_code = 400;
+		_state = invalid;
+		return;
+	}
 
 	// Extract query string
 	std::string::size_type i = _uri.find("?");
