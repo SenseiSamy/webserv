@@ -9,6 +9,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <ctime>
+#include <cstdlib>
 
 bool Response::_is_a_directory(const std::string &uri) const
 {
@@ -286,10 +288,24 @@ void Response::_generate_response_code(int num)
 			return;
 		}
 	}
-
 	set_status_code(num);
 	set_status_message(_error_codes[num]);
+	std::stringstream ss;
+	ss << num;
 	set_headers("Content-Type", "text/html");
-	_body = "<h1>" + to_string(num) + " " + _error_codes[num] + "</h1>\n";
+	_body += "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n\t<meta charset=\"UTF-8\">\n\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\t<title>Zizou2000</title>\n</head>"
+					"<body bgcolor=\"black\">\n\t<div align=\"center\">";
+	std::srand(std::time(0));
+	int randnum = std::rand();
+	if (randnum % 4 == 0)
+		_body += "<img src=\"https://http.cat/" + ss.str() + "\" alt=\"Centered Image\"\n\r";
+	else if (randnum % 4 == 1)
+		_body += "<img src=\"https://http.dog/" + ss.str() + ".jpg\" alt=\"Centered Image\"\n\r";
+
+	else if (randnum % 4 == 2)
+		_body += "<img src=\"https://http.pizza/" + ss.str() + ".jpg\" alt=\"Centered Image\"\n\r";
+	else
+		_body += "<img src=\"https://httpgoats.com/" + ss.str() + ".jpg\" alt=\"Centered Image\"\n\r";
+	_body += "width=\"800\"\n\rheight=\"600\"\n\r/></div>\n</body>\n\r</html>\n\r";
 	set_content_lenght();
 }
