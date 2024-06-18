@@ -20,7 +20,6 @@ Response::Response(const Request &request, const server &server,
 			_uri(""), _path_to_root(""), _server(server), _is_cgi(false)
 {
 	_set_root();
-	_select_route();
 	_generate();
 }
 
@@ -63,6 +62,31 @@ Response::~Response()
 
 void Response::_generate()
 {
+	_route = NULL;
+	const std::string request = _request.get_uri();
+
+	for (size_t i = 0; i < _server.routes.size(); ++i)
+	{
+		if (request.find(_server.routes[i].path) == 0)
+		{
+			for (size_t j = 0; j < _server.routes[i].accepted_methods.size(); ++j)
+			{
+				if (_request.get_method() == _server.routes[i].accepted_methods[j])
+				{
+					_route = &_server.routes[i];
+					break;
+				}
+			}
+			if (_route == NULL)
+			{
+				_generate_response_code(405); // Method Not Allowed
+				return;
+			}
+		}
+		if (_route != NULL)
+			break;
+	}
+
 	if (_request.get_version() != "HTTP/1.1")
 	{
 		_generate_response_code(505);
@@ -78,5 +102,5 @@ void Response::_generate()
 	else if (method == "DELETE")
 		_delete();
 	else
-		_generate_response_code(405);
+		_generate_response_code(405); // Method Not Allowed
 }

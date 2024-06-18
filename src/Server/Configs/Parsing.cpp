@@ -121,6 +121,10 @@ const route Server::_parse_route()
 	if (result.path.empty())
 		throw std::runtime_error("Syntax error: Missing path at line " + to_string(_current_line));
 
+	if (result.path[0] != '/')
+		result.path = "/" + result.path;
+	if (result.path[result.path.size() - 1] == '/')
+		result.path = result.path.substr(0, result.path.size() - 1);
 	return result;
 }
 

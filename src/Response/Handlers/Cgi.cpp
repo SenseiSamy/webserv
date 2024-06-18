@@ -88,23 +88,23 @@ int Response::_cgi_request(std::string &rep, std::string path_to_exec_prog, int 
 	int pid = 0;
 
 	if (access((_path_to_root + _uri).c_str(), F_OK) == -1)
-		return (404);
+		return (404); // Not Found
 	if (path_to_exec_prog.empty() && access((_path_to_root + _uri).c_str(), X_OK) == -1)
-		return (403);
+		return (403); // Forbidden
 
 	clock_t timer = clock();
 	if (_fork_and_exec(fd, pid, path_to_exec_prog, fd_in) == 1)
-		return (500);
+		return (500); // Internal Server Error
 
 	int p;
 	while ((p = waitpid(pid, NULL, WNOHANG)) == 0)
 	{
 		if (p == -1)
-			return (500);
+			return (500); // Internal Server Error
 		if ((((double)(clock() - timer)) / CLOCKS_PER_SEC) > 10.0)
 		{
 			kill(pid, SIGKILL);
-			return (504);
+			return (504); // Gateway Timeout
 		}
 	}
 	rep = _get_cgi_output(fd);

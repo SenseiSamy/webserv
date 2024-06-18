@@ -102,14 +102,14 @@ void Response::_multipart()
 	std::size_t boundpos = _request.get_headers_key("Content-Type").find("boundary=");
 	if (boundpos == std::string::npos)
 	{
-		_generate_response_code(400);
+		_generate_response_code(400); // Bad Request
 		return;
 	}
 	std::string boundary = "--" + _request.get_headers_key("Content-Type").substr(boundpos + 9, std::string::npos);
 	std::ifstream body(_request.get_file_name().c_str(), std::ios::in | std::ios::binary);
 	if (!body.is_open())
 	{
-		_generate_response_code(500);
+		_generate_response_code(500); // Internal Server Error
 		return;
 	}
 
@@ -126,7 +126,7 @@ void Response::_multipart()
 		filename.clear();
 		if (line != boundary)
 		{
-			_generate_response_code(400);
+			_generate_response_code(400); // Bad Request
 			return;
 		}
 		while (!line.empty() && body.good())
@@ -144,7 +144,7 @@ void Response::_multipart()
 		}
 		if (!body.good())
 		{
-			_generate_response_code(400);
+			_generate_response_code(400); // Bad Request
 			return;
 		}
 		std::streampos begin = body.tellg();
@@ -157,7 +157,7 @@ void Response::_multipart()
 			i = multipart_form(body, boundary);
 		if (i == -1)
 		{
-			_generate_response_code(400);
+			_generate_response_code(400); // Bad Request
 			return;
 		}
 		body.clear();
@@ -165,7 +165,7 @@ void Response::_multipart()
 		body.seekg(i, std::ios_base::cur);
 		crlf_getline(body, line);
 	}
-	_generate_response_code(201);
+	_generate_response_code(201); // Created
 }
 
 void Response::_app_form_urlencoded()
@@ -175,7 +175,7 @@ void Response::_app_form_urlencoded()
 		return;
 	if (_cgi(fd))
 		return;
-	_generate_response_code(200);
+	_generate_response_code(200); // OK
 }
 
 void Response::_post()
@@ -190,5 +190,5 @@ void Response::_post()
 	else if (_request.get_headers_key("Content-Type") == "application/x-www-form-urlencoded")
 		_app_form_urlencoded();
 	else
-		_generate_response_code(400);
+		_generate_response_code(400); // Bad Request
 }

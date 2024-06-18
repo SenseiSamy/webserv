@@ -181,27 +181,6 @@ void Response::_directory_listing()
 	set_content_lenght();
 }
 
-void Response::_select_route()
-{
-	const std::string request = _request.get_uri();
-
-	for (size_t i = 0; i < _server.routes.size(); ++i)
-	{
-		if (request.find(_server.routes[i].path) == 0)
-		{
-			for (size_t j = 0; j < _server.routes[i].accepted_methods.size(); ++j)
-			{
-				if (_request.get_method() == _server.routes[i].accepted_methods[j])
-				{
-					_route = &_server.routes[i];
-					return;
-				}
-			}
-		}
-	}
-	_route = NULL;
-}
-
 const std::string Response::convert() const
 {
 	std::stringstream ss;
