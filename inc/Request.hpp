@@ -85,6 +85,7 @@ public:
 	// Others
 	void clear();
 	void parse();
+	bool http100_continue;
 };
 
 #endif // REQUEST_HPP

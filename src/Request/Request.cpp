@@ -6,12 +6,12 @@
 #include <iostream> // std::cerr
 #include <sstream>	// std::istringstream
 
-Request::Request() : _request(""), _content_length(0), _state(incomplete), _file_size(0)
+Request::Request() : _request(""), _content_length(0), _state(incomplete), _file_size(0), http100_continue(false)
 {
 }
 
 Request::Request(const std::string &request, const std::vector<server> &servers)
-		: _request(request), _servers(servers), _content_length(0), _state(incomplete), _file_size(0)
+		: _request(request), _servers(servers), _content_length(0), _state(incomplete), _file_size(0), http100_continue(false)
 {
 	_refresh_state();
 	if (_state == header_complete)
@@ -42,6 +42,7 @@ Request::Request(const Request &other)
 		_state = other._state;
 		_file_size = other._file_size;
 		_file_name = other._file_name;
+		http100_continue = other.http100_continue;
 	}
 }
 
@@ -56,16 +57,10 @@ Request &Request::operator+=(const std::string &str)
 			parse();
 		break;
 	case header_complete:
-		if (str.size() + _file_size > _content_length || str.size() + _file_size > _server.max_body_size)
+		if (str.size() + _file_size > _content_length)
 		{
-			size_t size = std::min(_content_length - _file_size, _server.max_body_size - _file_size);
-			_tmp_file.write(str.c_str(), size - _file_size);
-			_file_size += size - _file_size;
-
-			if (size == _server.max_body_size)
-				_state = invalid;
-			else
-				_state = complete;
+			_tmp_file.write(str.c_str(), _content_length - _file_size);
+			_file_size += _content_length - _file_size;
 		}
 		else
 		{
@@ -216,6 +211,9 @@ void Request::parse()
 	_server = _find_server(_headers["Host"]);
 	if (_method == "POST")
 	{
+		if (get_headers_key("Expect") == std::string("100-continue"))
+			http100_continue = true;
+
 		_file_size = 0;
 		int i = 0;
 		do
