@@ -144,6 +144,15 @@ std::string Server::to_string(size_t i) const
 	return oss.str();
 }
 
+int is_error(const unsigned short &status_code)
+{
+	if (status_code >= 100 && status_code < 200)
+		return -1; // Informational
+	else if (status_code >= 200 && status_code < 300)
+		return 0; // Success
+	return 1; // Error
+}
+
 bool Server::_accept_new_connection(server *server)
 {
 	sockaddr_in client_addr;
@@ -264,21 +273,21 @@ void Server::run()
 					response = Response(request, server, _error_codes);
 				else if (request.get_state() == invalid)
 				{
-					if (request.get_file_size() > server.max_body_size) // Payload Too Large
-						response = Response(413, server, _error_codes);
-					else if (request.get_file_size() == 0) // Bad Request
-						response = Response(400, server, _error_codes);
-					else // Length Required
-						response = Response(411, server, _error_codes);
+					if (request.get_file_size() > server.max_body_size)
+						response = Response(413, server, _error_codes); // Payload Too Large
+					else if (request.get_file_size() == 0)
+						response = Response(400, server, _error_codes); // Bad Request
+					else
+						response = Response(411, server, _error_codes); // Length Required
 				}
 				if (_verbose)
 					response.display();
 				std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
-				if (response.get_status_code() >= 100 && response.get_status_code() < 200)
+				if (is_error(response.get_status_code()) == -1)
 					std::cout << "\033[1;34m" << response.get_status_code();
-				else if (response.get_status_code() >= 200 && response.get_status_code() < 300)
+				else if (is_error(response.get_status_code()) == 0)
 					std::cout << "\033[1;32m" << response.get_status_code();
-				else if (response.get_status_code() >= 300)
+				else if (is_error(response.get_status_code()) == 1)
 					std::cout << "\033[1;31m" << response.get_status_code() << " " << response.get_status_message();
 				std::cout << "\033[0m -" << std::endl;
 				if (_verbose)

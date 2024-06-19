@@ -9,6 +9,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <ctime>
+#include <cstdlib>
 
 bool Response::_is_a_directory(const std::string &uri) const
 {
@@ -42,20 +44,20 @@ bool Response::_write_perm(const std::string &name) const
 int Response::_check_and_rewrite_uri()
 {
 	if (access((_path_to_root + _uri).c_str(), F_OK) == -1)
-		return (404);
+		return (404); // Not Found
 	if (access((_path_to_root + _uri).c_str(), R_OK) == -1)
-		return (403);
+		return (403); // Forbidden
 	if (_is_a_directory((_path_to_root + _uri).c_str()))
-		return (403);
+		return (403); // Forbidden
 
 	char path[PATH_MAX];
 	if (realpath((_path_to_root + _uri).c_str(), path) == NULL)
-		return (500);
+		return (500); // Internal Server Error
 	_uri = path;
 	if (getcwd(path, PATH_MAX) == NULL)
-		return (500);
+		return (500); // Internal Server Error
 	if (_uri.find(_path_to_root) != 0)
-		return (403);
+		return (403); // Forbidden
 	_uri.erase(0, std::string(_path_to_root).size());
 	return (0);
 }
@@ -147,7 +149,10 @@ void Response::_directory_listing()
 		if (std::string(entry->d_name) == ".." || std::string(entry->d_name) == ".")
 			continue;
 		_body += "\t\t<li class=\"file-name\">\n\t\t<a href=\"";
-		_body += _uri + "/" + entry->d_name;
+		_body += _uri;
+		if (_uri[_uri.size() - 1] != '/')
+			_body += "/";
+		_body += entry->d_name;
 		_body += "\t\">";
 		_body += entry->d_name;
 		_body += "\t</a>\n";
@@ -174,27 +179,6 @@ void Response::_directory_listing()
 	_body += "</body>\n</html>";
 
 	set_content_lenght();
-}
-
-void Response::_select_route()
-{
-	const std::string request = _request.get_uri();
-
-	for (size_t i = 0; i < _server.routes.size(); ++i)
-	{
-		if (request.find(_server.routes[i].path) == 0)
-		{
-			for (size_t j = 0; j < _server.routes[i].accepted_methods.size(); ++j)
-			{
-				if (_request.get_method() == _server.routes[i].accepted_methods[j])
-				{
-					_route = &_server.routes[i];
-					return;
-				}
-			}
-		}
-	}
-	_route = NULL;
 }
 
 const std::string Response::convert() const
@@ -283,10 +267,24 @@ void Response::_generate_response_code(int num)
 			return;
 		}
 	}
-
 	set_status_code(num);
 	set_status_message(_error_codes[num]);
+	std::stringstream ss;
+	ss << num;
 	set_headers("Content-Type", "text/html");
-	_body = "<h1>" + to_string(num) + " " + _error_codes[num] + "</h1>\n";
+	_body += "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n\t<meta charset=\"UTF-8\">\n\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\t<title>Zizou2000</title>\n</head>"
+					"<body bgcolor=\"black\">\n\t<div align=\"center\">";
+	std::srand(std::time(0));
+	int randnum = std::rand();
+	if (randnum % 4 == 0)
+		_body += "<img src=\"https://http.cat/" + ss.str() + "\" alt=\"Centered Image\"\n\r";
+	else if (randnum % 4 == 1)
+		_body += "<img src=\"https://http.dog/" + ss.str() + ".jpg\" alt=\"Centered Image\"\n\r";
+
+	else if (randnum % 4 == 2)
+		_body += "<img src=\"https://http.pizza/" + ss.str() + ".jpg\" alt=\"Centered Image\"\n\r";
+	else
+		_body += "<img src=\"https://httpgoats.com/" + ss.str() + ".jpg\" alt=\"Centered Image\"\n\r";
+	_body += "width=\"800\"\n\rheight=\"600\"\n\r/></div>\n</body>\n\r</html>\n\r";
 	set_content_lenght();
 }

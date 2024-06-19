@@ -175,14 +175,21 @@ void Request::parse()
 
 	// Extract request line
 	std::istringstream request_iss(request_line);
-	if (!(request_iss >> _method >> _uri >> _version))
+	request_iss >> _method >> _uri >> _version;
+	std::string tmp;
+
+	request_iss >> tmp;
+	if (!tmp.empty())
+	{
+		_state = invalid;
 		return;
+	}
 
 	// Extract query string
 	std::string::size_type i = _uri.find("?");
 	if (i != std::string::npos)
 	{
-		_query_string = _uri.substr(i + 1);
+		_query_string = _uri.substr(i + 1);	
 		_uri = _uri.substr(0, i);
 	}
 
