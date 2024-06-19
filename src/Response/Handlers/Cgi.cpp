@@ -15,11 +15,13 @@ static inline std::string to_string(int num)
 
 static char *strdup(const std::string &str)
 {
-	char *new_str = new char[str.size()];
-	if (new_str == NULL)
+	char *ret = new char[str.size() + 1];
+	if (ret == NULL)
 		return (NULL);
-	std::strcpy(new_str, str.c_str());
-	return (new_str);
+	for (size_t i = 0; i < str.size(); ++i)
+		ret[i] = str.c_str()[i];
+	ret[str.size()] = '\0';
+	return (ret);
 }
 
 int Response::_fork_and_exec(int *fd, int &pid, std::string path_to_exec_prog, int fd_in)
