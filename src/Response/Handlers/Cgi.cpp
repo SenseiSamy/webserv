@@ -16,6 +16,8 @@ static inline std::string to_string(int num)
 static char *strdup(const std::string &str)
 {
 	char *new_str = new char[str.size()];
+	if (new_str == NULL)
+		return (NULL);
 	std::strcpy(new_str, str.c_str());
 	return (new_str);
 }
@@ -114,6 +116,8 @@ int Response::_cgi_request(std::string &rep, std::string path_to_exec_prog, int 
 char **Response::_map_to_env()
 {
 	char **env = new char *[_meta_var.size() + 1];
+	if (env == NULL)
+		return (NULL);
 	std::map<std::string, std::string>::iterator it;
 	std::size_t i;
 
@@ -121,6 +125,13 @@ char **Response::_map_to_env()
 	{
 		std::string tmp = it->first + "=" + it->second;
 		env[i] = new char[tmp.size() + 1];
+		if (env[i] == NULL)
+		{
+			for (std::size_t j = 0; j < i; ++j)
+				delete env[j];
+			delete[] env;
+			return (NULL);
+		}
 		for (std::size_t j = 0; tmp.c_str()[j]; ++j)
 			env[i][j] = tmp.c_str()[j];
 		env[i][tmp.size()] = '\0';
