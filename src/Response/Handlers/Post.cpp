@@ -173,8 +173,15 @@ void Response::_app_form_urlencoded()
 	int fd = open(_request.get_file_name().c_str(), O_RDONLY);
 	if (fd == -1)
 		return;
-	if (_cgi(fd))
+	int status_code = _cgi(fd);
+	if (status_code == 1)
 		return;
+	if (status_code > 1)
+	{
+		_is_cgi = false;
+		_generate_response_code(status_code);
+		return;
+	}
 	_generate_response_code(200); // OK
 }
 

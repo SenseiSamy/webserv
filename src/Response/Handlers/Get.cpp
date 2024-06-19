@@ -29,8 +29,16 @@ void Response::_get()
 		}
 	}
 
-	if (_cgi(-1))
+	int status_code = _cgi(-1);
+	if (status_code == 1)
 		return;
+	if (status_code > 1)
+	{
+		_is_cgi = false;
+		_generate_response_code(status_code);
+		return;
+	}
+
 	_find_type();
 	int err = _check_and_rewrite_uri();
 	if (err == 0)

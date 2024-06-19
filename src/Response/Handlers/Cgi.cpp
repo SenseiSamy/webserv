@@ -105,7 +105,7 @@ int Response::_cgi_request(std::string &rep, std::string path_to_exec_prog, int 
 	{
 		if (p == -1)
 			return (500); // Internal Server Error
-		if ((((double)(clock() - timer)) / CLOCKS_PER_SEC) > 10.0)
+		if ((((double)(clock() - timer)) / CLOCKS_PER_SEC) > 5.0)
 		{
 			kill(pid, SIGKILL);
 			return (504); // Gateway Timeout
@@ -186,7 +186,7 @@ void Response::_init_meta_var()
 int Response::_cgi(int fd_in)
 {
 	if (_route == NULL || _route->cgi.empty())
-		return (false);
+		return (-1);
 	for (std::map<std::string, std::string>::const_iterator it = _route->cgi.begin(); it != _route->cgi.end(); ++it)
 	{
 		std::size_t i = _uri.find(it->first);
@@ -203,19 +203,14 @@ int Response::_cgi(int fd_in)
 			std::string path_info = _uri.substr(i + it->first.size());
 			_is_cgi = true;
 			int status = _cgi_request(rep, it->second, fd_in);
-			if (status != EXIT_SUCCESS)
-			{
-				set_status_code(status);
-				set_status_message(_error_codes[status]);
-				_body = "\r\n<h1>" + to_string(status) + " " + _error_codes[status] + "</h1>\n";
-				return (true);
-			}
+			if (status)
+				return (status);
 			set_status_code(200);
 			set_status_message(_error_codes[200]);
 			_body += rep;
 			set_content_lenght();
-			return (true);
+			return (0);
 		}
 	}
-	return (false);
+	return (-1);
 }

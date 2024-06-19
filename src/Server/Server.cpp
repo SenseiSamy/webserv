@@ -150,7 +150,13 @@ int is_error(const unsigned short &status_code)
 		return -1; // Informational
 	else if (status_code >= 200 && status_code < 300)
 		return 0; // Success
-	return 1; // Error
+	else if (status_code >= 300 && status_code < 400)
+		return 1; // Redirection
+	else if (status_code >= 400 && status_code < 500)
+		return 2; // Client Error
+	else if (status_code >= 500 && status_code < 600)
+		return 3; // Server Error
+	return 4; // Unknown 
 }
 
 bool Server::_accept_new_connection(server *server)
@@ -282,14 +288,21 @@ void Server::run()
 				}
 				if (_verbose)
 					response.display();
+
 				std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
-				if (is_error(response.get_status_code()) == -1)
-					std::cout << "\033[1;34m" << response.get_status_code();
-				else if (is_error(response.get_status_code()) == 0)
-					std::cout << "\033[1;32m" << response.get_status_code();
-				else if (is_error(response.get_status_code()) == 1)
-					std::cout << "\033[1;31m" << response.get_status_code() << " " << response.get_status_message();
-				std::cout << "\033[0m -" << std::endl;
+				int error = is_error(response.get_status_code());
+				if (error == 0)
+					std::cout << "- \033[32m" << response.get_status_code() << " - " << response.get_status_message() << std::endl;
+				else if (error == 1)
+					std::cout << "- \033[33m" << response.get_status_code() << " - " << response.get_status_message() << std::endl;
+				else if (error == 2)
+					std::cout << "- \033[31m" << response.get_status_code() << " - " << response.get_status_message() << std::endl;
+				else if (error == 3)
+					std::cout << "- \033[31m" << response.get_status_code() << " - " << response.get_status_message() << std::endl;
+				else
+					std::cout << "\033[0m -" << std::endl;
+
+				std::cout << "\033[0m";
 				if (_verbose)
 					std::cout << "----------------------------------------" << std::endl;
 
