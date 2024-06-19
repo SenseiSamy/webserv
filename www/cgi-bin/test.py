@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 from random import randint
 
 print("Content-Type: text/plain\n")

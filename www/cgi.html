@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>WEBSERV</title>
+	<link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+	<header>
+        <h1>CGI TEST</h1>
+    </header>
+
+	<div class="flex-container">
+		<div class="test-box">
+			<h2>GET</h2>
+			<form action="/cgi-bin/random_number.cgi" method="GET">
+				<button type="submit">Random number</button>
+			</form>
+			<br>
+			<form action="/cgi-bin/fibonacci.cgi" method="GET">
+				<input type="text" name="n" size="3">
+				<button type="submit">Fibonacci number</button>
+			</form>
+		</div>
+		<div class="test-box">
+			<h2>POST</h2>
+			<form action="/cgi-bin/input.py" method="POST">
+				<fieldset>
+					<legend>Infos about yourself</legend>
+					<label for="name">Name:</label> 
+					<input type="text" name="name" size="10"><br>
+					<label for="name">Date of birth:</label> 
+					<input type="text" name="date-of-birth" placeholder="dd-mm-yyyy" size="10"><br>
+					<button type="submit">Send</button>
+				</fieldset>
+			</form>
+		</div>
+	</div>
+</body>
+
+</html>
