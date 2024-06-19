@@ -139,19 +139,17 @@ static void header_to_var(char &c)
 
 void Response::_init_meta_var()
 {
-	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
+	for (std::map<std::string, std::string>::const_iterator it = _request.get_headers().begin(); it != _request.get_headers().end(); ++it)
 	{
 		std::string tmp = it->first;
 		std::for_each(tmp.begin(), tmp.end(), &header_to_var);
-		_meta_var["HTTP_" + tmp] = "[" + it->second + "]";
+		_meta_var["HTTP_" + tmp] = it->second;
 	}
 
 	_meta_var["REQUEST_METHOD"] = _request.get_method();
 	_meta_var["REQUEST_URI"] = _request.get_uri();
 	_meta_var["SCRIPT_NAME"] = _uri;
-	_meta_var["QUERY_STRING"] =
-			(_request.get_uri().find('?') == std::string::npos ? ""
-																												 : _request.get_uri().substr(_request.get_uri().find('?') + 1));
+	_meta_var["QUERY_STRING"] = _request.get_query_string();
 	_meta_var["AUTH_TYPE"] = ""; // Implement based on specific auth handling
 	_meta_var["CONTENT_LENGTH"] = get_headers_key("Content-Length");
 	_meta_var["CONTENT_TYPE"] = get_headers_key("Content-Type");
@@ -169,6 +167,7 @@ void Response::_init_meta_var()
 	_meta_var["SERVER_PORT"] = "";		 // Retrieved from server configuration
 	_meta_var["SERVER_PROTOCOL"] = "HTTP/1.1";
 	_meta_var["SERVER_SOFTWARE"] = "webserv-42/1.0";
+	//_meta_var["REDIRECT_STATUS"] = "";
 }
 
 int Response::_cgi(int fd_in)

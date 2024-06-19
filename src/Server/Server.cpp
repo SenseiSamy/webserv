@@ -181,22 +181,22 @@ void Server::_read_request(int fd)
 {
 	char buffer[MAX_BUFFER_SIZE];
 	ssize_t count = read(fd, buffer, MAX_BUFFER_SIZE);
+	Request* request = &_requests[fd];
 
-	if (_requests[fd].get_servers().size() == 0)
+	if (request->get_servers().size() == 0)
 	{
-		_requests[fd].set_servers(_servers);
-		_requests[fd].set_server(_requests[fd].get_servers()[0]);
+		request->set_servers(_servers);
+		request->set_server(request->get_servers()[0]);
 	}
 	_requests[fd] += std::string(buffer, count);
 
 	if (count == 0 || count == -1)
-		_requests[fd].set_state(invalid);
+		request->set_state(invalid);
 
-	if (_requests[fd].get_state() == header_complete &&
-			_requests[fd].get_headers_key("Expect") == std::string("100-continue"))
+	if (request->http100_continue)
 	{
 		send(fd, "HTTP/1.1 100 Continue\r\n\r\n", 25, 0);
-		_requests[fd].set_headers_key("Expect", "");
+		request->http100_continue = false;
 	}
 }
 
