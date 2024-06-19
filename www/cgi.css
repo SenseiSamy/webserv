@@ -1,0 +1,25 @@
+.flex-container {
+	display: flex;
+	justify-content: center;
+}
+
+.test-box {
+	padding: 0% 2% 2% 2%;
+	margin: 8%;
+	border-radius: 10%;
+	border: solid;
+	text-align: center;
+}
+
+
+h1 {
+	text-align: center;
+}
+
+body {
+	background-position: center;
+	background-repeat: repeat;
+	height: 100vh;
+	margin: 0;
+	padding: 0;
+}

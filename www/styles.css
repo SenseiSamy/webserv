@@ -1,25 +1,79 @@
+body {
+	font-family: 'Press Start 2P', cursive;
+	background-size: cover;
+	background-position: center;
+	margin: 0;
+	padding: 0;
+	color: #fff;
+}
+
+header {
+	background-color: rgba(0, 0, 0, 0.7);
+	padding: 20px;
+	text-align: center;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+	margin: 0;
+	font-size: 2.5em;
+	color: #ffdd57;
+}
+
 .flex-container {
 	display: flex;
 	justify-content: center;
+	align-items: center;
+	height: 80vh;
 }
 
-.test-box {
-	padding: 0% 2% 2% 2%;
-	margin: 8%;
-	border-radius: 10%;
-	border: solid;
+.content {
+	background-color: rgba(0, 0, 0, 0.8);
+	padding: 20px;
+	border-radius: 8px;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 	text-align: center;
+	max-width: 600px;
 }
 
-
-h1 {
-	text-align: center;
+h2 {
+	color: #ffdd57;
+	margin-bottom: 20px;
 }
 
-body {
-	background-position: center;
-	background-repeat: repeat;
-	height: 100vh;
-	margin: 0;
-	padding: 0;
+form {
+	margin-bottom: 30px;
+}
+
+input[type="file"] {
+	margin-bottom: 10px;
+	background: #fff;
+	padding: 10px;
+	border: 2px solid #ffdd57;
+	border-radius: 4px;
+	color: #000;
+}
+
+button {
+	background: linear-gradient(45deg, #ffdd57, #ff7e5f);
+	color: black;
+	padding: 10px 20px;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: transform 0.2s ease;
+}
+
+button:hover {
+	transform: scale(1.1);
+}
+
+section img {
+	border-radius: 8px;
+	margin-top: 20px;
+}
+
+p {
+	font-size: 1.2em;
+	color: #ffdd57;
 }
