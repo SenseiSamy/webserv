@@ -2,42 +2,54 @@
 <html lang="en">
 
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>WEBSERV</title>
-	<link rel="stylesheet" type="text/css" href="cgi.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webserv 2000 - CGI Test</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    <link rel="icon" href="assets/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
+
 <body>
-	<header>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="cgi.html">CGI</a></li>
+            </ul>
+        </nav>
         <h1>CGI TEST</h1>
     </header>
 
-	<div class="flex-container">
-		<div class="test-box">
-			<h2>GET</h2>
-			<form action="/cgi-bin/random_number.cgi" method="GET">
-				<button type="submit">Random number</button>
-			</form>
-			<br>
-			<form action="/cgi-bin/fibonacci.cgi" method="GET">
-				<input type="text" name="n" size="3">
-				<button type="submit">Fibonacci number</button>
-			</form>
-		</div>
-		<div class="test-box">
-			<h2>POST</h2>
-			<form action="/cgi-bin/input.py" method="POST">
-				<fieldset>
-					<legend>Infos about yourself</legend>
-					<label for="name">Name:</label> 
-					<input type="text" name="name" size="10"><br>
-					<label for="name">Date of birth:</label> 
-					<input type="text" name="date-of-birth" placeholder="dd-mm-yyyy" size="10"><br>
-					<button type="submit">Send</button>
-				</fieldset>
-			</form>
-		</div>
-	</div>
+    <main class="flex-container">
+        <section class="test-box">
+            <h2>GET</h2>
+            <form action="/cgi-bin/random_number.cgi" method="GET">
+                <button type="submit">Random number</button>
+            </form>
+            <br>
+            <form action="/cgi-bin/fibonacci.cgi" method="GET">
+                <input type="text" name="n" size="3" placeholder="Enter n">
+                <button type="submit">Fibonacci number</button>
+            </form>
+        </section>
+
+        <section class="test-box">
+            <h2>POST</h2>
+            <form action="/cgi-bin/input.py" method="POST">
+                <fieldset>
+                    <legend>Infos about yourself</legend>
+                    <label for="name">Name:</label>
+                    <input type="text" name="name" size="10" placeholder="Your name">
+                    <br>
+                    <label for="date-of-birth">Date of birth:</label>
+                    <input type="text" name="date-of-birth" placeholder="dd-mm-yyyy" size="10">
+                    <br>
+                    <button type="submit">Send</button>
+                </fieldset>
+            </form>
+        </section>
+    </main>
 </body>
 
 </html>

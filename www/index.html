@@ -12,30 +12,28 @@
 
 <body>
     <header>
-        <h1>Welcome to Webserv 2000</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="cgi.html">CGI</a></li>
+            </ul>
+        </nav>
+        <h1>Webserv 2000</h1>
     </header>
 
-    <main class="flex-container">
-        <section class="content">
-            <h2>Upload Background Image</h2>
-
-            <form id="backgroundForm" onsubmit="uploadBackground(event)">
-                <input type="file" name="backgroundToUpload" id="backgroundToUpload">
-                <button type="submit">Upload Background</button>
-            </form>
-
+    <main>
+        <section class="hero">
             <h2>Upload File</h2>
-
             <form id="uploadForm" onsubmit="uploadFile(event)">
                 <input type="file" name="fileToUpload" id="fileToUpload">
                 <button type="submit">Upload</button>
             </form>
+        </section>
 
-            <section>
-                <h2>The GOAT</h2>
-                <img src="https://ssb.wiki.gallery/images/9/98/Glutonny.jpg" width="400" height="341" />
-                <p>This is the ultimate goat of ultimate</p>
-            </section>
+        <section class="goat">
+            <h2>The GOAT</h2>
+            <img src="https://ssb.wiki.gallery/images/9/98/Glutonny.jpg" width="400" height="341" alt="The GOAT">
+            <p>This is the ultimate goat of ultimate</p>
         </section>
     </main>
 
@@ -65,33 +63,7 @@
                 console.error('Error:', error);
                 alert('Error uploading file.');
             }
-        }
 
-        async function uploadBackground(event) {
-            event.preventDefault();
-            const fileInput = document.getElementById('backgroundToUpload');
-            const file = fileInput.files[0];
-            if (!file) {
-                alert('Please select a background image to upload.');
-                return;
-            }
-            const formData = new FormData();
-            formData.append('background', file);
-            try {
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    document.body.style.backgroundImage = `url('${data.url}')`;
-                } else {
-                    alert('Failed to upload background image.');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error uploading background image.');
-            }
         }
     </script>
 </body>
