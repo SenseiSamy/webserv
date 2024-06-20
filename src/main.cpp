@@ -2,8 +2,9 @@
 
 #include <cstdlib>
 #include <iostream>
-
+#include <string>
 #include <cstring>
+#include <algorithm>
 
 int main(int argc, const char *argv[])
 {
@@ -16,17 +17,11 @@ int main(int argc, const char *argv[])
 	int file_index = 1;
 	bool verbose = false;
 
-	for (int i = 1; argv[i]; ++i)
+	if (argc == 3)
 	{
-		if (std::strcmp(argv[i], "--verbose") == 0 || std::strcmp(argv[i], "-v") == 0)
+		std::string flag = argv[2];
+		if (flag == "--verbose" || flag == "-v")
 			verbose = true;
-		else if (std::strcmp(argv[i], "--help") == 0 || std::strcmp(argv[i], "-h") == 0)
-		{
-			std::cout << "Usage: " << argv[0] << " <config_file> [--verbose|--help]" << std::endl;
-			return EXIT_SUCCESS;
-		}
-		else
-			file_index = i;
 	}
 
 	try
