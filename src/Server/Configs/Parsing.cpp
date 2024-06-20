@@ -107,6 +107,7 @@ const route Server::_parse_route()
 	result.cgi = std::map<std::string, std::string>();
 	result.cgi_upload_path = "/tmp/upload";
 	result.cgi_upload_enable = true;
+	result.rewrite = "";
 
 	std::string word = _next_word();
 	while (word != "" && word != "}")

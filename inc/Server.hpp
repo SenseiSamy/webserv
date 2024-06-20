@@ -28,6 +28,7 @@ typedef struct route
 	std::vector<std::string> accepted_methods; // GET
 	std::string root;													 // /tmp/www
 	std::string redirect;											 // /var/www/html
+	std::string rewrite;											 // /var/www/html
 	bool directory_listing;										 // true
 	std::string default_file;									 // index.html
 

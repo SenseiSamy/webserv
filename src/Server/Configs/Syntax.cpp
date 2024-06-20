@@ -73,6 +73,8 @@ void Server::_route_value(route &route, const std::string &word)
 			throw std::runtime_error("Syntax error: Invalid value for cgi_upload_enable at line " + to_string(_current_line));
 		route.cgi_upload_enable = value[0] == "true";
 	}
+	else if (word == "rewrite")
+		route.rewrite = value[0];
 	else
 		throw std::runtime_error("Syntax error: Invalid keyword " + word + " at line " + to_string(_current_line));
 }

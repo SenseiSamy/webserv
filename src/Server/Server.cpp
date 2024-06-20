@@ -292,23 +292,26 @@ void Server::run()
 				std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
 				int error = is_error(response.get_status_code());
 				if (error == 0)
-					std::cout << "- \033[32m" << response.get_status_code() << " - " << response.get_status_message() << std::endl;
+					std::cout << "- \033[32m" << response.get_status_code() << " - " << response.get_status_message() << "\033[0m" << std::endl;
 				else if (error == 1)
-					std::cout << "- \033[33m" << response.get_status_code() << " - " << response.get_status_message() << std::endl;
+					std::cout << "- \033[33m" << response.get_status_code() << " - " << response.get_status_message() << "\033[0m" << std::endl;
 				else if (error == 2)
-					std::cout << "- \033[31m" << response.get_status_code() << " - " << response.get_status_message() << std::endl;
+					std::cout << "- \033[31m" << response.get_status_code() << " - " << response.get_status_message() << "\033[0m" << std::endl;
 				else if (error == 3)
-					std::cout << "- \033[31m" << response.get_status_code() << " - " << response.get_status_message() << std::endl;
+					std::cout << "- \033[31m" << response.get_status_code() << " - " << response.get_status_message() << "\033[0m" << std::endl;
 				else
 					std::cout << "\033[0m -" << std::endl;
 
-				std::cout << "\033[0m";
 				if (_verbose)
 					std::cout << "----------------------------------------" << std::endl;
 
 				std::string response_str = response.convert();
 
-				send(fd, response_str.c_str(), response_str.size(), 0);
+				if (send(fd, response_str.c_str(), response_str.size(), 0) == -1)
+				{
+					std::cerr << "send() failed " << std::string(strerror(errno));
+					close(fd);
+				}
 
 				_requests[fd].clear();
 				_requests.erase(fd);
