@@ -1,5 +1,16 @@
 #include "Response.hpp"
 
+#include <ctime>
+
+std::string get_current_date()
+{
+    std::time_t now = std::time(NULL);
+    char buf[100];
+    std::strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S GMT", std::gmtime(&now));
+    return std::string(buf);
+}
+
+
 Response::Response()
 		: _status_code(0), _status_message(""), _body(""), _headers(), _error_codes(), _uri(""), _path_to_root(""),
 			_server(), _is_cgi(false)
@@ -11,6 +22,7 @@ Response::Response(const unsigned short error, const server &server,
 		: _status_code(error), _status_message(error_codes.at(error)), _body(""), _error_codes(error_codes), _uri(""),
 			_path_to_root(""), _server(server), _is_cgi(false)
 {
+	_headers["Date"] = get_current_date();
 	_generate_response_code(error);
 }
 
@@ -19,6 +31,7 @@ Response::Response(const Request &request, const server &server,
 		: _status_code(0), _status_message(""), _body(""), _headers(), _request(request), _error_codes(error_codes),
 			_uri(""), _path_to_root(""), _server(server), _is_cgi(false)
 {
+	_headers["Date"] = get_current_date();
 	_set_root();
 	_generate();
 }
