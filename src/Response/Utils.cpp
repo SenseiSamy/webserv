@@ -261,7 +261,7 @@ void Response::_generate_response_code(int num)
 		if (std::atoi(it->first.c_str()) == num)
 		{
 			_uri = "/" + it->second;
-			if (access(_uri.c_str(), F_OK) == -1)
+			if (access((_path_to_root + _uri).c_str(), F_OK) == -1)
 				break;
 			_get();
 			return;
