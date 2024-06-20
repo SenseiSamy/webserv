@@ -209,7 +209,7 @@ int Response::_cgi(int fd_in)
 			set_status_message(_error_codes[200]);
 			_body += rep;
 			set_content_lenght();
-			return (0);
+			return (1);
 		}
 	}
 	return (-1);
