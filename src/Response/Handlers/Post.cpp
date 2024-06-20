@@ -182,7 +182,6 @@ void Response::_app_form_urlencoded()
 		_generate_response_code(status_code);
 		return;
 	}
-	_generate_response_code(200); // OK
 }
 
 void Response::_post()
