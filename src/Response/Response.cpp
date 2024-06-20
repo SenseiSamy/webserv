@@ -67,20 +67,23 @@ void Response::_generate()
 
 	for (size_t i = 0; i < _server.routes.size(); ++i)
 	{
-		if (request.find(_server.routes[i].path) == 0)
+		if (request.find(_server.routes[i].path) == 0 )
 		{
-			for (size_t j = 0; j < _server.routes[i].accepted_methods.size(); ++j)
+			if (request.size() == _server.routes[i].path.size() || request[_server.routes[i].path.size()] == '/')
 			{
-				if (_request.get_method() == _server.routes[i].accepted_methods[j])
+				for (size_t j = 0; j < _server.routes[i].accepted_methods.size(); ++j)
 				{
-					_route = &_server.routes[i];
-					break;
+					if (_request.get_method() == _server.routes[i].accepted_methods[j])
+					{
+						_route = &_server.routes[i];
+						break;
+					}
 				}
-			}
-			if (_route == NULL)
-			{
-				_generate_response_code(405); // Method Not Allowed
-				return;
+				if (_route == NULL)
+				{
+					_generate_response_code(405); // Method Not Allowed
+					return;
+				}
 			}
 		}
 		if (_route != NULL)
