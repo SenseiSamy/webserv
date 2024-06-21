@@ -62,6 +62,7 @@ private:
 	bool _exists(const std::string &name) const;
 	bool _write_perm(const std::string &name) const;
 	void _redirect();
+	void _rewrite();
 	void _directory_listing();
 	void _app_form_urlencoded();
 	void _multipart();

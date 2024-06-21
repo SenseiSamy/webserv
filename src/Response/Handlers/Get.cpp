@@ -4,8 +4,7 @@
 
 void Response::_get()
 {
-	if (_route != NULL && !_route->redirect.empty())
-	{
+	if (_route != NULL && !_route->redirect.empty()){
 		_redirect();
 		return;
 	}
@@ -14,6 +13,9 @@ void Response::_get()
 		_uri = "/index.html";
 	else if (_uri.empty())
 		_uri = _request.get_uri();
+
+	if (_route != NULL && !_route->rewrite.empty())
+		_rewrite();
 
 	if (_route != NULL && _is_a_directory(_path_to_root + _uri))
 	{

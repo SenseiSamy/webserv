@@ -74,6 +74,12 @@ void Response::_redirect()
 	set_headers("Location", _route->redirect);
 }
 
+void Response::_rewrite()
+{
+	_uri.erase(0, _route->path.length());
+	_uri = _route->rewrite + _uri;
+}
+
 void Response::_directory_listing()
 {
 	struct dirent *entry;
