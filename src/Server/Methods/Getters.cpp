@@ -1,4 +1,7 @@
 #include "Server.hpp"
+#include <cstring>
+#include <exception>
+#include <netinet/in.h>
 
 const bool &Server::get_verbose() const
 {
@@ -43,4 +46,16 @@ const size_t &Server::get_current_word() const
 const size_t &Server::get_current_line() const
 {
 	return _current_line;
+}
+
+sockaddr_in Server::get_client_addr(int fd) const
+{
+	try {
+		return _client_adresses.at(fd);
+	}
+	catch (std::exception& e) {
+		sockaddr_in a;
+		memset(&a, 0, sizeof(a));
+		return (a);
+	}
 }

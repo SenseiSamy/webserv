@@ -4,6 +4,7 @@
 #include "Server.hpp"
 
 #include <fstream>
+#include <netinet/in.h>
 
 enum state
 {
@@ -33,6 +34,7 @@ private:
 	std::fstream _tmp_file;
 	size_t _file_size;
 	std::string _file_name;
+	std::string _client_addr;
 
 	void _refresh_state();
 	server _find_server(const std::string &host) const;
@@ -61,6 +63,8 @@ public:
 	const size_t &get_file_size() const;
 	const std::string &get_file_name() const;
 	const std::string get_first_line() const;
+	const std::string &get_client_addr() const;
+
 
 	// Setters
 	void set_servers(const std::vector<server> &servers);
@@ -77,6 +81,7 @@ public:
 	void set_state(const enum state &state);
 	void set_file_size(const std::size_t &file_size);
 	void set_file_name(const std::string &file_name);
+	void set_client_addr(const std::string &addr);
 
 	// Displays
 	void display_request_str() const;

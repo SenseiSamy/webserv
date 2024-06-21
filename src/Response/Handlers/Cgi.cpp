@@ -1,7 +1,11 @@
 #include "Response.hpp"
 #include <algorithm>
+#include <arpa/inet.h>
+#include <cstddef>
 #include <cstdlib>
 #include <ctime>
+#include <iostream>
+#include <netinet/in.h>
 #include <sstream>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -173,7 +177,7 @@ void Response::_init_meta_var()
 		_meta_var["PATH_INFO"] = "";
 
 	_meta_var["PATH_TRANSLATED"] = ""; // Translate PATH_INFO to filesystem path
-	_meta_var["REMOTE_ADDR"] = "";		 // To be retrieved from socket information
+	_meta_var["REMOTE_ADDR"] = _request.get_client_addr();	 // To be retrieved from socket information
 	_meta_var["REMOTE_HOST"] = "";		 // Optional: resolve REMOTE_ADDR to hostname
 	_meta_var["REMOTE_USER"] = "";		 // User from authenticated session
 	_meta_var["SERVER_NAME"] = "";		 // Retrieved from server configuration or host header

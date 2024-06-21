@@ -35,13 +35,13 @@ Request::Request(const Request &other)
 		_version = other._version;
 		_headers = other._headers;
 		_body = other._body;
-
 		_server = other._server;
 		_content_length = other._content_length;
 		_query_string = other._query_string;
 		_state = other._state;
 		_file_size = other._file_size;
 		_file_name = other._file_name;
+		_client_addr = other._client_addr;
 		http100_continue = other.http100_continue;
 	}
 }

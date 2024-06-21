@@ -2,6 +2,7 @@
 #include "Request.hpp"
 #include "Response.hpp"
 
+#include <arpa/inet.h>
 #include <cerrno>
 #include <cstddef>
 #include <fcntl.h>
@@ -12,6 +13,7 @@
 #include <csignal>
 #include <iostream>
 #include <sys/epoll.h>
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
@@ -171,6 +173,8 @@ bool Server::_accept_new_connection(server *server)
 		return (false);
 	}
 
+	_client_adresses[client_fd] = client_addr;
+
 	fcntl(client_fd, F_SETFL, O_NONBLOCK);
 
 	ev.events = EPOLLIN | EPOLLOUT;
@@ -264,24 +268,30 @@ void Server::run()
 			else if (events[i].events & EPOLLIN) // Reading client request and if complete, sending response
 			{
 				_read_request(fd);
-				const Request &request = _requests[fd];
-				if (request.get_state() != complete && request.get_state() != invalid)
+
+				Request* request = &_requests[fd];
+				std::cout << request->get_client_addr() << "\n";
+				if (request->get_state() != complete && request->get_state() != invalid)
 					continue;
 				if (_verbose)
 				{
-					request.display();
+					request->display();
 					std::cout << "----------------------------------------" << std::endl;
 				}
-				Response response;
-				struct server server = request.get_server();
 
-				if (request.get_state() == complete)
-					response = Response(request, server, _error_codes);
-				else if (request.get_state() == invalid)
+				char tmp[INET_ADDRSTRLEN];
+				request->set_client_addr(inet_ntop(AF_INET, &_client_adresses[fd].sin_addr, tmp, INET_ADDRSTRLEN));
+
+				Response response;
+				struct server server = request->get_server();
+
+				if (request->get_state() == complete)
+					response = Response(*request, server, _error_codes);
+				else if (request->get_state() == invalid)
 				{
-					if (request.get_file_size() > server.max_body_size)
+					if (request->get_file_size() > server.max_body_size)
 						response = Response(413, server, _error_codes); // Payload Too Large
-					else if (request.get_file_size() == 0)
+					else if (request->get_file_size() == 0)
 						response = Response(400, server, _error_codes); // Bad Request
 					else
 						response = Response(411, server, _error_codes); // Length Required
@@ -289,7 +299,7 @@ void Server::run()
 				if (_verbose)
 					response.display();
 
-				std::cout << server.host << ":" << server.port << " - - \"" << request.get_first_line() << "\" ";
+				std::cout << server.host << ":" << server.port << " - - \"" << request->get_first_line() << "\" ";
 				int error = is_error(response.get_status_code());
 				if (error == 0)
 					std::cout << "- \033[32m" << response.get_status_code() << " - " << response.get_status_message() << "\033[0m" << std::endl;
@@ -313,6 +323,7 @@ void Server::run()
 					close(fd);
 				}
 
+				_client_adresses.erase(fd);
 				_requests[fd].clear();
 				_requests.erase(fd);
 				close(fd);

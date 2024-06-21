@@ -69,3 +69,8 @@ void Request::set_file_name(const std::string &file_name)
 {
 	_file_name = file_name;
 }
+
+void Request::set_client_addr(const std::string &addr)
+{
+	_client_addr = addr;
+}

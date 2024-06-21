@@ -65,6 +65,7 @@ private:
 	const std::map<unsigned short, std::string> _error_codes;
 	std::vector<server> _servers;
 	std::map<int, Request> _requests;
+	std::map<int, sockaddr_in> _client_adresses;
 
 	/* Parsing */
 	std::string _config_file;
@@ -107,6 +108,7 @@ public:
 	const std::map<size_t, std::vector<std::string> > &get_content_file() const;
 	const size_t &get_current_word() const;
 	const size_t &get_current_line() const;
+	sockaddr_in get_client_addr(int fd) const;
 
 	// Setters
 	void set_verbose(const bool &verbose);

@@ -89,3 +89,8 @@ const std::string Request::get_first_line() const
 		return "";
 	return _request.substr(0, pos);
 }
+
+const std::string &Request::get_client_addr() const
+{
+	return _client_addr;
+}
