@@ -105,7 +105,8 @@ int Response::_cgi_request(std::string &rep, std::string path_to_exec_prog, int 
 		return (500); // Internal Server Error
 
 	int p;
-	while ((p = waitpid(pid, NULL, WNOHANG)) == 0)
+	int status = 0;
+	while ((p = waitpid(pid, &status, WNOHANG)) == 0)
 	{
 		if (p == -1)
 			return (500); // Internal Server Error
@@ -115,7 +116,10 @@ int Response::_cgi_request(std::string &rep, std::string path_to_exec_prog, int 
 			return (504); // Gateway Timeout
 		}
 	}
-	rep = _get_cgi_output(fd);
+	if (!WIFEXITED(status) || (WIFEXITED(status) && WEXITSTATUS(status) == 1))
+		rep = "Content-Type: text/plain\r\n\r\nError: something went wrong while trying to execute the cgi script";
+	else
+		rep = _get_cgi_output(fd);
 	return (EXIT_SUCCESS);
 }
 
