@@ -1,15 +1,18 @@
 use std::env;
 
-fn fibonacci(n: usize) -> usize {
-	let mut seq = Vec::new();
+fn fibonacci(n: usize) -> Option<u128> {
+	let mut seq: Vec<u128> = Vec::new();
 	seq.push(0);
 	seq.push(1);
 
 	for i in 2..n+1 {
-		seq.push(seq[i - 1] + seq[i - 2]);
+		match seq[i - 1].checked_add(seq[i - 2]) {
+			Some(res) => seq.push(res),
+			None => return None,
+		}
 	}
 
-	seq[n]
+	Some(seq[n])
 }
 
 fn main() {
@@ -21,7 +24,12 @@ fn main() {
 				if var.starts_with("n=") {
 					let n = var[2..].to_string().parse::<usize>();
 					match n {
-						Ok(nb) => println!("F({}) = {}", nb, fibonacci(nb)),
+						Ok(nb) => {
+							match fibonacci(nb) {
+								Some(val) => println!("F({}) = {}", nb, val),
+								None => println!("Overflow !"),
+							}
+						},
 						Err(_) => println!("Failed to convert the value of n"),
 					}
 					return;
