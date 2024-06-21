@@ -180,8 +180,8 @@ void Response::_init_meta_var()
 	_meta_var["REMOTE_ADDR"] = _request.get_client_addr();	 // To be retrieved from socket information
 	_meta_var["REMOTE_HOST"] = "";		 // Optional: resolve REMOTE_ADDR to hostname
 	_meta_var["REMOTE_USER"] = "";		 // User from authenticated session
-	_meta_var["SERVER_NAME"] = "";		 // Retrieved from server configuration or host header
-	_meta_var["SERVER_PORT"] = "";		 // Retrieved from server configuration
+	_meta_var["SERVER_NAME"] = _server.host;		 // Retrieved from server configuration or host header
+	_meta_var["SERVER_PORT"] = to_string(_server.port);		 // Retrieved from server configuration
 	_meta_var["SERVER_PROTOCOL"] = "HTTP/1.1";
 	_meta_var["SERVER_SOFTWARE"] = "webserv-42/1.0";
 	//_meta_var["REDIRECT_STATUS"] = "";
