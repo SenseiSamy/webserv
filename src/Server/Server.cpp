@@ -270,7 +270,6 @@ void Server::run()
 				_read_request(fd);
 
 				Request* request = &_requests[fd];
-				std::cout << request->get_client_addr() << "\n";
 				if (request->get_state() != complete && request->get_state() != invalid)
 					continue;
 				if (_verbose)
