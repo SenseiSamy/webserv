@@ -50,26 +50,26 @@ Request &Request::operator+=(const std::string &str)
 {
 	switch (_state)
 	{
-	case incomplete:
-		_request += str;
-		_refresh_state();
-		if (_state == header_complete)
-			parse();
-		break;
-	case header_complete:
-		if (str.size() + _file_size > _content_length)
-		{
-			_tmp_file.write(str.c_str(), _content_length - _file_size);
-			_file_size += _content_length - _file_size;
-		}
-		else
-		{
-			_tmp_file.write(str.c_str(), str.size());
-			_file_size += str.size();
-		}
-		break;
-	default:
-		std::cerr << "on est pas trop cense arriver la imo";
+		case incomplete:
+			_request += str;
+			_refresh_state();
+			if (_state == header_complete)
+				parse();
+			break;
+		case header_complete:
+			if (str.size() + _file_size > _content_length)
+			{
+				_tmp_file.write(str.c_str(), _content_length - _file_size);
+				_file_size += _content_length - _file_size;
+			}
+			else
+			{
+				_tmp_file.write(str.c_str(), str.size());
+				_file_size += str.size();
+			}
+			break;
+		default:
+			break;
 	}
 	_refresh_state();
 	return (*this);

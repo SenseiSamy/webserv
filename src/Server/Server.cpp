@@ -161,6 +161,15 @@ int is_error(const unsigned short &status_code)
 	return 4; // Unknown 
 }
 
+server* Server::_find_server_for_connexion(int fd)
+{
+	for (size_t j = 0; j < Server::_servers.size(); ++j) {
+		if (Server::_servers[j].listen_fd == fd)
+			return (&Server::_servers[j]);
+	}
+	return (NULL);
+}
+
 bool Server::_accept_new_connection(server *server)
 {
 	sockaddr_in client_addr;
@@ -210,6 +219,65 @@ void Server::_read_request(int fd)
 	}
 }
 
+void Server::_send_response(int fd)
+{
+	Request* request = &_requests[fd];
+	if (_verbose)
+	{
+		request->display();
+		std::cout << "----------------------------------------" << std::endl;
+	}
+
+	char tmp[INET_ADDRSTRLEN];
+	request->set_client_addr(inet_ntop(AF_INET, &_client_adresses[fd].sin_addr, tmp, INET_ADDRSTRLEN));
+
+	Response response;
+	struct server server2 = request->get_server();
+
+	if (request->get_state() == complete)
+		response = Response(*request, server2, _error_codes);
+	else if (request->get_state() == invalid)
+	{
+		if (request->get_file_size() > server2.max_body_size)
+			response = Response(413, server2, _error_codes); // Payload Too Large
+		else if (request->get_file_size() == 0)
+			response = Response(400, server2, _error_codes); // Bad Request
+		else
+			response = Response(411, server2, _error_codes); // Length Required
+	}
+	if (_verbose)
+		response.display();
+
+	std::cout << server2.host << ":" << server2.port << " - - \"" << request->get_first_line() << "\" ";
+	int error = is_error(response.get_status_code());
+	if (error == 0)
+		std::cout << "- \033[32m" << response.get_status_code() << " - " << response.get_status_message() << "\033[0m" << std::endl;
+	else if (error == 1)
+		std::cout << "- \033[33m" << response.get_status_code() << " - " << response.get_status_message() << "\033[0m" << std::endl;
+	else if (error == 2)
+		std::cout << "- \033[31m" << response.get_status_code() << " - " << response.get_status_message() << "\033[0m" << std::endl;
+	else if (error == 3)
+		std::cout << "- \033[31m" << response.get_status_code() << " - " << response.get_status_message() << "\033[0m" << std::endl;
+	else
+		std::cout << "\033[0m -" << std::endl;
+
+	if (_verbose)
+		std::cout << "----------------------------------------" << std::endl;
+
+	std::string response_str = response.convert();
+
+	if (send(fd, response_str.c_str(), response_str.size(), 0) == -1)
+	{
+		std::cerr << "send() failed " << std::string(strerror(errno));
+		close(fd);
+	}
+
+	_client_adresses.erase(fd);
+	_requests[fd].clear();
+	_requests.erase(fd);
+	close(fd);
+}
+
 void Server::run()
 {
 	if (_verbose)
@@ -247,86 +315,16 @@ void Server::run()
 		for (int i = 0; i < nfds; ++i) // Iterating over all the fds that are available for reading/writing
 		{
 			const int fd = events[i].data.fd;
-			server *server = NULL;
-
-			for (size_t j = 0; j < Server::_servers.size(); ++j)
-			{
-				if (Server::_servers[j].listen_fd == fd)
-				{
-					server = &Server::_servers[j];
-					break;
-				}
-			}
+			server *server = _find_server_for_connexion(fd);
 
 			if (server != NULL) // Accepting a new connection
-			{
-				if (!_accept_new_connection(server))
-					continue;
-			}
+				_accept_new_connection(server);
 			else if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP)) // An error happened
 				close(fd);
 			else if (events[i].events & EPOLLIN) // Reading client request and if complete, sending response
-			{
 				_read_request(fd);
-
-				Request* request = &_requests[fd];
-				if (request->get_state() != complete && request->get_state() != invalid)
-					continue;
-				if (_verbose)
-				{
-					request->display();
-					std::cout << "----------------------------------------" << std::endl;
-				}
-
-				char tmp[INET_ADDRSTRLEN];
-				request->set_client_addr(inet_ntop(AF_INET, &_client_adresses[fd].sin_addr, tmp, INET_ADDRSTRLEN));
-
-				Response response;
-				struct server server = request->get_server();
-
-				if (request->get_state() == complete)
-					response = Response(*request, server, _error_codes);
-				else if (request->get_state() == invalid)
-				{
-					if (request->get_file_size() > server.max_body_size)
-						response = Response(413, server, _error_codes); // Payload Too Large
-					else if (request->get_file_size() == 0)
-						response = Response(400, server, _error_codes); // Bad Request
-					else
-						response = Response(411, server, _error_codes); // Length Required
-				}
-				if (_verbose)
-					response.display();
-
-				std::cout << server.host << ":" << server.port << " - - \"" << request->get_first_line() << "\" ";
-				int error = is_error(response.get_status_code());
-				if (error == 0)
-					std::cout << "- \033[32m" << response.get_status_code() << " - " << response.get_status_message() << "\033[0m" << std::endl;
-				else if (error == 1)
-					std::cout << "- \033[33m" << response.get_status_code() << " - " << response.get_status_message() << "\033[0m" << std::endl;
-				else if (error == 2)
-					std::cout << "- \033[31m" << response.get_status_code() << " - " << response.get_status_message() << "\033[0m" << std::endl;
-				else if (error == 3)
-					std::cout << "- \033[31m" << response.get_status_code() << " - " << response.get_status_message() << "\033[0m" << std::endl;
-				else
-					std::cout << "\033[0m -" << std::endl;
-
-				if (_verbose)
-					std::cout << "----------------------------------------" << std::endl;
-
-				std::string response_str = response.convert();
-
-				if (send(fd, response_str.c_str(), response_str.size(), 0) == -1)
-				{
-					std::cerr << "send() failed " << std::string(strerror(errno));
-					close(fd);
-				}
-
-				_client_adresses.erase(fd);
-				_requests[fd].clear();
-				_requests.erase(fd);
-				close(fd);
-			}
+			else if (events[i].events & EPOLLOUT && (_requests[fd].get_state() == complete || _requests[fd].get_state() == invalid)) // Sending response when request is complete or invalid
+				_send_response(fd);
 		}
 	}
 	close(_epoll_fd);

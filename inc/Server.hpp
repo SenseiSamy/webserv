@@ -88,8 +88,10 @@ private:
 
 	/* Server */
 	void _setup_server_socket(server &server);
+	server* _find_server_for_connexion(int fd);
 	bool _accept_new_connection(server *server);
 	void _read_request(int fd);
+	void _send_response(int fd);
 
 public:
 	Server();
