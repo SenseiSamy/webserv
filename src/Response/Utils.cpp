@@ -269,7 +269,20 @@ void Response::_generate_response_code(int num)
 			_uri = "/" + it->second;
 			if (access((_path_to_root + _uri).c_str(), F_OK) == -1)
 				break;
-			_get();
+			std::ifstream file((_path_to_root + _uri).c_str());
+			if (!file.is_open())
+			{
+				_generate_response_code(500);
+				return;
+			}
+			set_status_code(num);
+			set_status_message(_error_codes[num]);
+			// _add_content_type();
+			std::string line;
+			while (std::getline(file, line))
+				_body += line + "\n";
+			_add_content_type();
+			set_content_lenght();
 			return;
 		}
 	}
