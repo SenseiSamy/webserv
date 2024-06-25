@@ -277,11 +277,10 @@ void Response::_generate_response_code(int num)
 			}
 			set_status_code(num);
 			set_status_message(_error_codes[num]);
-			// _add_content_type();
 			std::string line;
 			while (std::getline(file, line))
 				_body += line + "\n";
-			_add_content_type();
+			_type = HTML;
 			set_content_lenght();
 			return;
 		}

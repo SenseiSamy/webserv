@@ -12,14 +12,14 @@ std::string get_current_date()
 
 
 Response::Response()
-		: _status_code(0), _status_message(""), _body(""), _headers(), _error_codes(), _uri(""), _path_to_root(""),
+		: _status_code(0), _type(UNKNOW), _status_message(""), _body(""), _headers(), _error_codes(), _uri(""), _path_to_root(""),
 			_server(), _is_cgi(false)
 {
 }
 
 Response::Response(const unsigned short error, const server &server,
 									 const std::map<unsigned short, std::string> &error_codes)
-		: _status_code(error), _status_message(error_codes.at(error)), _body(""), _error_codes(error_codes), _uri(""),
+		: _status_code(error), _type(UNKNOW), _status_message(error_codes.at(error)), _body(""), _error_codes(error_codes), _uri(""),
 			_path_to_root(""), _server(server), _is_cgi(false)
 {
 	_headers["date"] = get_current_date();
@@ -28,7 +28,7 @@ Response::Response(const unsigned short error, const server &server,
 
 Response::Response(const Request &request, const server &server,
 									 const std::map<unsigned short, std::string> &error_codes)
-		: _status_code(0), _status_message(""), _body(""), _headers(), _request(request), _error_codes(error_codes),
+		: _status_code(0), _type(UNKNOW), _status_message(""), _body(""), _headers(), _request(request), _error_codes(error_codes),
 			_uri(""), _path_to_root(""), _server(server), _is_cgi(false)
 {
 	_headers["date"] = get_current_date();

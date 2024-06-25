@@ -53,7 +53,6 @@ void Response::_get()
 		}
 		set_status_code(200);
 		set_status_message(_error_codes[200]);
-		// _add_content_type();
 		std::string line;
 		while (std::getline(file, line))
 			_body += line + "\n";
