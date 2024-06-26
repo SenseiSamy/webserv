@@ -3,7 +3,15 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <csignal>
 
+bool running = false;
+
+static void sigint_handler(int n)
+{
+	(void)n;
+	running = false;
+}
 
 int main(int argc, const char *argv[])
 {
@@ -22,14 +30,13 @@ int main(int argc, const char *argv[])
 		if (flag == "--verbose" || flag == "-v")
 			verbose = true;
 	}
+	signal(SIGINT, &sigint_handler);
 
-	try
-	{
+	try {
 		Server server(argv[file_index], verbose);
 		server.run();
 	}
-	catch (const std::exception &e)
-	{
+	catch (const std::exception &e) {
 		std::cerr << e.what() << std::endl;
 		return EXIT_FAILURE;
 	}

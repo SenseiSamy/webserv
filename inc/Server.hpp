@@ -15,6 +15,8 @@
 #define MAX_EVENTS 64
 #define MAX_BUFFER_SIZE 4096
 
+extern bool running;
+
 /* Classes */
 class Request;
 

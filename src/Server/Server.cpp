@@ -280,6 +280,8 @@ void Server::_send_response(int fd)
 
 void Server::run()
 {
+	running = true;
+
 	if (_verbose)
 		display();
 	_epoll_fd = epoll_create(1);
@@ -301,7 +303,7 @@ void Server::run()
 	}
 	std::cout << "----------------------------------------" << std::endl;
 
-	while (true)
+	while (running)
 	{
 		int nfds = epoll_wait(_epoll_fd, events, MAX_EVENTS, -1);
 		if (nfds < 0)
