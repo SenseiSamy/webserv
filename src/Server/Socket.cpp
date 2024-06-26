@@ -1,8 +1,9 @@
 #include "Server.hpp"
 
-#include <arpa/inet.h>
-#include <iostream>
-#include <unistd.h>
+#include <arpa/inet.h> 	// inet_addr
+#include <iostream>  		// std::cout
+#include <unistd.h> 		// close
+#include <cerrno> 			// errno
 
 void Server::_setup_server_socket(server &server)
 {

@@ -2,7 +2,6 @@
 #define SERVER_HPP
 
 /* Types */
-#include <cerrno>				// errno
 #include <map>					// std::map
 #include <netinet/in.h> // struct sockaddr_in
 #include <string>				// std::string
